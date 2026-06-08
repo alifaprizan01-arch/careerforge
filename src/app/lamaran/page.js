@@ -1,8 +1,8 @@
 'use client';
-
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabaseClient';
 import { useUser } from '../../lib/userContext';
 import Sidebar from '../components/Sidebar';
@@ -13,42 +13,46 @@ export default function LamaranPage() {
   const [applications, setApplications] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('semua');
+  const [search, setSearch] = useState('');
 
   useEffect(() => { if (loaded && !user) router.push('/auth'); }, [loaded, user]);
-  useEffect(() => { if (user) fetchApplications(); }, [user]);
+  useEffect(() => { if (user) fetch(); }, [user]);
 
-  const fetchApplications = async () => {
+  const fetch = async () => {
     setLoading(true);
-    const { data } = await supabase
-      .from('applications')
+    const { data } = await supabase.from('applications')
       .select('*, trayek(tujuan, asal, jenis, company, salary_min, salary_max)')
-      .eq('user_id', user.id)
-      .order('applied_at', { ascending: false });
+      .eq('user_id', user.id).order('applied_at', { ascending: false });
     setApplications(data || []);
     setLoading(false);
   };
 
   const statusConfig = {
-    'Menunggu': { bg: '#FFFBEB', color: '#D97706', border: '#FDE68A', icon: '⏳', desc: 'Sedang ditinjau' },
-    'Diproses': { bg: '#EFF6FF', color: '#2563EB', border: '#BFDBFE', icon: '⚙️', desc: 'Dalam seleksi' },
-    'Diterima': { bg: '#F0FDF4', color: '#16A34A', border: '#BBF7D0', icon: '🎉', desc: 'Selamat!' },
-    'Ditolak':  { bg: '#FEF2F2', color: '#DC2626', border: '#FECACA', icon: '😔', desc: 'Tidak dilanjutkan' },
+    'Menunggu': { badge: 'badge-yellow', icon: '⏳', label: 'Menunggu Review' },
+    'Diproses': { badge: 'badge-blue', icon: '🔍', label: 'Sedang Diproses' },
+    'Wawancara': { badge: 'badge-purple', icon: '🎤', label: 'Jadwal Wawancara' },
+    'Diterima': { badge: 'badge-green', icon: '✅', label: 'Diterima!' },
+    'Ditolak': { badge: 'badge-red', icon: '❌', label: 'Tidak Dilanjutkan' },
   };
-
-  const filtered = filter === 'semua' ? applications : applications.filter(a => a.status === filter);
 
   const stats = {
     total: applications.length,
     menunggu: applications.filter(a => a.status === 'Menunggu').length,
-    diproses: applications.filter(a => a.status === 'Diproses').length,
+    diproses: applications.filter(a => a.status === 'Diproses' || a.status === 'Wawancara').length,
     diterima: applications.filter(a => a.status === 'Diterima').length,
     ditolak: applications.filter(a => a.status === 'Ditolak').length,
   };
 
+  const filtered = applications.filter(a => {
+    const f = filter === 'semua' || a.status === filter;
+    const s = !search || a.trayek?.tujuan?.toLowerCase().includes(search.toLowerCase()) || a.trayek?.company?.toLowerCase().includes(search.toLowerCase());
+    return f && s;
+  });
+
   const formatSalary = (min, max) => {
     if (!min && !max) return null;
-    const fmt = (n) => n >= 1000000 ? `${(n/1000000).toFixed(0)}jt` : `${(n/1000).toFixed(0)}rb`;
-    if (min && max) return `Rp ${fmt(min)}-${fmt(max)}`;
+    const fmt = n => `${(n/1000000).toFixed(0)}jt`;
+    if (min && max) return `Rp ${fmt(min)}–${fmt(max)}`;
     if (min) return `Rp ${fmt(min)}+`;
     return `s/d Rp ${fmt(max)}`;
   };
@@ -56,105 +60,109 @@ export default function LamaranPage() {
   if (!loaded || !user) return null;
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#F8FAFC', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-base)', fontFamily: 'var(--font-sans)' }}>
       <Sidebar />
-      <main style={{ marginLeft: '220px', flex: 1, padding: '28px 32px' }}>
+      <main style={{ marginLeft: '240px', flex: 1, padding: '32px', maxWidth: 'calc(100vw - 240px)' }}>
 
         {/* Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '28px' }}>
           <div>
-            <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0F172A', marginBottom: '4px' }}>Riwayat Lamaran</h1>
-            <p style={{ color: '#64748B', fontSize: '14px' }}>Pantau status semua lamaranmu</p>
+            <h1 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>Riwayat Lamaran</h1>
+            <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '4px' }}>Pantau status semua lamaranmu</p>
           </div>
-          <Link href="/trayek" style={{ padding: '9px 18px', borderRadius: '8px', border: 'none', background: '#2563EB', color: '#fff', fontSize: '13px', fontWeight: 600, textDecoration: 'none' }}>
+          <Link href="/trayek" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 18px', borderRadius: '8px', background: 'var(--brand-600)', color: '#fff', fontWeight: 600, fontSize: '13px', textDecoration: 'none', boxShadow: 'var(--shadow-brand)' }}>
             + Cari Lowongan
           </Link>
-        </div>
+        </motion.div>
 
         {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '14px', marginBottom: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px', marginBottom: '24px' }}>
           {[
-            { label: 'Total', value: stats.total, color: '#0F172A', bg: '#F8FAFC', border: '#E2E8F0' },
-            { label: 'Menunggu', value: stats.menunggu, color: '#D97706', bg: '#FFFBEB', border: '#FDE68A' },
-            { label: 'Diproses', value: stats.diproses, color: '#2563EB', bg: '#EFF6FF', border: '#BFDBFE' },
-            { label: 'Diterima', value: stats.diterima, color: '#16A34A', bg: '#F0FDF4', border: '#BBF7D0' },
-            { label: 'Ditolak', value: stats.ditolak, color: '#DC2626', bg: '#FEF2F2', border: '#FECACA' },
+            { label: 'Total', value: stats.total, badge: 'badge-gray', active: filter === 'semua', onClick: () => setFilter('semua') },
+            { label: 'Menunggu', value: stats.menunggu, badge: 'badge-yellow', active: filter === 'Menunggu', onClick: () => setFilter('Menunggu') },
+            { label: 'Diproses', value: stats.diproses, badge: 'badge-blue', active: filter === 'Diproses', onClick: () => setFilter('Diproses') },
+            { label: 'Diterima', value: stats.diterima, badge: 'badge-green', active: filter === 'Diterima', onClick: () => setFilter('Diterima') },
+            { label: 'Ditolak', value: stats.ditolak, badge: 'badge-red', active: filter === 'Ditolak', onClick: () => setFilter('Ditolak') },
           ].map((s, i) => (
-            <div key={i} onClick={() => setFilter(i === 0 ? 'semua' : s.label)} style={{
-              background: s.bg, borderRadius: '10px', border: `1px solid ${s.border}`,
-              padding: '14px', textAlign: 'center', cursor: 'pointer',
-              boxShadow: filter === (i === 0 ? 'semua' : s.label) ? `0 0 0 2px ${s.color}` : 'none',
-              transition: 'all 0.15s',
-            }}>
-              <div style={{ fontSize: '22px', fontWeight: 700, color: s.color }}>{s.value}</div>
-              <div style={{ fontSize: '11px', color: s.color, opacity: 0.8, fontWeight: 500 }}>{s.label}</div>
-            </div>
+            <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
+              whileHover={{ y: -2 }} onClick={s.onClick}
+              style={{ background: 'var(--surface-primary)', borderRadius: '10px', border: `1.5px solid ${s.active ? 'var(--brand-400)' : 'var(--border-default)'}`, padding: '14px 16px', cursor: 'pointer', textAlign: 'center', boxShadow: s.active ? 'var(--shadow-brand)' : 'var(--shadow-xs)', transition: 'all 0.15s' }}>
+              <div style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px' }}>{loading ? '—' : s.value}</div>
+              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 500 }}>{s.label}</div>
+            </motion.div>
           ))}
         </div>
 
-        {/* Applications list */}
+        {/* Search */}
+        <div style={{ background: 'var(--surface-primary)', borderRadius: '10px', border: '1px solid var(--border-default)', padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '8px', boxShadow: 'var(--shadow-xs)' }}>
+          <span style={{ color: 'var(--text-tertiary)' }}>🔍</span>
+          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari posisi atau perusahaan..."
+            style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '14px', flex: 1, color: 'var(--text-primary)', fontFamily: 'var(--font-sans)' }} />
+          <span style={{ fontSize: '13px', color: 'var(--text-tertiary)' }}>{filtered.length} hasil</span>
+        </div>
+
+        {/* List */}
         {loading ? (
-          <p style={{ color: '#94A3B8', textAlign: 'center', padding: '40px' }}>Memuat riwayat lamaran...</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: '100px' }} />)}
+          </div>
         ) : filtered.length === 0 ? (
-          <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '60px', textAlign: 'center' }}>
-            <div style={{ fontSize: '48px', marginBottom: '12px' }}>📋</div>
-            <p style={{ color: '#94A3B8', fontSize: '14px', marginBottom: '16px' }}>
-              {filter === 'semua' ? 'Belum ada lamaran. Mulai lamar sekarang!' : `Tidak ada lamaran dengan status "${filter}".`}
-            </p>
-            <Link href="/trayek" style={{ display: 'inline-block', padding: '9px 20px', borderRadius: '8px', background: '#2563EB', color: '#fff', fontWeight: 600, fontSize: '13px', textDecoration: 'none' }}>
-              Cari Lowongan
-            </Link>
+          <div style={{ background: 'var(--surface-primary)', borderRadius: '14px', border: '1px solid var(--border-default)', padding: '80px', textAlign: 'center', boxShadow: 'var(--shadow-sm)' }}>
+            <div style={{ fontSize: '48px', marginBottom: '14px', opacity: 0.4 }}>📋</div>
+            <h3 style={{ fontSize: '16px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '6px' }}>Belum ada lamaran</h3>
+            <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginBottom: '20px' }}>Mulai lamar lowongan yang sesuai dengan profilmu</p>
+            <Link href="/trayek" style={{ display: 'inline-flex', padding: '9px 20px', borderRadius: '8px', background: 'var(--brand-600)', color: '#fff', fontWeight: 600, fontSize: '13px', textDecoration: 'none' }}>Cari Lowongan</Link>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-            {filtered.map(app => {
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            {filtered.map((app, i) => {
               const sc = statusConfig[app.status] || statusConfig['Menunggu'];
               const salary = formatSalary(app.trayek?.salary_min, app.trayek?.salary_max);
               return (
-                <div key={app.id} style={{ background: '#fff', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '18px 20px' }}>
+                <motion.div key={app.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                  style={{ background: 'var(--surface-primary)', borderRadius: '12px', border: '1px solid var(--border-default)', padding: '18px 20px', boxShadow: 'var(--shadow-xs)', transition: 'all 0.15s' }}
+                  onMouseEnter={e => { e.currentTarget.style.boxShadow = 'var(--shadow-md)'; e.currentTarget.style.borderColor = 'var(--border-strong)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.boxShadow = 'var(--shadow-xs)'; e.currentTarget.style.borderColor = 'var(--border-default)'; }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
-
-                    {/* Company logo */}
-                    <div style={{ width: '48px', height: '48px', borderRadius: '10px', background: '#EFF6FF', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '14px', color: '#2563EB', flexShrink: 0 }}>
+                    <div style={{ width: '48px', height: '48px', borderRadius: '11px', background: 'var(--surface-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '14px', color: 'var(--text-brand)', flexShrink: 0, border: '1px solid var(--border-brand)' }}>
                       {(app.trayek?.company || app.trayek?.tujuan)?.slice(0,2).toUpperCase() || 'CF'}
                     </div>
-
-                    {/* Job info */}
                     <div style={{ flex: 1, minWidth: 0 }}>
                       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
                         <div>
-                          <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#0F172A', marginBottom: '2px' }}>{app.trayek?.tujuan || 'Posisi'}</h3>
-                          <p style={{ fontSize: '13px', color: '#64748B' }}>{app.trayek?.company || 'Perusahaan'} • {app.trayek?.asal}</p>
-                        </div>
-                        {/* Status badge */}
-                        <div style={{ padding: '6px 12px', borderRadius: '20px', background: sc.bg, border: `1px solid ${sc.border}`, display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-                          <span style={{ fontSize: '14px' }}>{sc.icon}</span>
-                          <span style={{ fontSize: '12px', fontWeight: 600, color: sc.color }}>{app.status}</span>
-                        </div>
-                      </div>
-
-                      <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px', flexWrap: 'wrap' }}>
-                        <span style={{ fontSize: '12px', background: '#F1F5F9', color: '#475569', padding: '3px 8px', borderRadius: '20px' }}>{app.trayek?.jenis || 'Full Time'}</span>
-                        {salary && <span style={{ fontSize: '12px', color: '#64748B' }}>💰 {salary}</span>}
-                        <span style={{ fontSize: '12px', color: '#94A3B8' }}>📅 {new Date(app.applied_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}</span>
-                      </div>
-
-                      {/* Cover letter preview */}
-                      {app.cover_letter && (
-                        <div style={{ background: '#F8FAFC', borderRadius: '8px', padding: '10px 12px', border: '1px solid #F1F5F9' }}>
-                          <p style={{ fontSize: '12px', color: '#64748B', margin: 0, lineHeight: 1.5 }}>
-                            {app.cover_letter.slice(0, 120)}{app.cover_letter.length > 120 ? '...' : ''}
+                          <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '3px' }}>{app.trayek?.tujuan || 'Posisi'}</h3>
+                          <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>
+                            {app.trayek?.company || 'Perusahaan'}
+                            {app.trayek?.asal && <span> • 📍 {app.trayek.asal}</span>}
+                            {salary && <span> • 💰 {salary}</span>}
                           </p>
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px', flexShrink: 0 }}>
+                          <span className={`badge ${sc.badge}`}>{sc.icon} {app.status}</span>
+                          <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>{new Date(app.applied_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
+                        </div>
+                      </div>
+                      {app.cover_letter && (
+                        <div style={{ background: 'var(--surface-secondary)', borderRadius: '8px', padding: '10px 12px', border: '1px solid var(--border-subtle)', marginBottom: '10px' }}>
+                          <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>{app.cover_letter.slice(0,140)}...</p>
+                        </div>
+                      )}
+                      {app.interview_date && (
+                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '5px 12px', borderRadius: '6px', background: 'var(--surface-brand)', border: '1px solid var(--border-brand)' }}>
+                          <span style={{ fontSize: '12px' }}>🗓️</span>
+                          <span style={{ fontSize: '12px', color: 'var(--text-brand)', fontWeight: 600 }}>
+                            Interview: {new Date(app.interview_date).toLocaleString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                          </span>
                         </div>
                       )}
                     </div>
-
-                    {/* Action */}
-                    <Link href={`/trayek/${app.trayek_id}`} style={{ padding: '7px 14px', borderRadius: '8px', border: '1px solid #E2E8F0', background: '#fff', color: '#475569', fontSize: '12px', fontWeight: 500, textDecoration: 'none', flexShrink: 0 }}>
+                    <Link href={`/trayek/${app.trayek_id}`} style={{ padding: '7px 14px', borderRadius: '8px', border: '1px solid var(--border-default)', color: 'var(--text-secondary)', fontSize: '12px', fontWeight: 500, textDecoration: 'none', background: 'var(--surface-secondary)', flexShrink: 0, transition: 'all 0.15s' }}
+                      onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-brand)'; e.currentTarget.style.color = 'var(--text-brand)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface-secondary)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}>
                       Detail →
                     </Link>
                   </div>
-                </div>
+                </motion.div>
               );
             })}
           </div>

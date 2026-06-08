@@ -1,7 +1,7 @@
 'use client';
-
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabaseClient';
 import { useUser } from '../../lib/userContext';
 import Sidebar from '../components/Sidebar';
@@ -12,9 +12,16 @@ export default function MentoringPage() {
   const [mentors, setMentors] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [selectedMentor, setSelectedMentor] = useState(null);
+  const [mentorReviews, setMentorReviews] = useState([]);
   const [reviewForm, setReviewForm] = useState({ mentor_id: '', rating: 5, comment: '' });
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState('');
+  const [search, setSearch] = useState('');
+  const [filterRating, setFilterRating] = useState(0);
+  const [sortBy, setSortBy] = useState('rating');
+  const [showReviewModal, setShowReviewModal] = useState(false);
+  const [hoverRating, setHoverRating] = useState(0);
 
   useEffect(() => { if (loaded && !user) router.push('/auth'); }, [loaded, user]);
   useEffect(() => { if (user) fetchAll(); }, [user]);
@@ -23,127 +30,333 @@ export default function MentoringPage() {
     setLoading(true);
     const [{ data: m }, { data: r }] = await Promise.all([
       supabase.from('mentors').select('*'),
-      supabase.from('mentoring_reviews').select('*, mentors(name)').order('created_at', { ascending: false }),
+      supabase.from('mentoring_reviews').select('*, mentors(full_name), users(full_name, avatar_url)').order('created_at', { ascending: false }),
     ]);
-    setMentors(m || []);
-    setReviews(r || []);
-    setLoading(false);
+    setMentors(m || []); setReviews(r || []); setLoading(false);
   };
+
+  const fetchMentorReviews = async id => {
+    const { data } = await supabase.from('mentoring_reviews').select('*, users(full_name, avatar_url)').eq('mentor_id', id).order('created_at', { ascending: false });
+    setMentorReviews((data || []).filter(r => r != null && r.rating != null));
+  };
+
+  const selectMentor = m => { setSelectedMentor(m); fetchMentorReviews(m.id); setReviewForm(f => ({ ...f, mentor_id: String(m.id) })); };
 
   const handleReview = async e => {
     e.preventDefault();
-    if (!reviewForm.mentor_id) { setMsg('Pilih mentor terlebih dahulu.'); return; }
+    if (!reviewForm.mentor_id || !reviewForm.comment.trim()) { setMsg('Tulis komentar terlebih dahulu.'); return; }
     setSubmitting(true);
     try {
-      await supabase.from('mentoring_reviews').insert([{
-        user_id: user.id, mentor_id: parseInt(reviewForm.mentor_id),
-        rating: reviewForm.rating, comment: reviewForm.comment,
-      }]);
-      setMsg('Review berhasil dikirim!');
-      setReviewForm({ mentor_id: '', rating: 5, comment: '' });
+      const { data: newReview } = await supabase.from('mentoring_reviews').insert([{ user_id: user.id, mentor_id: parseInt(reviewForm.mentor_id), rating: reviewForm.rating, comment: reviewForm.comment }]).select('*, users(full_name, avatar_url)').single();
+      if (newReview) setMentorReviews(prev => [newReview, ...prev.filter(r => r != null)]);
+      setMsg('Review berhasil dikirim! ✓');
+      setReviewForm(f => ({ ...f, rating: 5, comment: '' }));
+      setShowReviewModal(false);
       fetchAll();
       setTimeout(() => setMsg(''), 3000);
     } catch { setMsg('Gagal mengirim review.'); }
     finally { setSubmitting(false); }
   };
 
+  const filteredMentors = mentors.filter(m => m != null).filter(m => {
+    const s = !search || m.full_name?.toLowerCase().includes(search.toLowerCase()) || m.expertise?.toLowerCase().includes(search.toLowerCase());
+    const r = filterRating === 0 || (m.rating_avg || 0) >= filterRating;
+    return s && r;
+  }).sort((a, b) => {
+    if (sortBy === 'rating') return (b.rating_avg || 0) - (a.rating_avg || 0);
+    if (sortBy === 'reviews') return (b.total_reviews || 0) - (a.total_reviews || 0);
+    if (sortBy === 'experience') return (b.years_experience || 0) - (a.years_experience || 0);
+    return 0;
+  });
+
+  const renderStars = (rating, size = 14) => (
+    <div style={{ display: 'flex', gap: '1px' }}>
+      {[1,2,3,4,5].map(n => <span key={n} style={{ fontSize: `${size}px`, color: n <= Math.round(rating) ? '#F59E0B' : 'var(--border-strong)' }}>★</span>)}
+    </div>
+  );
+
   if (!loaded || !user) return null;
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#F8FAFC', fontFamily: 'Inter, sans-serif' }}>
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-base)', fontFamily: 'var(--font-sans)' }}>
       <Sidebar />
-      <main style={{ marginLeft: '220px', flex: 1, padding: '28px 32px' }}>
-        <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0F172A', marginBottom: '4px' }}>Mentoring</h1>
-        <p style={{ color: '#64748B', fontSize: '14px', marginBottom: '24px' }}>Bimbingan dari mentor berpengalaman & simulasi interview AI</p>
+      <main style={{ marginLeft: '240px', flex: 1, padding: '32px' }}>
 
-        {/* Interview AI Banner */}
-        <div style={{
-          background: 'linear-gradient(135deg,#1E3A5F,#2563EB)',
-          borderRadius: '12px', padding: '24px 32px', display: 'flex', alignItems: 'center',
-          gap: '24px', marginBottom: '28px',
-        }}>
-          <div style={{ fontSize: '48px' }}>🎤</div>
+        {/* Header */}
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: '24px' }}>
+          <h1 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>Mentoring</h1>
+          <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '4px' }}>Temukan mentor terbaik dan booking sesi learning</p>
+        </motion.div>
+
+        {msg && <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ padding: '12px 16px', background: 'var(--success-50)', border: '1px solid #BBF7D0', borderRadius: '8px', color: 'var(--text-success)', marginBottom: '16px', fontSize: '13px', fontWeight: 500 }}>✓ {msg}</motion.div>}
+
+        {/* Interview AI banner */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
+          style={{ background: 'linear-gradient(135deg, var(--brand-900) 0%, var(--brand-700) 100%)', borderRadius: '14px', padding: '22px 28px', display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '24px', boxShadow: 'var(--shadow-lg)', position: 'relative', overflow: 'hidden' }}>
+          <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '120px', height: '120px', background: 'rgba(255,255,255,0.04)', borderRadius: '50%' }} />
+          <motion.div animate={{ scale: [1, 1.08, 1] }} transition={{ duration: 2.5, repeat: Infinity }}
+            style={{ width: '52px', height: '52px', background: 'rgba(255,255,255,0.12)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px', flexShrink: 0, border: '1px solid rgba(255,255,255,0.2)' }}>🤖</motion.div>
           <div style={{ flex: 1 }}>
-            <h2 style={{ color: '#fff', margin: '0 0 6px', fontSize: '18px', fontWeight: 700 }}>Simulasi Interview AI</h2>
-            <p style={{ color: 'rgba(255,255,255,0.75)', margin: 0, fontSize: '13px' }}>Latih kemampuan wawancaramu dan dapatkan feedback instan dari AI.</p>
+            <h2 style={{ color: '#fff', margin: '0 0 4px', fontSize: '16px', fontWeight: 800, letterSpacing: '-0.01em' }}>Simulasi Interview AI</h2>
+            <p style={{ color: 'rgba(255,255,255,0.65)', margin: 0, fontSize: '13px' }}>Latih wawancara & dapatkan feedback instan — gratis!</p>
           </div>
-          <button style={{ padding: '11px 24px', borderRadius: '8px', border: 'none', background: '#fff', color: '#2563EB', fontWeight: 700, fontSize: '14px', cursor: 'pointer', whiteSpace: 'nowrap' }}>
-            Mulai Simulasi →
-          </button>
+          <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => router.push('/interview')}
+            style={{ padding: '10px 20px', borderRadius: '9px', border: 'none', background: '#fff', color: 'var(--brand-700)', fontWeight: 700, fontSize: '13px', cursor: 'pointer', flexShrink: 0, fontFamily: 'var(--font-sans)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
+            Mulai Sekarang →
+          </motion.button>
+        </motion.div>
+
+        {/* Search & filter */}
+        <div style={{ background: 'var(--surface-primary)', borderRadius: '12px', border: '1px solid var(--border-default)', padding: '14px 16px', marginBottom: '20px', boxShadow: 'var(--shadow-xs)' }}>
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-secondary)', border: '1.5px solid var(--border-default)', borderRadius: '9px', padding: '9px 14px' }}>
+              <span style={{ color: 'var(--text-tertiary)' }}>🔍</span>
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari mentor atau keahlian..."
+                style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '14px', flex: 1, color: 'var(--text-primary)', fontFamily: 'var(--font-sans)' }} />
+            </div>
+            <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ padding: '9px 12px', borderRadius: '9px', border: '1.5px solid var(--border-default)', fontSize: '13px', outline: 'none', background: 'var(--surface-secondary)', color: 'var(--text-primary)', fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>
+              <option value="rating">Rating Tertinggi</option>
+              <option value="reviews">Ulasan Terbanyak</option>
+              <option value="experience">Pengalaman Terlama</option>
+            </select>
+          </div>
+          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-tertiary)', fontWeight: 500 }}>Min Rating:</span>
+            {[0,3,4,5].map(r => (
+              <button key={r} onClick={() => setFilterRating(r)} style={{
+                padding: '4px 12px', borderRadius: '20px', border: `1px solid ${filterRating === r ? '#F59E0B' : 'var(--border-default)'}`,
+                background: filterRating === r ? '#FFFBEB' : 'transparent', color: filterRating === r ? '#D97706' : 'var(--text-secondary)',
+                fontSize: '12px', cursor: 'pointer', fontWeight: 500, fontFamily: 'var(--font-sans)',
+              }}>{r === 0 ? 'Semua' : `${r}★+`}</button>
+            ))}
+          </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: '24px' }}>
-
-          {/* Mentor list */}
+        <div style={{ display: 'grid', gridTemplateColumns: selectedMentor ? '1fr 380px' : '1fr', gap: '20px' }}>
+          {/* Mentor grid */}
           <div>
-            <h3 style={{ fontSize: '15px', fontWeight: 600, color: '#0F172A', marginBottom: '16px' }}>Daftar Mentor</h3>
-            {loading ? <p style={{ color: '#94A3B8' }}>Memuat...</p> : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                {mentors.length === 0 ? (
-                  <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '40px', textAlign: 'center' }}>
-                    <p style={{ color: '#94A3B8', fontSize: '14px' }}>Belum ada mentor terdaftar.</p>
-                  </div>
-                ) : mentors.map(m => (
-                  <div key={m.id} style={{ background: '#fff', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '16px 20px', display: 'flex', gap: '14px', alignItems: 'center' }}>
-                    <div style={{ width: '48px', height: '48px', borderRadius: '50%', background: 'linear-gradient(135deg,#2563EB,#1D4ED8)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '16px', flexShrink: 0 }}>
-                      {m.name?.slice(0,1)}
-                    </div>
-                    <div style={{ flex: 1 }}>
-                      <p style={{ margin: '0 0 2px', fontWeight: 600, color: '#0F172A', fontSize: '14px' }}>{m.name}</p>
-                      <p style={{ margin: '0 0 4px', fontSize: '12px', color: '#64748B' }}>{m.expertise || 'Mentor'}</p>
-                      {m.bio && <p style={{ margin: 0, fontSize: '12px', color: '#94A3B8' }}>{m.bio.slice(0,80)}...</p>}
-                    </div>
-                    <button onClick={() => setReviewForm(f => ({ ...f, mentor_id: String(m.id) }))} style={{ padding: '7px 14px', borderRadius: '8px', border: '1px solid #2563EB', color: '#2563EB', background: '#fff', fontWeight: 600, fontSize: '12px', cursor: 'pointer' }}>
-                      Beri Review
-                    </button>
-                  </div>
-                ))}
+            <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '14px' }}>
+              {filteredMentors.length} mentor tersedia
+            </div>
+            {loading ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '12px' }}>
+                {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: '180px' }} />)}
+              </div>
+            ) : filteredMentors.length === 0 ? (
+              <div style={{ background: 'var(--surface-primary)', borderRadius: '12px', border: '1px solid var(--border-default)', padding: '60px', textAlign: 'center' }}>
+                <div style={{ fontSize: '40px', marginBottom: '12px', opacity: 0.4 }}>🎤</div>
+                <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Tidak ada mentor yang sesuai</p>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '12px' }}>
+                {filteredMentors.map((m, i) => {
+                  const isSelected = selectedMentor?.id === m.id;
+                  return (
+                    <motion.div key={m.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
+                      onClick={() => selectMentor(m)}
+                      style={{ background: 'var(--surface-primary)', borderRadius: '12px', padding: '18px', cursor: 'pointer',
+                        border: `${isSelected ? '2' : '1'}px solid ${isSelected ? 'var(--border-brand)' : 'var(--border-default)'}`,
+                        boxShadow: isSelected ? 'var(--shadow-brand)' : 'var(--shadow-xs)', transition: 'all 0.15s' }}
+                      onMouseEnter={e => { if (!isSelected) { e.currentTarget.style.boxShadow = 'var(--shadow-md)'; e.currentTarget.style.transform = 'translateY(-2px)'; } }}
+                      onMouseLeave={e => { if (!isSelected) { e.currentTarget.style.boxShadow = 'var(--shadow-xs)'; e.currentTarget.style.transform = 'none'; } }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
+                        {m.avatar_url ? <img src={m.avatar_url} style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid var(--border-brand)' }} /> :
+                          <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'linear-gradient(135deg,var(--brand-600),var(--brand-800))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '16px', flexShrink: 0 }}>
+                            {m.full_name?.slice(0,1)}
+                          </div>}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: '14px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{m.full_name}</div>
+                          <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{m.expertise || 'Mentor'}</div>
+                        </div>
+                        {m.availability === 'Tersedia' && <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#22C55E', flexShrink: 0 }} />}
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '7px', marginBottom: '10px' }}>
+                        {renderStars(m.rating_avg || 0)}
+                        <span style={{ fontSize: '13px', fontWeight: 700, color: (m.rating_avg || 0) > 0 ? '#D97706' : 'var(--text-tertiary)' }}>{(m.rating_avg || 0) > 0 ? parseFloat(m.rating_avg).toFixed(1) : 'Baru'}</span>
+                        <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>({m.total_reviews || 0})</span>
+                      </div>
+
+                      {m.expertise_tags?.length > 0 && (
+                        <div style={{ display: 'flex', gap: '4px', flexWrap: 'wrap', marginBottom: '10px' }}>
+                          {m.expertise_tags.slice(0,3).map((tag, j) => <span key={j} className="badge badge-blue">#{tag}</span>)}
+                        </div>
+                      )}
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '10px', borderTop: '1px solid var(--border-subtle)' }}>
+                        <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>{m.years_experience ? `${m.years_experience} thn pengalaman` : 'Mentor'}</span>
+                        <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-success)' }}>{m.price_per_session > 0 ? `Rp ${(m.price_per_session/1000).toFixed(0)}rb/jam` : 'Gratis'}</span>
+                      </div>
+                    </motion.div>
+                  );
+                })}
               </div>
             )}
           </div>
 
-          {/* Right: Review form + list */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-            <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '20px' }}>
-              <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#0F172A', marginBottom: '14px' }}>Tulis Review</h3>
-              {msg && <div style={{ padding: '8px 12px', background: '#F0FDF4', borderRadius: '6px', color: '#16A34A', fontSize: '13px', marginBottom: '12px' }}>{msg}</div>}
-              <form onSubmit={handleReview} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <select value={reviewForm.mentor_id} onChange={e => setReviewForm(f => ({ ...f, mentor_id: e.target.value }))}
-                  style={{ padding: '9px 12px', borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '13px', outline: 'none', background: '#fff', color: '#0F172A' }}>
-                  <option value="">Pilih Mentor</option>
-                  {mentors.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                </select>
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                  <span style={{ fontSize: '12px', color: '#64748B' }}>Rating:</span>
-                  {[1,2,3,4,5].map(n => (
-                    <button type="button" key={n} onClick={() => setReviewForm(f => ({ ...f, rating: n }))}
-                      style={{ width: '28px', height: '28px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontSize: '14px', background: reviewForm.rating >= n ? '#FEF3C7' : '#F1F5F9' }}>⭐</button>
-                  ))}
-                </div>
-                <textarea value={reviewForm.comment} onChange={e => setReviewForm(f => ({ ...f, comment: e.target.value }))}
-                  placeholder="Tulis pengalamanmu..." rows={3}
-                  style={{ padding: '9px 12px', borderRadius: '8px', border: '1px solid #E2E8F0', fontSize: '13px', outline: 'none', resize: 'vertical', fontFamily: 'inherit', color: '#0F172A' }} />
-                <button type="submit" disabled={submitting} style={{ padding: '9px', borderRadius: '8px', border: 'none', background: submitting ? '#93C5FD' : '#2563EB', color: '#fff', fontWeight: 600, cursor: 'pointer', fontSize: '13px' }}>
-                  {submitting ? 'Mengirim...' : 'Kirim Review'}
-                </button>
-              </form>
-            </div>
+          {/* Detail panel */}
+          <AnimatePresence>
+            {selectedMentor && (
+              <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
+                style={{ position: 'sticky', top: '32px', maxHeight: 'calc(100vh - 100px)', display: 'flex', flexDirection: 'column', gap: '14px', overflowY: 'auto' }}>
 
-            <div style={{ background: '#fff', borderRadius: '12px', border: '1px solid #E2E8F0', padding: '20px' }}>
-              <h3 style={{ fontSize: '14px', fontWeight: 600, color: '#0F172A', marginBottom: '14px' }}>Review Terbaru</h3>
-              {reviews.slice(0,4).map(r => (
-                <div key={r.id} style={{ borderBottom: '1px solid #F1F5F9', paddingBottom: '12px', marginBottom: '12px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px' }}>
-                    <span style={{ fontSize: '13px', fontWeight: 600, color: '#334155' }}>{r.mentors?.name || 'Mentor'}</span>
-                    <span style={{ fontSize: '12px', color: '#F59E0B' }}>{'⭐'.repeat(r.rating || 5)}</span>
+                {/* Profile card */}
+                <div style={{ background: 'var(--surface-primary)', borderRadius: '12px', border: '1px solid var(--border-default)', padding: '20px', boxShadow: 'var(--shadow-sm)' }}>
+                  <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start', marginBottom: '16px' }}>
+                    {selectedMentor.avatar_url ? <img src={selectedMentor.avatar_url} style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--border-brand)', flexShrink: 0 }} /> :
+                      <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'linear-gradient(135deg,var(--brand-600),var(--brand-800))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '22px', flexShrink: 0 }}>
+                        {selectedMentor.full_name?.slice(0,1)}
+                      </div>}
+                    <div style={{ flex: 1 }}>
+                      <h2 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '2px', letterSpacing: '-0.01em' }}>{selectedMentor.full_name}</h2>
+                      <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '8px' }}>{selectedMentor.expertise}</p>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        {renderStars(selectedMentor.rating_avg || 0, 16)}
+                        <span style={{ fontSize: '15px', fontWeight: 800, color: '#D97706' }}>{(selectedMentor.rating_avg || 0) > 0 ? parseFloat(selectedMentor.rating_avg).toFixed(1) : 'Baru'}</span>
+                        <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>({selectedMentor.total_reviews || 0} ulasan)</span>
+                      </div>
+                    </div>
                   </div>
-                  <p style={{ margin: 0, fontSize: '12px', color: '#64748B' }}>{r.comment}</p>
+
+                  {/* Stats */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '14px' }}>
+                    {[
+                      { label: 'Pengalaman', value: selectedMentor.years_experience ? `${selectedMentor.years_experience} thn` : '—' },
+                      { label: 'Ulasan', value: selectedMentor.total_reviews || 0 },
+                      { label: 'Harga/Jam', value: selectedMentor.price_per_session > 0 ? `Rp ${(selectedMentor.price_per_session/1000).toFixed(0)}rb` : 'Gratis' },
+                    ].map((s, i) => (
+                      <div key={i} style={{ background: 'var(--surface-secondary)', borderRadius: '8px', padding: '10px', textAlign: 'center', border: '1px solid var(--border-subtle)' }}>
+                        <div style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-brand)', letterSpacing: '-0.02em' }}>{s.value}</div>
+                        <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', fontWeight: 500, marginTop: '2px' }}>{s.label}</div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {selectedMentor.bio && <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6, marginBottom: '14px' }}>{selectedMentor.bio}</p>}
+
+                  {selectedMentor.expertise_tags?.length > 0 && (
+                    <div style={{ display: 'flex', gap: '5px', flexWrap: 'wrap', marginBottom: '14px' }}>
+                      {selectedMentor.expertise_tags.map((tag, i) => <span key={i} className="badge badge-blue">#{tag}</span>)}
+                    </div>
+                  )}
+
+                  <div style={{ display: 'flex', gap: '8px' }}>
+                    <motion.button whileTap={{ scale: 0.97 }} onClick={() => router.push(`/mentoring/${selectedMentor.id}`)}
+                      style={{ flex: 2, padding: '10px', borderRadius: '9px', border: 'none', background: 'var(--brand-600)', color: '#fff', fontWeight: 700, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)', boxShadow: 'var(--shadow-brand)' }}>
+                      📅 Book Sesi
+                    </motion.button>
+                    <motion.button whileTap={{ scale: 0.97 }} onClick={() => { setReviewForm(f => ({ ...f, mentor_id: String(selectedMentor.id) })); setShowReviewModal(true); }}
+                      style={{ flex: 1, padding: '10px', borderRadius: '9px', border: '1.5px solid var(--border-brand)', background: 'var(--surface-brand)', color: 'var(--text-brand)', fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+                      ⭐ Review
+                    </motion.button>
+                  </div>
                 </div>
-              ))}
-              {reviews.length === 0 && <p style={{ fontSize: '13px', color: '#94A3B8' }}>Belum ada review.</p>}
-            </div>
-          </div>
+
+                {/* Reviews */}
+                <div style={{ background: 'var(--surface-primary)', borderRadius: '12px', border: '1px solid var(--border-default)', padding: '18px', boxShadow: 'var(--shadow-xs)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+                    <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>Ulasan ({mentorReviews.length})</h3>
+                    {mentorReviews.length > 0 && <span style={{ fontSize: '18px', fontWeight: 800, color: '#D97706' }}>{parseFloat(selectedMentor.rating_avg || 0).toFixed(1)} ★</span>}
+                  </div>
+
+                  {/* Rating bars */}
+                  {mentorReviews.length > 0 && (
+                    <div style={{ marginBottom: '14px', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      {[5,4,3,2,1].map(star => {
+                        const count = mentorReviews.filter(r => r != null && r.rating === star).length;
+                        const pct = mentorReviews.length > 0 ? (count / mentorReviews.length) * 100 : 0;
+                        return (
+                          <div key={star} style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ fontSize: '11px', color: 'var(--text-secondary)', width: '20px', textAlign: 'right', fontWeight: 500 }}>{star}★</span>
+                            <div style={{ flex: 1, height: '5px', background: 'var(--surface-secondary)', borderRadius: '3px', overflow: 'hidden' }}>
+                              <motion.div initial={{ width: 0 }} animate={{ width: `${pct}%` }} transition={{ duration: 0.6 }}
+                                style={{ height: '100%', background: '#F59E0B', borderRadius: '3px' }} />
+                            </div>
+                            <span style={{ fontSize: '11px', color: 'var(--text-tertiary)', width: '16px' }}>{count}</span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {mentorReviews.length === 0 ? (
+                    <div style={{ textAlign: 'center', padding: '20px 0' }}>
+                      <p style={{ color: 'var(--text-tertiary)', fontSize: '13px', marginBottom: '10px' }}>Belum ada ulasan</p>
+                      <button onClick={() => setShowReviewModal(true)} style={{ padding: '7px 16px', borderRadius: '8px', border: 'none', background: 'var(--brand-600)', color: '#fff', fontWeight: 600, fontSize: '12px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+                        ⭐ Tulis Ulasan
+                      </button>
+                    </div>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxHeight: '260px', overflowY: 'auto' }}>
+                      {mentorReviews.filter(r => r != null).map((r, i) => (
+                        <div key={r.id} style={{ borderBottom: i < mentorReviews.length-1 ? '1px solid var(--border-subtle)' : 'none', paddingBottom: '12px' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
+                            {r.users?.avatar_url ? <img src={r.users.avatar_url} style={{ width: '26px', height: '26px', borderRadius: '50%', objectFit: 'cover' }} /> :
+                              <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'linear-gradient(135deg,var(--brand-600),var(--brand-800))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '9px', flexShrink: 0 }}>
+                                {r.users?.full_name?.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2)}
+                              </div>}
+                            <div style={{ flex: 1 }}>
+                              <div style={{ fontSize: '12px', fontWeight: 600, color: 'var(--text-primary)' }}>{r.users?.full_name || 'User'}</div>
+                              <div style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>{r.created_at ? new Date(r.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : ''}</div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '1px' }}>
+                              {[1,2,3,4,5].map(n => <span key={n} style={{ fontSize: '12px', color: n <= r.rating ? '#F59E0B' : 'var(--border-strong)' }}>★</span>)}
+                            </div>
+                          </div>
+                          <p style={{ margin: 0, fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5 }}>{r.comment}</p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
+
+        {/* Review Modal */}
+        <AnimatePresence>
+          {showReviewModal && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+              <motion.div initial={{ scale: 0.92, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} exit={{ scale: 0.92, opacity: 0 }}
+                style={{ background: 'var(--surface-primary)', borderRadius: '16px', padding: '28px', maxWidth: '420px', width: '100%', boxShadow: 'var(--shadow-2xl)', border: '1px solid var(--border-default)' }}>
+                <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px', letterSpacing: '-0.01em' }}>⭐ Beri Ulasan</h3>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '20px' }}>untuk <strong>{selectedMentor?.full_name}</strong></p>
+
+                <div style={{ textAlign: 'center', marginBottom: '20px' }}>
+                  <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', marginBottom: '8px' }}>
+                    {[1,2,3,4,5].map(n => (
+                      <motion.span key={n} whileHover={{ scale: 1.2 }} whileTap={{ scale: 0.9 }}
+                        onClick={() => setReviewForm(f => ({ ...f, rating: n }))}
+                        onMouseEnter={() => setHoverRating(n)} onMouseLeave={() => setHoverRating(0)}
+                        style={{ fontSize: '36px', cursor: 'pointer', color: n <= (hoverRating || reviewForm.rating) ? '#F59E0B' : 'var(--border-strong)', lineHeight: 1, userSelect: 'none' }}>★</motion.span>
+                    ))}
+                  </div>
+                  <p style={{ fontSize: '13px', fontWeight: 700, color: '#D97706' }}>
+                    {['', 'Mengecewakan', 'Kurang Baik', 'Cukup Baik', 'Bagus', 'Luar Biasa! 🎉'][reviewForm.rating]}
+                  </p>
+                </div>
+
+                <form onSubmit={handleReview} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div>
+                    <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Ulasanmu</label>
+                    <textarea value={reviewForm.comment} onChange={e => setReviewForm(f => ({ ...f, comment: e.target.value }))}
+                      placeholder="Bagikan pengalamanmu dengan mentor ini..." rows={4}
+                      style={{ width: '100%', padding: '10px 14px', borderRadius: '9px', border: '1.5px solid var(--border-default)', fontSize: '14px', outline: 'none', resize: 'vertical', background: 'var(--surface-secondary)', color: 'var(--text-primary)', fontFamily: 'var(--font-sans)', lineHeight: 1.6, boxSizing: 'border-box' }} required />
+                    <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', textAlign: 'right', marginTop: '4px' }}>{reviewForm.comment.length} karakter</div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button type="button" onClick={() => setShowReviewModal(false)} style={{ flex: 1, padding: '11px', borderRadius: '9px', border: '1px solid var(--border-default)', background: 'transparent', color: 'var(--text-secondary)', fontSize: '14px', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontWeight: 500 }}>Batal</button>
+                    <button type="submit" disabled={submitting} style={{ flex: 2, padding: '11px', borderRadius: '9px', border: 'none', background: submitting ? '#93C5FD' : 'var(--brand-600)', color: '#fff', fontWeight: 700, fontSize: '14px', cursor: 'pointer', fontFamily: 'var(--font-sans)', boxShadow: 'var(--shadow-brand)' }}>
+                      {submitting ? 'Mengirim...' : '✓ Kirim Ulasan'}
+                    </button>
+                  </div>
+                </form>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );

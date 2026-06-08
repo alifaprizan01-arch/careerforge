@@ -1,4 +1,5 @@
 import { UserProvider } from '../lib/userContext';
+import { ThemeProvider } from '../lib/themeContext';
 import './globals.css';
 
 export const metadata = {
@@ -8,11 +9,13 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
   return (
-    <html lang="id">
+    <html lang="id" suppressHydrationWarning>
       <body>
-        <UserProvider>
-          {children}
-        </UserProvider>
+        <ThemeProvider>
+          <UserProvider>
+            {children}
+          </UserProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
