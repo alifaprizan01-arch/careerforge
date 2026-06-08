@@ -1,12 +1,13 @@
 'use client';
-import { useEffect, useState, useRef, useCallback } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabaseClient';
 import { useUser } from '../../lib/userContext';
 import Sidebar from '../components/Sidebar';
 
-export default function ChatPage() {
+// ✅ Komponen ini dipisah karena menggunakan useSearchParams
+function ChatPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loaded } = useUser();
@@ -460,5 +461,18 @@ export default function ChatPage() {
         </AnimatePresence>
       </main>
     </div>
+  );
+}
+
+// ✅ Default export dibungkus Suspense — ini yang fix error build Vercel
+export default function ChatPage() {
+  return (
+    <Suspense fallback={
+      <div style={{ display: 'flex', minHeight: '100vh', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ width: '32px', height: '32px', border: '3px solid #e5e7eb', borderTopColor: '#6366f1', borderRadius: '50%', animation: 'spin 0.7s linear infinite' }} />
+      </div>
+    }>
+      <ChatPageInner />
+    </Suspense>
   );
 }
