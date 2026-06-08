@@ -1,4 +1,4 @@
-'use client';
+'use client'; // v2
 import { useEffect, useState, useRef, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -476,4 +476,5 @@ export default function ChatPage() {
     </Suspense>
   );
 }
+
 
