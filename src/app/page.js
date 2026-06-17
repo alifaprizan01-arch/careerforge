@@ -1,313 +1,525 @@
 ﻿'use client';
-import { useEffect, useState } from 'react';
+
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { motion } from 'framer-motion';
+// 1. Tambahkan AnimatePresence untuk animasi pop-up badge notifikasi
+import { motion, AnimatePresence } from 'framer-motion'; 
 import { supabase } from '../lib/supabaseClient';
 import { useUser } from '../lib/userContext';
 import { useTheme } from '../lib/themeContext';
+import Landing from './components/Landing';
 import Sidebar from './components/Sidebar';
+import { useSidebar } from '../lib/sidebarContext';
+import Footer from './components/Footer';
+
+/* ---- Visual helper: warna + emoji per kategori (aman untuk dark mode) ---- */
+const PALETTES_LIGHT = [
+  { bg: '#F5F3FF', fg: '#7C3AED' },
+  { bg: '#EFF6FF', fg: '#1D4ED8' },
+  { bg: '#F0FDF4', fg: '#16A34A' },
+  { bg: '#FFFBEB', fg: '#D97706' },
+  { bg: '#FDF2F8', fg: '#DB2777' },
+];
+const PALETTES_DARK = [
+  { bg: 'rgba(124,58,237,0.16)', fg: '#C084FC' },
+  { bg: 'rgba(37,99,235,0.15)', fg: '#93C5FD' },
+  { bg: 'rgba(34,197,94,0.12)', fg: '#4ADE80' },
+  { bg: 'rgba(245,158,11,0.12)', fg: '#FCD34D' },
+  { bg: 'rgba(236,72,153,0.14)', fg: '#F9A8D4' },
+];
+const EMOJI_RULES = [
+  [/(ai|kecerdasan|gener|machine|ml)/, '🤖'],
+  [/(data|analis|analyt|statist)/, '📊'],
+  [/(web|program|develop|coding|software|it|teknolog|perangkat)/, '💻'],
+  [/(desain|design|ux|ui|grafis)/, '🎨'],
+  [/(bisnis|business|manaj|management|wirausaha)/, '💼'],
+  [/(market|pemasaran|digital|iklan)/, '📣'],
+  [/(bahasa|language|english)/, '🗣️'],
+  [/(keuang|finance|akun)/, '💰'],
+  [/(produktiv|karir|career|soft|gaya hidup|hidup)/, '🚀'],
+];
+const emojiFor = (name) => {
+  const n = (name || '').toLowerCase();
+  for (const [re, e] of EMOJI_RULES) if (re.test(n)) return e;
+  return '📘';
+};
 
 export default function Home() {
   const router = useRouter();
   const { user, loaded } = useUser();
   const { isDark } = useTheme();
+
+  // State Utama
   const [trayek, setTrayek] = useState([]);
   const [trainings, setTrainings] = useState([]);
   const [userTrainings, setUserTrainings] = useState([]);
   const [certCount, setCertCount] = useState(0);
   const [appliedCount, setAppliedCount] = useState(0);
-  const [filter, setFilter] = useState('semua');
   const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const [homeCat, setHomeCat] = useState('semua');
+  const [saved, setSaved] = useState([]);
+  const carRef = useRef(null);
+  const gridRef = useRef(null);
+  const [carIdx, setCarIdx] = useState(0);
 
-  useEffect(() => { if (loaded && !user) router.push('/auth'); }, [loaded, user]);
-  useEffect(() => { if (user) fetchAll(); }, [user]);
+  // State Sidebar & Promo
+  const { isOpen: sidebarOpen, toggle: toggleSidebar } = useSidebar();
+  const [timeLeft, setTimeLeft] = useState('00:00:00');
+  const [banner, setBanner] = useState(null);
+  
+  // 2. STATE BARU UNTUK NOTIFIKASI
+  const [unreadCount, setUnreadCount] = useState(0);
+
+  useEffect(() => {
+    if (user) fetchAll();
+  }, [user]);
+
+  // 3. EFFECT UNTUK MENGAMBIL DATA NOTIFIKASI SECARA REAL-TIME
+  useEffect(() => {
+    if (!user) return;
+    
+    const fetchUnread = async () => {
+      const { count } = await supabase
+        .from('notifications')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('is_read', false);
+      setUnreadCount(count || 0);
+    };
+
+    fetchUnread();
+    
+    const channel = supabase.channel('notif-badge-home')
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'notifications', filter: `user_id=eq.${user.id}` }, fetchUnread)
+      .subscribe();
+      
+    return () => supabase.removeChannel(channel);
+  }, [user]);
+
+  // Ambil konfigurasi banner promo dari database (diatur admin)
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.from('promo_banner').select('*').eq('id', 1).single();
+      if (data) setBanner(data);
+    })();
+  }, []);
+
+  // Countdown asli
+  useEffect(() => {
+    const pad = (n) => String(n).padStart(2, '0');
+    const tick = () => {
+      const now = new Date();
+      const end = new Date(now);
+      end.setHours(23, 59, 59, 999);
+      let diff = Math.max(0, end - now);
+      const h = Math.floor(diff / 3600000); diff -= h * 3600000;
+      const m = Math.floor(diff / 60000); diff -= m * 60000;
+      const s = Math.floor(diff / 1000);
+      setTimeLeft(`${pad(h)}:${pad(m)}:${pad(s)}`);
+    };
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
 
   const fetchAll = async () => {
     setLoading(true);
     try {
       const [{ data: t }, { data: tr }, { data: ut }, { count: cc }, { count: ac }] = await Promise.all([
         supabase.from('trayek').select('*').order('id', { ascending: false }),
-        supabase.from('trainings').select('*'),
+        supabase.from('trainings').select('*, training_categories(name)'),
         supabase.from('user_trainings').select('*, trainings(title)').eq('user_id', user.id),
         supabase.from('user_certifications').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
         supabase.from('applications').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
       ]);
-      setTrayek(t || []); setTrainings(tr || []); setUserTrainings(ut || []);
-      setCertCount(cc || 0); setAppliedCount(ac || 0);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+      setTrayek(t || []);
+      setTrainings(tr || []);
+      setUserTrainings(ut || []);
+      setCertCount(cc || 0);
+      setAppliedCount(ac || 0);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const filtered = trayek.filter(d => {
-    const f = filter === 'semua' || d.jenis === filter;
-    const s = !search || d.tujuan?.toLowerCase().includes(search.toLowerCase()) || d.asal?.toLowerCase().includes(search.toLowerCase());
-    return f && s;
+  const filteredTrainings = trainings.filter(course => {
+    const matchSearch = !search || course.title?.toLowerCase().includes(search.toLowerCase());
+    const matchCat = homeCat === 'semua' || course.training_categories?.name === homeCat;
+    return matchSearch && matchCat;
   });
 
-  const initials = n => n?.split(' ').map(x => x[0]).join('').toUpperCase().slice(0,2) || '?';
+  const courseCats = [...new Set(trainings.map(t => t.training_categories?.name).filter(Boolean))];
+  const countFor = (name) => trainings.filter(t => t.training_categories?.name === name).length;
+  const toggleSaved = (id) => setSaved(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
-  const jenisColor = (j) => {
-    if (j === 'Remote') return { bg: 'var(--brand-50)', color: 'var(--brand-700)', border: 'var(--brand-200)' };
-    if (j === 'Full Time') return { bg: 'var(--success-50)', color: 'var(--success-600)', border: '#BBF7D0' };
-    return { bg: 'var(--warning-50)', color: 'var(--warning-600)', border: '#FDE68A' };
+  const CAR_STEP = 252;
+  const scrollCar = (dir) => carRef.current?.scrollBy({ left: dir * CAR_STEP * 2, behavior: 'smooth' });
+  const onCarScroll = () => { const el = carRef.current; if (el) setCarIdx(Math.round(el.scrollLeft / CAR_STEP)); };
+  const pickCat = (name) => {
+    setHomeCat(name);
+    setTimeout(() => gridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 60);
   };
 
-  if (!loaded || !user) return null;
+  const initials = n => n?.split(' ').map(x => x[0]).join('').toUpperCase().slice(0, 2) || '?';
+  const hasHero = !!banner?.hero_image_url;
+  const paletteAt = (i) => (isDark ? PALETTES_DARK : PALETTES_LIGHT)[i % 5];
+  const visualFor = (name) => {
+    let h = 0; for (const ch of (name || '')) h += ch.charCodeAt(0);
+    return { ...paletteAt(h), emoji: emojiFor(name) };
+  };
+
+  if (!loaded) return null;
+  if (!user) return <Landing />;
+
+  const isAdmin = ['admin', 'superadmin'].includes((user.role || '').toLowerCase()) || user.is_admin === true;
+
+  const heroStats = [
+    { label: 'Pelatihan diikuti', value: userTrainings.length, emoji: '📚', color: 'var(--text-brand)' },
+    { label: 'Sertifikat', value: certCount, emoji: '🏆', color: 'var(--text-success)' },
+    { label: 'Lamaran terkirim', value: appliedCount, emoji: '📨', color: 'var(--text-warning)' },
+  ];
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-base)', fontFamily: 'var(--font-sans)' }}>
-      <Sidebar />
-      <main style={{ marginLeft: '240px', flex: 1, padding: '32px', maxWidth: 'calc(100vw - 240px)' }}>
+    <div style={{ background: 'var(--bg-base)', color: 'var(--text-primary)', fontFamily: 'var(--font-sans)', minHeight: '100vh' }}>
 
-        {/* Page Header */}
-        <motion.div initial={{ opacity: 0, y: -12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
-          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '28px' }}>
-          <div>
-            <p style={{ fontSize: '13px', color: 'var(--text-tertiary)', fontWeight: 500, marginBottom: '4px', letterSpacing: '0.02em' }}>
-              {new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
-            </p>
-            <h1 style={{ fontSize: '26px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', lineHeight: 1.2 }}>
-              Selamat datang, {user.full_name?.split(' ')[0]}! 👋
-            </h1>
+      <Sidebar />
+
+      <div style={{
+        paddingLeft: sidebarOpen ? '240px' : '0px',
+        width: '100%',
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        transition: 'padding-left 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+        willChange: 'padding-left',
+      }}>
+
+        {/* NAVBAR ATAS */}
+        <header style={{ display: 'flex', alignItems: 'center', padding: '12px 24px', borderBottom: '1px solid var(--border-default)', gap: '20px', background: 'var(--surface-primary)', position: 'sticky', top: 0, zIndex: 99 }}>
+
+
+          <div onClick={() => router.push('/')} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
+            <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: 'var(--brand-600)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '13px' }}>CF</div>
+            <span style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>CareerForge</span>
           </div>
-          <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-            <Link href="/interview" style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 16px', borderRadius: '8px', background: isDark ? 'rgba(37,99,235,0.15)' : 'var(--brand-50)', border: '1px solid var(--border-brand)', color: 'var(--text-brand)', fontSize: '13px', fontWeight: 600, textDecoration: 'none' }}>
+
+          <button onClick={() => router.push('/pelatihan')} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: 500 }}>
+            Kategori ▾
+          </button>
+
+          <div style={{ flex: 1, position: 'relative' }}>
+            <input type="text" value={search} onChange={e => setSearch(e.target.value)}
+              placeholder="Cari kursus atau pelatihan apa saja..."
+              style={{ width: '100%', padding: '11px 14px 11px 42px', borderRadius: '24px', border: '1.5px solid var(--border-default)', fontSize: '14px', background: 'var(--surface-secondary)', color: 'var(--text-primary)', outline: 'none', fontFamily: 'var(--font-sans)' }} />
+            <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }}>🔍</span>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '20px', fontSize: '14px' }}>
+            <Link href="/pelatihan" style={{ textDecoration: 'none', color: 'var(--text-secondary)', fontWeight: 500 }}>
+              📚 Pelatihanku ({userTrainings.length})
+            </Link>
+            <Link href="/interview" style={{ textDecoration: 'none', color: 'var(--text-brand)', fontWeight: 700 }}>
               🤖 Interview AI
             </Link>
+
+            {/* 4. TOMBOL NOTIFIKASI YANG DIPINDAHKAN KE SINI */}
+            <Link href="/notifikasi" style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', textDecoration: 'none', color: 'var(--text-primary)' }}>
+              <span style={{ fontSize: '20px' }}>🔔</span>
+              <AnimatePresence>
+                {unreadCount > 0 && (
+                  <motion.span 
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    exit={{ scale: 0 }}
+                    style={{ position: 'absolute', top: '-4px', right: '-4px', background: '#EF4444', color: '#fff', fontSize: '9px', fontWeight: 800, minWidth: '16px', height: '16px', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '0 4px', border: '2px solid var(--surface-primary)' }}
+                  >
+                    {unreadCount > 9 ? '9+' : unreadCount}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </Link>
+
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
               onClick={() => router.push('/profil')}
-              style={{ width: '38px', height: '38px', borderRadius: '50%', cursor: 'pointer', overflow: 'hidden', border: '2px solid var(--border-brand)', flexShrink: 0 }}>
-              {user.avatar_url ? <img src={user.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> :
-                <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg,var(--brand-600),var(--brand-800))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '12px' }}>{initials(user.full_name)}</div>}
+              style={{ width: '36px', height: '36px', borderRadius: '50%', cursor: 'pointer', overflow: 'hidden', border: '2px solid var(--brand-600)', flexShrink: 0 }}>
+              {user.avatar_url ? (
+                <img src={user.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Avatar" />
+              ) : (
+                <div style={{ width: '100%', height: '100%', background: 'var(--brand-600)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '12px' }}>
+                  {initials(user.full_name)}
+                </div>
+              )}
             </motion.div>
           </div>
-        </motion.div>
+        </header>
 
-        {/* Stats Row */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '28px' }}>
-          {[
-            { label: 'Lowongan', value: trayek.length, icon: '💼', color: 'var(--brand-600)', bg: 'var(--brand-50)', link: '/trayek' },
-            { label: 'Pelatihan Aktif', value: `${userTrainings.length}/${trainings.length}`, icon: '📚', color: 'var(--success-600)', bg: 'var(--success-50)', link: '/pelatihan' },
-            { label: 'Sertifikat', value: certCount, icon: '🏆', color: 'var(--warning-600)', bg: 'var(--warning-50)', link: '/sertifikat' },
-            { label: 'Lamaran', value: appliedCount, icon: '📋', color: '#7C3AED', bg: '#F5F3FF', link: '/lamaran' },
-          ].map((s, i) => (
-            <motion.div key={i} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08, duration: 0.4 }}>
-              <Link href={s.link} style={{ textDecoration: 'none' }}>
-                <motion.div whileHover={{ y: -3, boxShadow: 'var(--shadow-lg)' }}
-                  style={{ background: 'var(--surface-primary)', borderRadius: '12px', border: '1px solid var(--border-default)', padding: '18px 20px', display: 'flex', alignItems: 'center', gap: '14px', boxShadow: 'var(--shadow-sm)', cursor: 'pointer' }}>
-                  <div style={{ width: '46px', height: '46px', borderRadius: '11px', background: s.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>{s.icon}</div>
+        {/* HERO SECTION */}
+        <section style={{ position: 'relative', display: 'flex', alignItems: 'center', padding: '56px 48px', background: hasHero ? '#0F172A' : 'var(--surface-secondary)', backgroundImage: hasHero ? `url(${banner.hero_image_url})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center', justifyContent: 'space-between', gap: '40px', flexWrap: 'wrap', overflow: 'hidden' }}>
+          {hasHero && <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(15,23,42,0.88) 0%, rgba(15,23,42,0.6) 60%, rgba(15,23,42,0.35) 100%)' }} />}
+
+          <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} style={{ position: 'relative', zIndex: 1, maxWidth: '520px', flex: '1 1 420px' }}>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: hasHero ? 'rgba(255,255,255,0.2)' : 'var(--surface-brand)', borderRadius: '6px', padding: '5px 10px', marginBottom: '14px' }}>
+              <span style={{ fontSize: '12px', color: hasHero ? '#fff' : 'var(--text-brand)', fontWeight: 700, letterSpacing: '0.02em' }}>Selamat datang, {user.full_name?.split(' ')[0]} 👋</span>
+            </div>
+            <h1 style={{ fontSize: '38px', fontWeight: 800, lineHeight: 1.15, marginBottom: '16px', color: hasHero ? '#fff' : 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+              Temukan ribuan kursus, mulai belajar hari ini
+            </h1>
+            <p style={{ fontSize: '16px', color: hasHero ? 'rgba(255,255,255,0.9)' : 'var(--text-secondary)', marginBottom: '24px', lineHeight: 1.6 }}>
+              Materi terbaik langsung dari instruktur ahli untuk mendukung perjalanan karier Anda.
+            </p>
+            <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+              <button onClick={() => router.push('/pelatihan')} style={{ padding: '13px 24px', background: 'var(--brand-600)', color: '#fff', border: 'none', borderRadius: '10px', fontWeight: 700, fontSize: '15px', cursor: 'pointer', fontFamily: 'var(--font-sans)', boxShadow: 'var(--shadow-brand)' }}>
+                Jelajahi Kursus →
+              </button>
+              <button onClick={() => router.push('/lowongan')} style={{ padding: '13px 24px', background: hasHero ? 'rgba(255,255,255,0.95)' : 'var(--surface-primary)', color: hasHero ? '#0F172A' : 'var(--text-primary)', border: hasHero ? 'none' : '1px solid var(--border-default)', borderRadius: '10px', fontWeight: 600, fontSize: '15px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+                Lihat Lowongan
+              </button>
+            </div>
+          </motion.div>
+
+          <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}
+            style={{ position: 'relative', zIndex: 1, flex: '1 1 320px', maxWidth: '420px', background: 'var(--surface-primary)', border: '1px solid var(--border-default)', borderRadius: '18px', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Ringkasan Aktivitas Anda</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              {heroStats.map((s, i) => (
+                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'var(--surface-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0 }}>{s.emoji}</div>
                   <div>
-                    <motion.div key={s.value} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} style={{ fontSize: '24px', fontWeight: 800, color: s.color, letterSpacing: '-0.03em', lineHeight: 1 }}>{loading ? '—' : s.value}</motion.div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '3px', fontWeight: 500 }}>{s.label}</div>
+                    <div style={{ fontSize: '24px', fontWeight: 800, lineHeight: 1, color: s.color }}>{s.value}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '3px' }}>{s.label}</div>
                   </div>
-                </motion.div>
-              </Link>
-            </motion.div>
-          ))}
-        </div>
-
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 320px', gap: '24px' }}>
-          {/* Left */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-
-            {/* Hero Banner */}
-            <motion.div initial={{ opacity: 0, scale: 0.98 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.15 }}
-              style={{ background: 'linear-gradient(135deg, var(--brand-900) 0%, var(--brand-700) 60%, var(--brand-500) 100%)', borderRadius: '14px', padding: '28px 32px', position: 'relative', overflow: 'hidden' }}>
-              {/* Decorative */}
-              <div style={{ position: 'absolute', top: '-40px', right: '-40px', width: '180px', height: '180px', background: 'rgba(255,255,255,0.04)', borderRadius: '50%' }} />
-              <div style={{ position: 'absolute', bottom: '-20px', right: '80px', width: '100px', height: '100px', background: 'rgba(255,255,255,0.03)', borderRadius: '50%' }} />
-              <div style={{ position: 'relative', zIndex: 1 }}>
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.12)', borderRadius: '20px', padding: '4px 12px', marginBottom: '14px' }}>
-                  <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.9)', fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase' }}>SDGs 8 — Pekerjaan Layak</span>
                 </div>
-                <h2 style={{ color: '#fff', fontSize: '22px', fontWeight: 800, marginBottom: '8px', letterSpacing: '-0.02em', lineHeight: 1.25 }}>Tingkatkan kariermu hari ini</h2>
-                <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '14px', marginBottom: '20px', lineHeight: 1.6 }}>Temukan lowongan yang sesuai dan latih skill interview dengan AI.</p>
-                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                  <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-                    <Link href="/trayek" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#fff', color: 'var(--brand-700)', fontWeight: 700, fontSize: '13px', padding: '9px 18px', borderRadius: '8px', textDecoration: 'none', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
-                      💼 Cari Lowongan
-                    </Link>
-                  </motion.div>
-                  <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}>
-                    <Link href="/interview" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.15)', color: '#fff', fontWeight: 600, fontSize: '13px', padding: '9px 18px', borderRadius: '8px', textDecoration: 'none', border: '1px solid rgba(255,255,255,0.25)' }}>
-                      🤖 Simulasi Interview
-                    </Link>
-                  </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </section>
+
+        {/* ===== BANNER PROMO ===== */}
+        {banner && banner.active && (
+          <div style={{ padding: '28px 24px 0', maxWidth: '1400px', width: '100%', margin: '0 auto' }}>
+            <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
+              style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '28px', background: banner.bg_color || 'linear-gradient(120deg, #F97316, #FB923C)', borderRadius: '20px', padding: '28px 34px', flexWrap: 'wrap', overflow: 'hidden' }}>
+
+              {isAdmin && (
+                <button onClick={() => router.push('/admin/banner')} title="Edit banner"
+                  style={{ position: 'absolute', top: '14px', right: '16px', background: 'rgba(255,255,255,0.25)', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+                  ✎ Edit
+                </button>
+              )}
+
+              <div style={{ flex: '1 1 360px' }}>
+                <span style={{ display: 'inline-block', background: 'rgba(255,255,255,0.25)', color: '#fff', fontSize: '12px', fontWeight: 700, padding: '4px 12px', borderRadius: '6px', marginBottom: '12px', letterSpacing: '0.02em' }}>Promo Spesial</span>
+                <h2 style={{ fontSize: '24px', fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: '8px' }}>{banner.title}</h2>
+                {banner.subtitle && <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.92)', lineHeight: 1.6, marginBottom: '18px', maxWidth: '480px' }}>{banner.subtitle}</p>}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
+                  {banner.button_text && (
+                    <button onClick={() => router.push(banner.button_link || '/pelatihan')} style={{ background: '#fff', color: '#C2410C', border: 'none', padding: '11px 24px', borderRadius: '10px', fontWeight: 700, fontSize: '14px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+                      {banner.button_text}
+                    </button>
+                  )}
+                  {banner.show_countdown && (
+                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#fff', fontSize: '13px', fontWeight: 600 }}>
+                      Berakhir dalam
+                      <span style={{ fontFamily: 'monospace', background: 'rgba(0,0,0,0.22)', padding: '4px 10px', borderRadius: '6px', letterSpacing: '0.05em' }}>{timeLeft}</span>
+                    </span>
+                  )}
                 </div>
+              </div>
+
+              <div style={{ flex: '0 0 auto', width: '260px', height: '160px', borderRadius: '16px', background: banner.image_url ? '#fff' : 'rgba(255,255,255,0.18)', padding: banner.image_url ? '10px' : 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '64px', overflow: 'hidden', boxShadow: banner.image_url ? '0 10px 28px rgba(0,0,0,0.20)' : 'none' }}>
+                {banner.image_url
+                  ? <img src={banner.image_url} alt="Promo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px' }} />
+                  : '🚀'}
               </div>
             </motion.div>
+          </div>
+        )}
 
-            {/* Job listings */}
-            <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2 }}
-              style={{ background: 'var(--surface-primary)', borderRadius: '14px', border: '1px solid var(--border-default)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)' }}>
-              <div style={{ padding: '18px 20px 14px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <div>
-                  <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>Lowongan Terbaru</h3>
-                  <p style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '2px' }}>{filtered.length} lowongan tersedia</p>
-                </div>
-                <Link href="/trayek" style={{ fontSize: '12px', color: 'var(--text-brand)', fontWeight: 600, textDecoration: 'none' }}>Lihat semua →</Link>
+        {/* ===== CAROUSEL: Pelajari skill penting ===== */}
+        {courseCats.length > 0 && (
+          <div style={{ padding: '40px 24px 0', maxWidth: '1400px', width: '100%', margin: '0 auto' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 0.8fr) minmax(0, 1.8fr)', gap: '32px', alignItems: 'center' }}>
+              <div>
+                <h2 style={{ fontSize: '26px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.25, marginBottom: '10px', letterSpacing: '-0.02em' }}>
+                  Pelajari skill penting terkait karier dan kehidupan
+                </h2>
+                <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                  CareerForge membantu Anda membangun keahlian yang dibutuhkan dengan cepat dan memajukan karier di pasar kerja yang terus berubah.
+                </p>
               </div>
 
-              <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-subtle)', display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-                <div style={{ flex: 1, minWidth: '160px', display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-secondary)', border: '1px solid var(--border-default)', borderRadius: '8px', padding: '7px 12px' }}>
-                  <span style={{ color: 'var(--text-tertiary)', fontSize: '14px' }}>🔍</span>
-                  <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari posisi atau lokasi..."
-                    style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '13px', flex: 1, color: 'var(--text-primary)', fontFamily: 'var(--font-sans)' }} />
-                </div>
-                <div style={{ display: 'flex', gap: '6px' }}>
-                  {['semua', 'Full Time', 'Remote', 'Setengah Hari'].map(f => (
-                    <motion.button key={f} whileTap={{ scale: 0.95 }} onClick={() => setFilter(f)} style={{
-                      padding: '6px 12px', borderRadius: '20px', border: `1px solid ${filter === f ? 'var(--brand-400)' : 'var(--border-default)'}`,
-                      fontSize: '12px', cursor: 'pointer', fontWeight: 500, fontFamily: 'var(--font-sans)',
-                      background: filter === f ? 'var(--surface-brand)' : 'transparent',
-                      color: filter === f ? 'var(--text-brand)' : 'var(--text-secondary)',
-                    }}>{f}</motion.button>
-                  ))}
-                </div>
-              </div>
-
-              <div style={{ padding: '4px 0' }}>
-                {loading ? (
-                  <div style={{ padding: '20px' }}>
-                    {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: '60px', marginBottom: '8px' }} />)}
-                  </div>
-                ) : filtered.slice(0,6).map((item, i) => {
-                  const jc = jenisColor(item.jenis);
-                  return (
-                    <motion.div key={item.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.05 }}
-                      style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '13px 20px', borderBottom: i < Math.min(filtered.length, 6) - 1 ? '1px solid var(--border-subtle)' : 'none' }}
-                      onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-secondary)'}
-                      onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                      <div style={{ width: '40px', height: '40px', borderRadius: '10px', background: 'var(--surface-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '12px', color: 'var(--text-brand)', flexShrink: 0, border: '1px solid var(--border-brand)' }}>
-                        {(item.company || item.tujuan)?.slice(0,2).toUpperCase()}
-                      </div>
-                      <div style={{ flex: 1, minWidth: 0 }}>
-                        <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '14px', marginBottom: '3px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.tujuan}</div>
-                        <div style={{ fontSize: '12px', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span>{item.company || 'Perusahaan'}</span>
-                          {item.asal && <><span style={{ color: 'var(--border-strong)' }}>•</span><span>📍 {item.asal}</span></>}
+              <div>
+                <div ref={carRef} onScroll={onCarScroll}
+                  style={{ display: 'flex', gap: '12px', overflowX: 'auto', scrollSnapType: 'x mandatory', paddingBottom: '4px' }}>
+                  {courseCats.map((name) => {
+                    const v = visualFor(name);
+                    return (
+                      <div key={name} onClick={() => pickCat(name)}
+                        style={{ position: 'relative', flex: '0 0 240px', height: '300px', scrollSnapAlign: 'start', borderRadius: '16px', overflow: 'hidden', cursor: 'pointer', background: v.bg, transition: 'transform 0.15s', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '50px' }}
+                        onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
+                        onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
+                        <span style={{ fontSize: '80px' }}>{v.emoji}</span>
+                        <div style={{ position: 'absolute', left: '14px', right: '14px', bottom: '14px', background: 'var(--surface-primary)', borderRadius: '12px', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: 'var(--shadow-md)' }}>
+                          <div>
+                            <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)' }}>{name}</div>
+                            <div style={{ fontSize: '12px', color: 'var(--text-tertiary)', marginTop: '2px' }}>{countFor(name)} kursus</div>
+                          </div>
+                          <span style={{ color: 'var(--text-brand)', fontSize: '18px' }}>→</span>
                         </div>
                       </div>
-                      <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-                        <span style={{ fontSize: '11px', padding: '3px 9px', borderRadius: '20px', background: jc.bg, color: jc.color, border: `1px solid ${jc.border}`, fontWeight: 500 }}>{item.jenis || 'Full Time'}</span>
-                        <Link href={`/trayek/${item.id}`} style={{ padding: '5px 12px', borderRadius: '7px', border: '1.5px solid var(--brand-400)', color: 'var(--text-brand)', fontSize: '12px', fontWeight: 600, textDecoration: 'none', background: 'var(--surface-brand)' }}>Lamar</Link>
+                    );
+                  })}
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '14px', marginTop: '16px' }}>
+                  <button onClick={() => scrollCar(-1)} aria-label="Sebelumnya"
+                    style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1px solid var(--border-default)', background: 'var(--surface-primary)', color: 'var(--text-secondary)', cursor: 'pointer', boxShadow: 'var(--shadow-xs)', fontSize: '16px' }}>‹</button>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    {courseCats.map((_, i) => (
+                      <span key={i} style={{ width: i === carIdx ? '20px' : '8px', height: '8px', borderRadius: '999px', background: i === carIdx ? 'var(--brand-600)' : 'var(--border-strong)', transition: 'all 0.2s' }} />
+                    ))}
+                  </div>
+                  <button onClick={() => scrollCar(1)} aria-label="Berikutnya"
+                    style={{ width: '36px', height: '36px', borderRadius: '50%', border: '1px solid var(--border-default)', background: 'var(--surface-primary)', color: 'var(--text-secondary)', cursor: 'pointer', boxShadow: 'var(--shadow-xs)', fontSize: '16px' }}>›</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+       {/* SECTION: Banner Interview AI dengan Gambar dari Internet */}
+        <section style={{ padding: '40px 24px', maxWidth: '1400px', width: '100%', margin: '0 auto' }}>
+          <div style={{ 
+            background: '#006aff', borderRadius: '24px', padding: '48px', display: 'flex', 
+            justifyContent: 'space-between', alignItems: 'center', gap: '40px', flexWrap: 'wrap', color: '#FFFFFF'
+          }}>
+            
+            {/* Teks Kiri */}
+            <div style={{ flex: '1 1 450px' }}>
+              <h2 style={{ fontSize: '32px', fontWeight: 800, marginBottom: '16px' }}>Coba Simulasi Interview Dengan AI</h2>
+              <p style={{ fontSize: '16px', color: '#D1D5DB', marginBottom: '24px' }}>
+                Siapkan skill Anda untuk interview yang lebih profesional. Dapatkan akses ke berbagai bidang pekerjaan yang terasa nyata.
+              </p>
+              
+              <button onClick={() => router.push('/interview')} 
+                style={{ padding: '12px 24px', background: '#FFF', color: '#111827', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>
+                Mulai Interview AI →
+              </button>
+            </div>
+
+            {/* Area Gambar dari Internet */}
+            <div style={{ flex: '0 0 400px', height: '240px', display: 'flex', gap: '16px' }}>
+              <img 
+                src="https://i.pinimg.com/736x/4e/1f/49/4e1f49060ffa40da3c9b3750a2dac383.jpg" 
+                alt="Simulasi Interview 1" 
+                style={{ flex: 1, borderRadius: '16px', objectFit: 'cover', background: '#3B82F6' }} 
+              />
+              <img 
+                src="https://i.pinimg.com/webp85/1200x/10/4b/2b/104b2b613ca32b6bac89f7d2772061be.webp" 
+                alt="Simulasi Interview 2" 
+                style={{ flex: 1, borderRadius: '16px', objectFit: 'cover', background: '#6366F1' }} 
+              />
+            </div>
+          </div>
+        </section>
+      
+
+        {/* MAIN CONTENT SPLIT GRID */}
+        <main ref={gridRef} style={{ padding: '40px 24px', display: 'grid', gridTemplateColumns: '1fr 3fr', gap: '40px', maxWidth: '1400px', width: '100%', margin: '0 auto' }}>
+
+          <div>
+            <h2 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '18px', letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>Kategori Utama</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+              {[{ name: 'semua', label: 'Semua', emoji: '✨' }, ...courseCats.map(c => ({ name: c, label: c, emoji: emojiFor(c) }))].map((cat) => {
+                const active = homeCat === cat.name;
+                const iconBg = cat.name === 'semua' ? 'var(--surface-brand)' : visualFor(cat.name).bg;
+                return (
+                  <div key={cat.name} onClick={() => setHomeCat(cat.name)}
+                    style={{ border: `1.5px solid ${active ? 'var(--brand-600)' : 'var(--border-default)'}`, borderRadius: '12px', padding: '16px 10px', textAlign: 'center', cursor: 'pointer', background: active ? 'var(--surface-brand)' : 'var(--surface-primary)', transition: 'all 0.15s', boxShadow: 'var(--shadow-xs)' }}
+                    onMouseEnter={e => { if (!active) { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; } }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'var(--shadow-xs)'; }}>
+                    <div style={{ width: '42px', height: '42px', margin: '0 auto 8px', borderRadius: '50%', background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>{cat.emoji}</div>
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: active ? 'var(--text-brand)' : 'var(--text-primary)' }}>{cat.label}</div>
+                    {cat.name !== 'semua' && <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '3px' }}>{countFor(cat.name)} kursus</div>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px', flexWrap: 'wrap', gap: '8px' }}>
+              <h2 style={{ fontSize: '18px', fontWeight: 800, letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>
+                {homeCat === 'semua' ? 'Kursus Utama & Rekomendasi Untuk Anda' : `Kursus ${homeCat}`}
+                <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-tertiary)', marginLeft: '8px' }}>({filteredTrainings.length})</span>
+              </h2>
+              <Link href="/pelatihan" style={{ fontSize: '13px', color: 'var(--text-brand)', fontWeight: 600, textDecoration: 'none' }}>Lihat semua →</Link>
+            </div>
+
+            {loading ? (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+                {[1, 2, 3, 4].map(i => <div key={i} className="skeleton" style={{ height: '250px' }} />)}
+              </div>
+            ) : filteredTrainings.length === 0 ? (
+              <div style={{ background: 'var(--surface-primary)', border: '1px solid var(--border-default)', borderRadius: '14px', padding: '48px', textAlign: 'center' }}>
+                <div style={{ fontSize: '36px', marginBottom: '10px', opacity: 0.4 }}>🔍</div>
+                <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>Tidak ada kursus yang cocok</h3>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '14px' }}>Coba kategori lain atau ubah kata kunci pencarian.</p>
+                <button onClick={() => { setHomeCat('semua'); setSearch(''); }}
+                  style={{ padding: '8px 18px', borderRadius: '8px', border: 'none', background: 'var(--brand-600)', color: '#fff', fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+                  Tampilkan semua
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '16px' }}>
+                {filteredTrainings.map((course, i) => {
+                  const v = visualFor(course.training_categories?.name || course.title);
+                  const isSaved = saved.includes(course.id);
+                  return (
+                    <motion.div key={course.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(i * 0.04, 0.3) }}
+                      onClick={() => router.push(`/pelatihan/${course.id}`)}
+                      className="course-card"
+                      style={{ border: '1px solid var(--border-default)', borderRadius: '14px', display: 'flex', flexDirection: 'column', cursor: 'pointer', background: 'var(--surface-primary)', overflow: 'hidden', boxShadow: 'var(--shadow-sm)', transition: 'all 0.15s' }}
+                      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = 'var(--shadow-lg)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}>
+
+                      <div style={{ position: 'relative', height: '120px', background: v.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px' }}>
+                        {v.emoji}
+                        <button onClick={(e) => { e.stopPropagation(); toggleSaved(course.id); }}
+                          aria-label={isSaved ? 'Hapus dari simpanan' : 'Simpan kursus'}
+                          style={{ position: 'absolute', top: '10px', right: '10px', width: '30px', height: '30px', borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.9)', color: isSaved ? '#EF4444' : 'var(--text-tertiary)', cursor: 'pointer', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-xs)' }}>
+                          {isSaved ? '♥' : '♡'}
+                        </button>
+                      </div>
+
+                      <div style={{ padding: '12px 14px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+                        <div>
+                          {course.training_categories?.name && <span className="badge badge-blue" style={{ marginBottom: '6px', display: 'inline-flex' }}>{course.training_categories.name}</span>}
+                          <h3 style={{ fontSize: '14px', fontWeight: 800, margin: '4px 0', lineHeight: 1.3, color: 'var(--text-primary)' }}>{course.title}</h3>
+                          <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', margin: '0 0 6px' }}>{course.instructor || 'Instruktur Ahli'}</p>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'var(--text-warning)', fontWeight: 700 }}>
+                            <span>4.8</span><span>⭐</span><span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>(12)</span>
+                          </div>
+                        </div>
+                        <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>Rp 149.000</span>
+                          <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-brand)' }}>Lihat →</span>
+                        </div>
                       </div>
                     </motion.div>
                   );
                 })}
-                {filtered.length === 0 && !loading && (
-                  <div style={{ padding: '40px', textAlign: 'center', color: 'var(--text-tertiary)' }}>
-                    <div style={{ fontSize: '32px', marginBottom: '8px', opacity: 0.5 }}>🔍</div>
-                    <p style={{ fontSize: '14px' }}>Tidak ada lowongan yang sesuai</p>
-                  </div>
-                )}
               </div>
-            </motion.div>
+            )}
           </div>
+        </main>
 
-          {/* Right */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-
-            {/* Profile card */}
-            <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.2 }}
-              style={{ background: 'var(--surface-primary)', borderRadius: '14px', border: '1px solid var(--border-default)', padding: '20px', boxShadow: 'var(--shadow-sm)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '16px' }}>
-                <motion.div whileHover={{ scale: 1.05 }} onClick={() => router.push('/profil')}
-                  style={{ width: '48px', height: '48px', borderRadius: '50%', cursor: 'pointer', overflow: 'hidden', border: '2px solid var(--border-brand)', flexShrink: 0 }}>
-                  {user.avatar_url ? <img src={user.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> :
-                    <div style={{ width: '100%', height: '100%', background: 'linear-gradient(135deg,var(--brand-600),var(--brand-800))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '16px' }}>{initials(user.full_name)}</div>}
-                </motion.div>
-                <div>
-                  <div style={{ fontWeight: 700, fontSize: '14px', color: 'var(--text-primary)' }}>{user.full_name}</div>
-                  <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>{user.email}</div>
-                </div>
-              </div>
-              <div style={{ marginBottom: '10px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                  <span style={{ fontSize: '12px', color: 'var(--text-secondary)', fontWeight: 500 }}>Kelengkapan Profil</span>
-                  <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-brand)' }}>65%</span>
-                </div>
-                <div style={{ height: '6px', background: 'var(--surface-secondary)', borderRadius: '3px', overflow: 'hidden', border: '1px solid var(--border-subtle)' }}>
-                  <motion.div initial={{ width: 0 }} animate={{ width: '65%' }} transition={{ duration: 0.9, delay: 0.4, ease: 'easeOut' }}
-                    style={{ height: '100%', background: 'linear-gradient(90deg,var(--brand-500),var(--brand-400))', borderRadius: '3px' }} />
-                </div>
-              </div>
-              <Link href="/profil" style={{ display: 'block', textAlign: 'center', padding: '8px', borderRadius: '8px', border: '1px solid var(--border-default)', color: 'var(--text-secondary)', fontSize: '12px', fontWeight: 600, textDecoration: 'none', background: 'var(--surface-secondary)', transition: 'all var(--transition-base)' }}
-                onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-tertiary)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
-                onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface-secondary)'; e.currentTarget.style.color = 'var(--text-secondary)'; }}>
-                Lengkapi Profil →
-              </Link>
-            </motion.div>
-
-            {/* Training progress */}
-            <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.25 }}
-              style={{ background: 'var(--surface-primary)', borderRadius: '14px', border: '1px solid var(--border-default)', padding: '18px', boxShadow: 'var(--shadow-sm)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
-                <h3 style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)' }}>Pelatihan Aktif</h3>
-                <Link href="/pelatihan" style={{ fontSize: '12px', color: 'var(--text-brand)', fontWeight: 600, textDecoration: 'none' }}>Lihat semua</Link>
-              </div>
-              {userTrainings.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '16px 0' }}>
-                  <p style={{ fontSize: '13px', color: 'var(--text-tertiary)', marginBottom: '10px' }}>Belum ada pelatihan aktif</p>
-                  <Link href="/pelatihan" style={{ fontSize: '12px', color: 'var(--text-brand)', fontWeight: 600, textDecoration: 'none' }}>+ Daftar Pelatihan</Link>
-                </div>
-              ) : userTrainings.slice(0,3).map((ut, i) => (
-                <div key={ut.id} style={{ marginBottom: '14px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '5px' }}>
-                    <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '70%' }}>{ut.trainings?.title || 'Pelatihan'}</span>
-                    <span style={{ fontSize: '12px', fontWeight: 700, color: ut.progress >= 100 ? 'var(--text-success)' : 'var(--text-brand)' }}>{ut.progress || 0}%</span>
-                  </div>
-                  <div style={{ height: '5px', background: 'var(--surface-secondary)', borderRadius: '3px', overflow: 'hidden' }}>
-                    <motion.div initial={{ width: 0 }} animate={{ width: `${ut.progress || 0}%` }} transition={{ duration: 0.7, delay: 0.4 + i * 0.1 }}
-                      style={{ height: '100%', background: ut.progress >= 100 ? 'var(--success-500)' : 'linear-gradient(90deg,var(--brand-500),var(--brand-400))', borderRadius: '3px' }} />
-                  </div>
-                </div>
-              ))}
-            </motion.div>
-
-            {/* Interview AI CTA */}
-            <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.3 }}
-              style={{ background: 'linear-gradient(135deg, var(--brand-900) 0%, #1E293B 100%)', borderRadius: '14px', padding: '20px', boxShadow: 'var(--shadow-md)', border: '1px solid rgba(255,255,255,0.06)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '14px' }}>
-                <motion.div animate={{ scale: [1, 1.1, 1] }} transition={{ duration: 2.5, repeat: Infinity }}
-                  style={{ width: '44px', height: '44px', background: 'rgba(37,99,235,0.3)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', border: '1px solid rgba(37,99,235,0.4)' }}>🤖</motion.div>
-                <div>
-                  <div style={{ color: '#fff', fontWeight: 700, fontSize: '14px', letterSpacing: '-0.01em' }}>Interview AI</div>
-                  <div style={{ color: 'rgba(255,255,255,0.55)', fontSize: '12px', marginTop: '2px' }}>Powered by Groq</div>
-                </div>
-              </div>
-              <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '12px', lineHeight: 1.6, marginBottom: '14px' }}>Latih wawancara dengan AI dan dapatkan feedback personal secara instan.</p>
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.97 }}>
-                <Link href="/interview" style={{ display: 'block', textAlign: 'center', background: 'var(--brand-600)', color: '#fff', fontWeight: 700, fontSize: '13px', padding: '10px', borderRadius: '9px', textDecoration: 'none', boxShadow: 'var(--shadow-brand)' }}>
-                  🚀 Mulai Simulasi
-                </Link>
-              </motion.div>
-            </motion.div>
-
-            {/* Quick links */}
-            <motion.div initial={{ opacity: 0, x: 16 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: 0.35 }}
-              style={{ background: 'var(--surface-primary)', borderRadius: '14px', border: '1px solid var(--border-default)', padding: '16px', boxShadow: 'var(--shadow-sm)' }}>
-              <h3 style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '12px', letterSpacing: '0.04em', textTransform: 'uppercase' }}>Akses Cepat</h3>
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                {[
-                  { href: '/lamaran', icon: '📋', label: 'Lamaranku' },
-                  { href: '/mentoring', icon: '🎤', label: 'Mentoring' },
-                  { href: '/sertifikat', icon: '🏆', label: 'Sertifikat' },
-                  { href: '/notifikasi', icon: '🔔', label: 'Notifikasi' },
-                ].map(item => (
-                  <Link key={item.href} href={item.href} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '9px 10px', borderRadius: '9px', textDecoration: 'none', border: '1px solid var(--border-default)', color: 'var(--text-secondary)', fontSize: '13px', fontWeight: 500, background: 'var(--surface-secondary)', transition: 'all var(--transition-base)' }}
-                    onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-brand)'; e.currentTarget.style.color = 'var(--text-brand)'; e.currentTarget.style.borderColor = 'var(--border-brand)'; }}
-                    onMouseLeave={e => { e.currentTarget.style.background = 'var(--surface-secondary)'; e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.borderColor = 'var(--border-default)'; }}>
-                    <span style={{ fontSize: '15px' }}>{item.icon}</span>{item.label}
-                  </Link>
-                ))}
-              </div>
-            </motion.div>
-          </div>
-        </div>
-      </main>
+        <Footer />
+      </div>
     </div>
   );
 }

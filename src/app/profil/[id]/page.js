@@ -1,36 +1,40 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { supabase } from '../../lib/supabaseClient';
-import { useUser } from '../../lib/userContext';
-import Sidebar from '../components/Sidebar';
+import { supabase } from '../../../lib/supabaseClient';
+import { useUser } from '../../../lib/userContext';
+import Sidebar from '../../components/Sidebar';
 
-export default function MyProfilePage() {
+export default function PublicProfilePage() {
+  const { id } = useParams();
   const router = useRouter();
-  const { user, loaded } = useUser();
+  const { user } = useUser();
 
   const [profile, setProfile] = useState(null);
   const [skills, setSkills] = useState([]);
   const [experiences, setExperiences] = useState([]);
   const [trainings, setTrainings] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [notFound, setNotFound] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    if (loaded && !user) { router.push('/auth'); return; }
-    if (user) fetchProfile();
-  }, [loaded, user]);
+  const isOwner = user && String(user.id) === String(id);
+  const showSidebar = !!user;
+
+  useEffect(() => { if (id) fetchProfile(); }, [id]);
 
   const fetchProfile = async () => {
     setLoading(true);
+    // Hanya ambil kolom yang layak publik — email & phone sengaja TIDAK diambil
     const [{ data: u }, { data: sk }, { data: ex }, { data: tr }] = await Promise.all([
-      supabase.from('users').select('full_name, job_title, location, bio, avatar_url').eq('id', user.id).single(),
-      supabase.from('user_skills').select('*').eq('user_id', user.id),
-      supabase.from('user_experience').select('*').eq('user_id', user.id).order('start_year', { ascending: false }),
-      supabase.from('user_trainings').select('progress, trainings(title)').eq('user_id', user.id),
+      supabase.from('users').select('full_name, job_title, location, bio, avatar_url').eq('id', id).single(),
+      supabase.from('user_skills').select('*').eq('user_id', id),
+      supabase.from('user_experience').select('*').eq('user_id', id).order('start_year', { ascending: false }),
+      supabase.from('user_trainings').select('progress, trainings(title)').eq('user_id', id),
     ]);
-    setProfile(u || {});
+    if (!u) { setNotFound(true); setLoading(false); return; }
+    setProfile(u);
     setSkills(sk || []);
     setExperiences(ex || []);
     setTrainings((tr || []).filter(t => (t.progress || 0) >= 100));
@@ -42,18 +46,16 @@ export default function MyProfilePage() {
 
   const handleShare = async () => {
     try {
-      await navigator.clipboard.writeText(window.location.origin + '/profil/' + user.id);
+      await navigator.clipboard.writeText(window.location.href);
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     } catch { /* abaikan */ }
   };
 
-  if (!loaded || !user) return null;
-
   const Wrapper = ({ children }) => (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-base)', fontFamily: 'var(--font-sans)' }}>
-      <Sidebar />
-      <main style={{ marginLeft: '240px', flex: 1, padding: '32px' }}>
+      {showSidebar && <Sidebar />}
+      <main style={{ marginLeft: showSidebar ? '240px' : 0, flex: 1, padding: '32px' }}>
         <div style={{ maxWidth: '860px', margin: '0 auto' }}>{children}</div>
       </main>
     </div>
@@ -66,12 +68,20 @@ export default function MyProfilePage() {
     </Wrapper>
   );
 
+  if (notFound) return (
+    <Wrapper>
+      <div style={{ background: 'var(--surface-primary)', border: '1px solid var(--border-default)', borderRadius: '16px', padding: '60px', textAlign: 'center' }}>
+        <div style={{ fontSize: '40px', marginBottom: '12px', opacity: 0.4 }}>🔍</div>
+        <h2 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)' }}>Profil tidak ditemukan</h2>
+        <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '16px' }}>Pengguna ini mungkin tidak ada atau telah dihapus.</p>
+        <button onClick={() => router.push('/')} style={{ padding: '9px 20px', borderRadius: '8px', border: 'none', background: 'var(--brand-600)', color: '#fff', fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>Ke Beranda</button>
+      </div>
+    </Wrapper>
+  );
+
   return (
     <Wrapper>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px', flexWrap: 'wrap', gap: '10px' }}>
-        <h1 style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>Profil Saya</h1>
-        <span style={{ fontSize: '12px', color: 'var(--text-tertiary)' }}>Inilah tampilan profilmu yang dilihat orang lain & perusahaan</span>
-      </div>
+      <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '13px', marginBottom: '16px', fontFamily: 'var(--font-sans)' }}>← Kembali</button>
 
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
@@ -81,14 +91,15 @@ export default function MyProfilePage() {
             {profile.avatar_url ? <img src={profile.avatar_url} alt={profile.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials(profile.full_name)}
           </div>
           <div style={{ flex: 1, minWidth: '220px' }}>
-            <h2 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', marginBottom: '4px' }}>{profile.full_name || 'Pengguna'}</h2>
+            <h1 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', marginBottom: '4px' }}>{profile.full_name || 'Pengguna'}</h1>
             {profile.job_title && <p style={{ fontSize: '15px', color: 'var(--text-brand)', fontWeight: 600, marginBottom: '4px' }}>{profile.job_title}</p>}
             {profile.location && <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>📍 {profile.location}</p>}
           </div>
           <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            <button onClick={() => router.push('/profil/edit')} style={{ padding: '10px 18px', borderRadius: '9px', border: 'none', background: 'var(--brand-600)', color: '#fff', fontWeight: 700, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)', boxShadow: 'var(--shadow-brand)' }}>✎ Edit Profil</button>
-            <button onClick={() => router.push('/dokumen')} style={{ padding: '10px 18px', borderRadius: '9px', border: '1px solid var(--border-default)', background: 'var(--surface-primary)', color: 'var(--text-primary)', fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>📁 Dokumen Saya</button>
-            <button onClick={handleShare} style={{ padding: '10px 18px', borderRadius: '9px', border: '1px solid var(--border-default)', background: 'var(--surface-primary)', color: 'var(--text-primary)', fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+            {isOwner && (
+              <button onClick={() => router.push('/profil/edit')} style={{ padding: '10px 18px', borderRadius: '9px', border: '1px solid var(--border-default)', background: 'var(--surface-primary)', color: 'var(--text-primary)', fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>✎ Edit Profil</button>
+            )}
+            <button onClick={handleShare} style={{ padding: '10px 18px', borderRadius: '9px', border: 'none', background: 'var(--brand-600)', color: '#fff', fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)', boxShadow: 'var(--shadow-brand)' }}>
               {copied ? '✓ Tautan disalin' : '🔗 Bagikan'}
             </button>
           </div>
@@ -112,7 +123,7 @@ export default function MyProfilePage() {
 
       {/* Skills */}
       <Section title="Skills & Keahlian">
-        {skills.length === 0 ? <Empty text="Belum ada skill. Tambahkan lewat Edit Profil." /> : (
+        {skills.length === 0 ? <Empty text="Belum ada skill yang ditambahkan." /> : (
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
             {skills.map(s => (
               <span key={s.id} className={`badge ${levelBadge(s.level)}`} style={{ fontSize: '13px', padding: '6px 12px' }}>
@@ -125,7 +136,7 @@ export default function MyProfilePage() {
 
       {/* Pengalaman */}
       <Section title="Pengalaman Kerja">
-        {experiences.length === 0 ? <Empty text="Belum ada pengalaman kerja. Tambahkan lewat Edit Profil." /> : experiences.map((ex, i) => (
+        {experiences.length === 0 ? <Empty text="Belum ada pengalaman kerja." /> : experiences.map((ex, i) => (
           <div key={ex.id} style={{ display: 'flex', gap: '16px', paddingBottom: i < experiences.length - 1 ? '18px' : 0, marginBottom: i < experiences.length - 1 ? '18px' : 0, borderBottom: i < experiences.length - 1 ? '1px solid var(--border-default)' : 'none' }}>
             <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: 'var(--surface-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>🏢</div>
             <div style={{ flex: 1 }}>

@@ -72,8 +72,9 @@ export default function AdminLamaranPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: c.bg, fontFamily: 'Inter, sans-serif' }}>
-      <div style={{ background: isDark ? '#1E293B' : '#1E3A5F', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ background: isDark ? 'linear-gradient(135deg,#172554,#1E3A8A)' : 'linear-gradient(135deg,#1E40AF,#2563EB)', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.08em', padding: '4px 10px', borderRadius: '6px', background: 'rgba(255,255,255,0.18)', color: '#fff' }}>🛡️ ADMIN</span>
           <Link href="/admin" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '13px' }}>← Dashboard</Link>
           <span style={{ color: 'rgba(255,255,255,0.3)' }}>/</span>
           <span style={{ color: '#fff', fontWeight: 600, fontSize: '14px' }}>Kelola Lamaran</span>

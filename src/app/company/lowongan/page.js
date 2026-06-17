@@ -139,8 +139,21 @@ export default function CompanyLowonganPage() {
                     <div><label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: c.muted, marginBottom: '6px' }}>Persyaratan (satu per baris)</label><textarea style={{ ...inp, resize: 'vertical', minHeight: '70px', lineHeight: 1.6 }} value={form.requirements} onChange={e => setForm({ ...form, requirements: e.target.value })} placeholder="Minimal S1&#10;Pengalaman 2 tahun&#10;Menguasai Figma" /></div>
                     <div>
                       <label style={{ display: 'block', fontSize: '13px', fontWeight: 500, color: c.muted, marginBottom: '6px' }}>📎 Dokumen yang Dibutuhkan (satu per baris)</label>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px' }}>
+                        {['CV', 'Portfolio', 'Sertifikat', 'Ijazah', 'Transkrip Nilai', 'KTP', 'Surat Lamaran'].map(label => (
+                          <button key={label} type="button"
+                            onClick={() => setForm(f => {
+                              const lines = (f.required_documents || '').split('\n').map(x => x.trim()).filter(Boolean);
+                              if (lines.includes(label)) return f;
+                              return { ...f, required_documents: [...lines, label].join('\n') };
+                            })}
+                            style={{ padding: '4px 12px', borderRadius: '20px', border: `1px solid ${c.border}`, background: 'transparent', color: c.muted, fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>
+                            + {label}
+                          </button>
+                        ))}
+                      </div>
                       <textarea style={{ ...inp, resize: 'vertical', minHeight: '70px', lineHeight: 1.6 }} value={form.required_documents} onChange={e => setForm({ ...form, required_documents: e.target.value })} placeholder="CV terbaru (PDF)&#10;Portfolio desain&#10;Sertifikat relevan" />
-                      <p style={{ fontSize: '11px', color: c.muted, marginTop: '4px' }}>Dokumen ini akan ditampilkan kepada pelamar sebagai panduan</p>
+                      <p style={{ fontSize: '11px', color: c.muted, marginTop: '4px' }}>Klik tombol di atas untuk menambah cepat, atau ketik manual (satu per baris). Dokumen ini ditampilkan ke pelamar saat melamar.</p>
                     </div>
                   </div>
                   <div style={{ padding: '16px 24px', borderTop: `1px solid ${c.border}`, display: 'flex', gap: '10px', position: 'sticky', bottom: 0, background: c.card }}>

@@ -3,43 +3,34 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { supabase } from '../../lib/supabaseClient';
 import { useUser } from '../../lib/userContext';
 import { useTheme } from '../../lib/themeContext';
+import { useSidebar } from '../../lib/sidebarContext';
 
+// 1. MENU DIURUTKAN DARI A - Z (Beranda tetap di atas sebagai standar UX)
 const navItems = [
   { href: '/', icon: '▦', label: 'Beranda', exact: true },
-  { href: '/trayek', icon: '💼', label: 'Lowongan' },
+  { href: '/cv-builder', icon: '✨', label: 'CV Builder' },
   { href: '/lamaran', icon: '📋', label: 'Lamaran' },
-  { href: '/chat', icon: '💬', label: 'Pesan' },
-  { href: '/pelatihan', icon: '🎓', label: 'Pelatihan' },
+  { href: '/trayek', icon: '💼', label: 'Lowongan' },
   { href: '/mentoring', icon: '🎤', label: 'Mentoring' },
-  { href: '/interview', icon: '🤖', label: 'Interview AI' },
-  { href: '/sertifikat', icon: '🏆', label: 'Sertifikat' },
-  { href: '/notifikasi', icon: '🔔', label: 'Notifikasi' },
-];
-
-const mobileNav = [
-  { href: '/', icon: '▦', label: 'Home', exact: true },
-  { href: '/trayek', icon: '💼', label: 'Kerja' },
+  { href: '/pelatihan', icon: '🎓', label: 'Pelatihan' },
   { href: '/chat', icon: '💬', label: 'Pesan' },
-  { href: '/interview', icon: '🤖', label: 'AI' },
-  { href: '/notifikasi', icon: '🔔', label: 'Notif' },
-  { href: '/profil', icon: '👤', label: 'Profil' },
+  { href: '/sertifikat', icon: '🏆', label: 'Sertifikat' },
 ];
 
 const portalLinks = {
-  admin: { href: '/admin', icon: '🛡️', label: 'Dashboard Admin', colorVar: 'var(--brand-600)' },
+  admin: { href: '/admin', icon: '🛡️', label: 'Dashboard Admin', colorVar: '#5624D0' },
   company: { href: '/company', icon: '🏢', label: 'Portal Perusahaan', colorVar: '#7C3AED' },
-  mentor: { href: '/mentor', icon: '🎤', label: 'Portal Mentor', colorVar: 'var(--success-600)' },
+  mentor: { href: '/mentor', icon: '🎤', label: 'Portal Mentor', colorVar: '#10B981' },
 };
 
 const roleLabels = {
-  admin: { text: 'Superadmin', bg: 'var(--brand-600)', color: '#fff' },
+  admin: { text: 'Superadmin', bg: '#5624D0', color: '#fff' },
   company: { text: 'Perusahaan', bg: '#7C3AED', color: '#fff' },
-  mentor: { text: 'Mentor', bg: 'var(--success-600)', color: '#fff' },
-  user: { text: 'Member', bg: 'var(--surface-tertiary)', color: 'var(--text-secondary)' },
+  mentor: { text: 'Mentor', bg: '#10B981', color: '#fff' },
 };
 
 export default function Sidebar() {
@@ -47,8 +38,20 @@ export default function Sidebar() {
   const router = useRouter();
   const { user, logout } = useUser();
   const { isDark, toggleTheme } = useTheme();
+  const sidebarCtx = useSidebar();
+  const isOpen = sidebarCtx ? sidebarCtx.isOpen : true;
+  const toggleSidebar = sidebarCtx ? sidebarCtx.toggle : () => {};
   const [unreadCount, setUnreadCount] = useState(0);
-  const [collapsed, setCollapsed] = useState(false);
+
+  const theme = {
+    purple: '#5624D0',
+    darkText: isDark ? '#F8FAFC' : '#1C1D1F',
+    lightText: isDark ? '#94A3B8' : '#6A6F73',
+    border: isDark ? '#334155' : '#D1D7DC',
+    bgLight: isDark ? '#1E293B' : '#F7F9FA',
+    white: isDark ? '#0F172A' : '#FFFFFF',
+    hoverBg: isDark ? '#1E293B' : '#F3F4F6'
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -67,145 +70,138 @@ export default function Sidebar() {
   const handleLogout = () => { logout(); router.push('/auth'); };
   const initials = user?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?';
   const portal = user?.role && portalLinks[user.role] ? portalLinks[user.role] : null;
-  const roleLabel = user?.role ? roleLabels[user.role] : roleLabels.user;
+  const roleLabel = user?.role ? roleLabels[user.role] : { text: 'Member', bg: theme.bgLight, color: theme.lightText };
 
   const isActive = (href, exact) => exact ? pathname === href : pathname === href || (href !== '/' && pathname.startsWith(href));
 
   return (
     <>
-      {/* Desktop Sidebar */}
-      <motion.aside
-        initial={{ x: -240, opacity: 0 }}
-        animate={{ x: 0, opacity: 1 }}
-        transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+      {/* Tombol buka (mengambang) — tampil saat sidebar tertutup, di SEMUA halaman */}
+      {!isOpen && (
+        <button onClick={toggleSidebar} aria-label="Buka menu"
+          style={{ position: 'fixed', top: '14px', left: '14px', zIndex: 200, width: '42px', height: '42px', borderRadius: '10px', border: `1px solid ${theme.border}`, background: theme.white, color: theme.darkText, cursor: 'pointer', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(0,0,0,0.15)' }}>
+          ☰
+        </button>
+      )}
+
+      <aside
         style={{
           width: '240px', height: '100vh', position: 'fixed', left: 0, top: 0,
-          background: 'var(--surface-primary)', borderRight: '1px solid var(--border-default)',
+          background: theme.white, borderRight: `1px solid ${theme.border}`,
           display: 'flex', flexDirection: 'column', zIndex: 100,
-          boxShadow: 'var(--shadow-sm)',
+          fontFamily: 'var(--font-sans, Arial, sans-serif)',
+          transform: isOpen ? 'translateX(0)' : 'translateX(-240px)',
+          transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease, border-color 0.2s ease',
+          willChange: 'transform'
         }}
       >
-        {/* Logo */}
-        <div style={{ padding: '18px 16px 14px', borderBottom: '1px solid var(--border-default)', display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ width: '34px', height: '34px', background: 'linear-gradient(135deg, var(--brand-600), var(--brand-800))', borderRadius: '9px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '13px', letterSpacing: '-0.5px', flexShrink: 0, boxShadow: 'var(--shadow-brand)' }}>CF</div>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 800, fontSize: '15px', color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>CareerForge</div>
-            <div style={{ fontSize: '10px', color: 'var(--text-tertiary)', fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase' }}>SDGs 8</div>
+        {/* Header Logo */}
+        <div style={{ padding: '16px 16px', borderBottom: `1px solid ${theme.border}`, display: 'flex', alignItems: 'center', gap: '10px' }}>
+          {/* Tombol tutup sidebar */}
+          <button onClick={toggleSidebar} aria-label="Tutup menu"
+            style={{ width: '30px', height: '30px', border: `1px solid ${theme.border}`, background: theme.bgLight, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: theme.darkText, borderRadius: '6px', fontSize: '15px', flexShrink: 0 }}>
+            ☰
+          </button>
+          <div style={{ width: '32px', height: '32px', background: theme.purple, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '13px', borderRadius: '4px', flexShrink: 0 }}>
+            CF
           </div>
-          <button onClick={toggleTheme} style={{ width: '28px', height: '28px', borderRadius: '7px', border: '1px solid var(--border-default)', background: 'var(--surface-secondary)', cursor: 'pointer', fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: 'var(--text-secondary)' }}
-            title={isDark ? 'Light mode' : 'Dark mode'}>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <div style={{ fontWeight: 800, fontSize: '15px', color: theme.darkText, letterSpacing: '-0.02em' }}>CareerForge</div>
+            <div style={{ fontSize: '10px', color: theme.lightText, fontWeight: 700, letterSpacing: '0.04em' }}>SDGs 8</div>
+          </div>
+          <button onClick={toggleTheme} style={{ width: '28px', height: '28px', border: `1px solid ${theme.border}`, background: theme.bgLight, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: theme.darkText, borderRadius: '4px', flexShrink: 0 }}>
             {isDark ? '☀️' : '🌙'}
           </button>
         </div>
 
-        {/* Portal link */}
+        {/* Portal Akses Cepat */}
         {portal && (
-          <div style={{ padding: '8px 12px', borderBottom: '1px solid var(--border-default)', background: 'var(--surface-secondary)' }}>
-            <Link href={portal.href} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '7px 10px', borderRadius: '8px', textDecoration: 'none', background: 'var(--surface-brand)', border: '1px solid var(--border-brand)' }}>
+          <div style={{ padding: '12px 16px', borderBottom: `1px solid ${theme.border}` }}>
+            <Link href={portal.href} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', border: `1px solid ${theme.purple}`, textDecoration: 'none', borderRadius: '6px' }}>
               <span style={{ fontSize: '14px' }}>{portal.icon}</span>
-              <span style={{ fontSize: '12px', fontWeight: 600, color: portal.colorVar, flex: 1 }}>{portal.label}</span>
-              <span style={{ fontSize: '11px', color: portal.colorVar, opacity: 0.7 }}>→</span>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: portal.colorVar, flex: 1 }}>{portal.label}</span>
+              <span style={{ color: theme.lightText }}>→</span>
             </Link>
           </div>
         )}
 
-        {/* User */}
-        <Link href="/profil" style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-default)', textDecoration: 'none', display: 'block', transition: 'background var(--transition-fast)' }}
-          onMouseEnter={e => e.currentTarget.style.background = 'var(--surface-secondary)'}
-          onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        {/* Profil Pengguna */}
+        <Link href="/profil" style={{ padding: '14px 16px', borderBottom: `1px solid ${theme.border}`, textDecoration: 'none', display: 'block', backgroundColor: theme.bgLight }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ position: 'relative', flexShrink: 0 }}>
               {user?.avatar_url ? (
-                <img src={user.avatar_url} style={{ width: '34px', height: '34px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border-brand)' }} />
+                <img src={user.avatar_url} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', border: `1px solid ${theme.border}` }} alt="Avatar" />
               ) : (
-                <div style={{ width: '34px', height: '34px', borderRadius: '50%', background: 'linear-gradient(135deg, var(--brand-600), var(--brand-800))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '12px' }}>{initials}</div>
+                <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: theme.purple, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700 }}>{initials}</div>
               )}
-              <div style={{ position: 'absolute', bottom: '0', right: '0', width: '8px', height: '8px', borderRadius: '50%', background: '#22C55E', border: '1.5px solid var(--surface-primary)' }} />
+              <div style={{ position: 'absolute', bottom: '0', right: '0', width: '10px', height: '10px', borderRadius: '50%', background: '#22C55E', border: `2px solid ${theme.bgLight}` }} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontWeight: 600, fontSize: '13px', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.full_name || 'User'}</div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', marginTop: '2px' }}>
-                <span style={{ fontSize: '10px', padding: '1px 6px', borderRadius: '4px', background: roleLabel.bg, color: roleLabel.color, fontWeight: 600, letterSpacing: '0.02em' }}>{roleLabel.text}</span>
-              </div>
+              <div style={{ fontWeight: 700, fontSize: '13px', color: theme.darkText, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.full_name || 'User'}</div>
+              <span style={{ fontSize: '9px', padding: '2px 6px', background: roleLabel.bg, color: roleLabel.color, fontWeight: 700, borderRadius: '4px' }}>{roleLabel.text}</span>
             </div>
-            <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>✏</span>
           </div>
         </Link>
 
-        {/* Nav */}
-        <nav style={{ flex: 1, padding: '10px 10px', overflowY: 'auto' }}>
-          <div style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-tertiary)', letterSpacing: '0.08em', textTransform: 'uppercase', padding: '4px 4px 8px', marginTop: '2px' }}>Menu Utama</div>
-          {navItems.map((item, i) => {
+        {/* 2. MENU NAVIGASI DENGAN EFEK HOVER MODERN */}
+        <nav style={{ flex: 1, padding: '16px 12px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
+          <div style={{ fontSize: '11px', fontWeight: 800, color: theme.lightText, letterSpacing: '0.05em', textTransform: 'uppercase', padding: '0 8px', marginBottom: '8px' }}>Navigasi Utama</div>
+
+          {navItems.map((item) => {
             const active = isActive(item.href, item.exact);
             return (
-              <motion.div key={item.href} initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}>
-                <Link href={item.href} style={{
-                  display: 'flex', alignItems: 'center', gap: '9px',
-                  padding: '8px 10px', borderRadius: '8px', marginBottom: '1px',
-                  textDecoration: 'none', position: 'relative',
-                  background: active ? 'var(--surface-brand)' : 'transparent',
-                  color: active ? 'var(--text-brand)' : 'var(--text-secondary)',
-                  fontWeight: active ? 600 : 400, fontSize: '14px',
-                  borderLeft: `2px solid ${active ? 'var(--brand-600)' : 'transparent'}`,
-                  transition: 'all var(--transition-base)',
-                }}
-                  onMouseEnter={e => { if (!active) { e.currentTarget.style.background = 'var(--surface-secondary)'; e.currentTarget.style.color = 'var(--text-primary)'; } }}
-                  onMouseLeave={e => { if (!active) { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; } }}>
-                  <span style={{ fontSize: '16px', width: '20px', textAlign: 'center', flexShrink: 0 }}>{item.icon}</span>
-                  <span style={{ flex: 1 }}>{item.label}</span>
-                  {item.href === '/notifikasi' && unreadCount > 0 && (
-                    <motion.span initial={{ scale: 0 }} animate={{ scale: 1 }}
-                      style={{ background: '#EF4444', color: '#fff', borderRadius: '10px', fontSize: '10px', fontWeight: 700, padding: '1px 6px', minWidth: '18px', textAlign: 'center' }}>
-                      {unreadCount > 9 ? '9+' : unreadCount}
-                    </motion.span>
+              <Link key={item.href} href={item.href} style={{ textDecoration: 'none' }}>
+                <motion.div
+                  whileHover={{ backgroundColor: active ? 'transparent' : theme.hoverBg, x: active ? 0 : 4 }}
+                  style={{
+                    display: 'flex', alignItems: 'center', gap: '14px',
+                    padding: '10px 14px',
+                    background: active ? 'rgba(86, 36, 208, 0.08)' : 'transparent',
+                    color: active ? theme.purple : theme.darkText,
+                    fontWeight: active ? 700 : 500,
+                    fontSize: '13px',
+                    borderRadius: '8px',
+                    position: 'relative',
+                    transition: 'color 0.2s ease, background-color 0.2s ease'
+                  }}
+                >
+                  {active && (
+                    <motion.div
+                      layoutId="activeTab"
+                      style={{ position: 'absolute', left: 0, top: '10%', bottom: '10%', width: '4px', backgroundColor: theme.purple, borderRadius: '0 4px 4px 0' }}
+                    />
                   )}
-                </Link>
-              </motion.div>
+
+                  <span style={{ fontSize: '18px', width: '24px', textAlign: 'center', opacity: active ? 1 : 0.6, transition: 'opacity 0.2s ease' }}>{item.icon}</span>
+                  <span style={{ flex: 1 }}>{item.label}</span>
+
+                  {item.href === '/notifikasi' && unreadCount > 0 && (
+                    <span style={{ background: '#EF4444', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '12px' }}>
+                      {unreadCount > 9 ? '9+' : unreadCount}
+                    </span>
+                  )}
+                </motion.div>
+              </Link>
             );
           })}
         </nav>
 
-        {/* Bottom */}
-        <div style={{ padding: '10px 10px 14px', borderTop: '1px solid var(--border-default)', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <Link href="/profil" style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '8px 10px', borderRadius: '8px', textDecoration: 'none', color: 'var(--text-secondary)', fontSize: '14px', fontWeight: 500, transition: 'all var(--transition-base)' }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--surface-secondary)'; e.currentTarget.style.color = 'var(--text-primary)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}>
-            <span style={{ fontSize: '16px' }}>👤</span> Edit Profil
+        {/* Bagian Bawah / Footer */}
+        <div style={{ padding: '16px', borderTop: `1px solid ${theme.border}`, display: 'flex', flexDirection: 'column', gap: '8px', backgroundColor: theme.bgLight }}>
+          <Link href="/profil/edit" style={{ textDecoration: 'none' }}>
+            <motion.div whileHover={{ backgroundColor: theme.border }} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', color: theme.darkText, fontSize: '13px', fontWeight: 600, borderRadius: '8px', transition: 'background-color 0.2s ease' }}>
+              <span style={{ fontSize: '16px' }}>👤</span> Edit Profil
+            </motion.div>
           </Link>
-          <button onClick={handleLogout} style={{ width: '100%', padding: '8px 10px', borderRadius: '8px', border: 'none', background: 'transparent', color: 'var(--text-secondary)', fontSize: '14px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '9px', cursor: 'pointer', transition: 'all var(--transition-base)' }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'var(--error-50)'; e.currentTarget.style.color = 'var(--error-600)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}>
+          <motion.button
+            whileHover={{ backgroundColor: 'rgba(220, 38, 38, 0.1)' }}
+            onClick={handleLogout}
+            style={{ width: '100%', padding: '10px 14px', border: 'none', background: 'transparent', color: '#DC2626', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', borderRadius: '8px', transition: 'background-color 0.2s ease' }}
+          >
             <span style={{ fontSize: '16px' }}>🚪</span> Keluar
-          </button>
+          </motion.button>
         </div>
-      </motion.aside>
-
-      {/* Mobile Bottom Nav */}
-      <div className="bottom-nav">
-        {mobileNav.map(item => {
-          const active = isActive(item.href, item.exact);
-          return (
-            <Link key={item.href} href={item.href} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', padding: '6px 10px', textDecoration: 'none', flex: 1, color: active ? 'var(--text-brand)' : 'var(--text-tertiary)', position: 'relative' }}>
-              <span style={{ fontSize: '20px' }}>{item.icon}</span>
-              <span style={{ fontSize: '10px', fontWeight: active ? 600 : 400 }}>{item.label}</span>
-              {item.href === '/notifikasi' && unreadCount > 0 && (
-                <span style={{ position: 'absolute', top: '4px', right: '14px', width: '7px', height: '7px', borderRadius: '50%', background: '#EF4444' }} />
-              )}
-              {active && <motion.div layoutId="mobileIndicator" style={{ position: 'absolute', bottom: 0, width: '24px', height: '2px', borderRadius: '1px', background: 'var(--brand-600)' }} />}
-            </Link>
-          );
-        })}
-        {portal && (
-          <Link href={portal.href} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', padding: '6px 10px', textDecoration: 'none', flex: 1, color: portal.colorVar }}>
-            <span style={{ fontSize: '20px' }}>{portal.icon}</span>
-            <span style={{ fontSize: '10px', fontWeight: 600 }}>Portal</span>
-          </Link>
-        )}
-        <button onClick={toggleTheme} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px', padding: '6px 10px', border: 'none', background: 'transparent', cursor: 'pointer', flex: 1, color: 'var(--text-tertiary)' }}>
-          <span style={{ fontSize: '20px' }}>{isDark ? '☀️' : '🌙'}</span>
-          <span style={{ fontSize: '10px' }}>Tema</span>
-        </button>
-      </div>
+      </aside>
     </>
   );
 }

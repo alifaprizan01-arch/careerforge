@@ -7,7 +7,6 @@ import { supabase } from '../../lib/supabaseClient';
 import { useUser } from '../../lib/userContext';
 import { useTheme } from '../../lib/themeContext';
 import Sidebar from '../components/Sidebar';
-import { useSidebar } from '../../lib/sidebarContext';
 
 export default function LowonganPage() {
   const router = useRouter();
@@ -21,20 +20,20 @@ export default function LowonganPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('Semua');
-  const { isOpen: sidebarOpen, toggle: toggleSidebar } = useSidebar();
+  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [activeTab, setActiveTab] = useState('deskripsi'); // deskripsi | kualifikasi | perusahaan
 
   // Tema Dinamis Premium
   const theme = {
-    purple: '#7C3AED',
-    purpleHover: '#6D28D9',
+    purple: '#5624D0',
+    purpleHover: '#401A9A',
     darkText: isDark ? '#F8FAFC' : '#1C1D1F',
     lightText: isDark ? '#94A3B8' : '#6A6F73',
     border: isDark ? '#334155' : '#D1D7DC',
     bgLight: isDark ? '#1E293B' : '#F7F9FA',
     white: isDark ? '#0F172A' : '#FFFFFF',
     cardBg: isDark ? '#1E293B' : '#FFFFFF',
-    cardSelected: isDark ? '#2E3A4E' : '#F5F3FF',
+    cardSelected: isDark ? '#2E3A4E' : '#F4EFFC',
     green: '#22C55E',
     greenBg: 'rgba(34, 197, 94, 0.1)',
   };
@@ -112,7 +111,7 @@ export default function LowonganPage() {
 
   return (
     <div style={{ backgroundColor: theme.white, color: theme.darkText, minHeight: '100vh', transition: 'all 0.2s ease' }}>
-      <Sidebar />
+      <Sidebar isOpen={sidebarOpen} />
 
       <div style={{ 
         paddingLeft: sidebarOpen ? '240px' : '0px', 
@@ -123,7 +122,7 @@ export default function LowonganPage() {
         {/* HEADER & FILTER SECTIONS */}
         <header style={{ padding: '24px', borderBottom: `1px solid ${theme.border}`, display: 'flex', flexDirection: 'column', gap: '16px', position: 'sticky', top: 0, backgroundColor: theme.white, zIndex: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <button onClick={toggleSidebar} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: theme.darkText }}>☰</button>
+            <button onClick={() => setSidebarOpen(!sidebarOpen)} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: theme.darkText }}>☰</button>
             <h1 style={{ fontSize: '24px', fontWeight: 800, letterSpacing: '-0.02em' }}>Lowongan Karier</h1>
           </div>
 

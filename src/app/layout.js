@@ -1,5 +1,6 @@
 import { UserProvider } from '../lib/userContext';
 import { ThemeProvider } from '../lib/themeContext';
+import { SidebarProvider } from '../lib/sidebarContext';
 import './globals.css';
 
 export const metadata = {
@@ -13,7 +14,9 @@ export default function RootLayout({ children }) {
       <body>
         <ThemeProvider>
           <UserProvider>
-            {children}
+            <SidebarProvider>
+              {children}
+            </SidebarProvider>
           </UserProvider>
         </ThemeProvider>
       </body>

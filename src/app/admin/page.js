@@ -78,6 +78,7 @@ export default function AdminDashboard() {
     { href: '/admin/lowongan', icon: '💼', label: 'Kelola Lowongan', value: stats.trayek, unit: 'lowongan', color: '#2563EB', bg: isDark ? 'rgba(37,99,235,0.15)' : '#EFF6FF' },
     { href: '/admin/users', icon: '👥', label: 'Kelola User', value: stats.users, unit: 'user', color: '#16A34A', bg: isDark ? 'rgba(22,163,74,0.15)' : '#F0FDF4' },
     { href: '/admin/lamaran', icon: '📋', label: 'Kelola Lamaran', value: stats.applications, unit: 'lamaran', color: '#7C3AED', bg: isDark ? 'rgba(124,58,237,0.15)' : '#F5F3FF' },
+    { href: '/admin/pelatihan', icon: '🎓', label: 'Kelola Pelatihan', value: stats?.trainings || 0, unit: 'pelatihan', color: '#16A34A', bg: isDark ? 'rgba(22,163,74,0.15)' : '#F0FDF4' },
     { icon: '📢', label: 'Broadcast Notif', value: stats.notifications, unit: 'terkirim', color: '#D97706', bg: isDark ? 'rgba(217,119,6,0.15)' : '#FFFBEB', onClick: () => setShowBroadcast(true) },
   ];
 

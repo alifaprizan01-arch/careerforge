@@ -7,6 +7,44 @@ import { supabase } from '../../lib/supabaseClient';
 import { useUser } from '../../lib/userContext';
 import Sidebar from '../components/Sidebar';
 
+// Aksen warna per status (untuk garis kiri kartu & angka statistik)
+const ACCENT = { 'Menunggu': '#D97706', 'Diproses': '#2563EB', 'Wawancara': '#7C3AED', 'Diterima': '#16A34A', 'Ditolak': '#DC2626' };
+
+// Stepper progres lamaran
+const STAGE_LABELS = ['Dilamar', 'Direview', 'Diproses', 'Hasil'];
+const statusStage = (status) => {
+  if (status === 'Menunggu') return 1;
+  if (status === 'Diproses' || status === 'Wawancara') return 2;
+  if (status === 'Diterima' || status === 'Ditolak') return 3;
+  return 1;
+};
+
+function StatusStepper({ status }) {
+  const current = statusStage(status);
+  const doneColor = status === 'Ditolak' ? '#DC2626' : (status === 'Diterima' ? '#16A34A' : 'var(--brand-600)');
+  return (
+    <div style={{ marginTop: '12px', marginBottom: '12px' }}>
+      <div style={{ display: 'flex', alignItems: 'center' }}>
+        {STAGE_LABELS.map((label, idx) => {
+          const reached = idx <= current;
+          const isLast = idx === STAGE_LABELS.length - 1;
+          return (
+            <div key={idx} style={{ display: 'flex', alignItems: 'center', flex: isLast ? '0 0 auto' : 1 }}>
+              <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: reached ? doneColor : 'var(--surface-secondary)', border: `2px solid ${reached ? doneColor : 'var(--border-strong)'}`, flexShrink: 0 }} />
+              {!isLast && <div style={{ flex: 1, height: '2px', background: idx < current ? doneColor : 'var(--border-default)' }} />}
+            </div>
+          );
+        })}
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '5px' }}>
+        {STAGE_LABELS.map((label, idx) => (
+          <span key={idx} style={{ fontSize: '10px', color: idx <= current ? 'var(--text-secondary)' : 'var(--text-tertiary)', fontWeight: idx <= current ? 600 : 400 }}>{label}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export default function LamaranPage() {
   const router = useRouter();
   const { user, loaded } = useUser();
@@ -78,16 +116,16 @@ export default function LamaranPage() {
         {/* Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px', marginBottom: '24px' }}>
           {[
-            { label: 'Total', value: stats.total, badge: 'badge-gray', active: filter === 'semua', onClick: () => setFilter('semua') },
-            { label: 'Menunggu', value: stats.menunggu, badge: 'badge-yellow', active: filter === 'Menunggu', onClick: () => setFilter('Menunggu') },
-            { label: 'Diproses', value: stats.diproses, badge: 'badge-blue', active: filter === 'Diproses', onClick: () => setFilter('Diproses') },
-            { label: 'Diterima', value: stats.diterima, badge: 'badge-green', active: filter === 'Diterima', onClick: () => setFilter('Diterima') },
-            { label: 'Ditolak', value: stats.ditolak, badge: 'badge-red', active: filter === 'Ditolak', onClick: () => setFilter('Ditolak') },
+            { label: 'Total', value: stats.total, badge: 'badge-gray', color: 'var(--text-brand)', active: filter === 'semua', onClick: () => setFilter('semua') },
+            { label: 'Menunggu', value: stats.menunggu, badge: 'badge-yellow', color: '#D97706', active: filter === 'Menunggu', onClick: () => setFilter('Menunggu') },
+            { label: 'Diproses', value: stats.diproses, badge: 'badge-blue', color: '#2563EB', active: filter === 'Diproses', onClick: () => setFilter('Diproses') },
+            { label: 'Diterima', value: stats.diterima, badge: 'badge-green', color: '#16A34A', active: filter === 'Diterima', onClick: () => setFilter('Diterima') },
+            { label: 'Ditolak', value: stats.ditolak, badge: 'badge-red', color: '#DC2626', active: filter === 'Ditolak', onClick: () => setFilter('Ditolak') },
           ].map((s, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
               whileHover={{ y: -2 }} onClick={s.onClick}
               style={{ background: 'var(--surface-primary)', borderRadius: '10px', border: `1.5px solid ${s.active ? 'var(--brand-400)' : 'var(--border-default)'}`, padding: '14px 16px', cursor: 'pointer', textAlign: 'center', boxShadow: s.active ? 'var(--shadow-brand)' : 'var(--shadow-xs)', transition: 'all 0.15s' }}>
-              <div style={{ fontSize: '22px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px' }}>{loading ? '—' : s.value}</div>
+              <div style={{ fontSize: '22px', fontWeight: 800, color: s.color, marginBottom: '4px' }}>{loading ? '—' : s.value}</div>
               <div style={{ fontSize: '11px', color: 'var(--text-secondary)', fontWeight: 500 }}>{s.label}</div>
             </motion.div>
           ))}
@@ -120,9 +158,9 @@ export default function LamaranPage() {
               const salary = formatSalary(app.trayek?.salary_min, app.trayek?.salary_max);
               return (
                 <motion.div key={app.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                  style={{ background: 'var(--surface-primary)', borderRadius: '12px', border: '1px solid var(--border-default)', padding: '18px 20px', boxShadow: 'var(--shadow-xs)', transition: 'all 0.15s' }}
-                  onMouseEnter={e => { e.currentTarget.style.boxShadow = 'var(--shadow-md)'; e.currentTarget.style.borderColor = 'var(--border-strong)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.boxShadow = 'var(--shadow-xs)'; e.currentTarget.style.borderColor = 'var(--border-default)'; }}>
+                  style={{ background: 'var(--surface-primary)', borderRadius: '12px', border: '1px solid var(--border-default)', borderLeft: `4px solid ${ACCENT[app.status] || 'var(--brand-600)'}`, padding: '18px 20px', boxShadow: 'var(--shadow-xs)', transition: 'all 0.15s' }}
+                  onMouseEnter={e => { e.currentTarget.style.boxShadow = 'var(--shadow-md)'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.boxShadow = 'var(--shadow-xs)'; e.currentTarget.style.transform = 'none'; }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
                     <div style={{ width: '48px', height: '48px', borderRadius: '11px', background: 'var(--surface-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '14px', color: 'var(--text-brand)', flexShrink: 0, border: '1px solid var(--border-brand)' }}>
                       {(app.trayek?.company || app.trayek?.tujuan)?.slice(0,2).toUpperCase() || 'CF'}
@@ -142,6 +180,7 @@ export default function LamaranPage() {
                           <span style={{ fontSize: '11px', color: 'var(--text-tertiary)' }}>{new Date(app.applied_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
                         </div>
                       </div>
+                      <StatusStepper status={app.status} />
                       {app.cover_letter && (
                         <div style={{ background: 'var(--surface-secondary)', borderRadius: '8px', padding: '10px 12px', border: '1px solid var(--border-subtle)', marginBottom: '10px' }}>
                           <p style={{ fontSize: '12px', color: 'var(--text-secondary)', lineHeight: 1.5, margin: 0 }}>{app.cover_letter.slice(0,140)}...</p>
