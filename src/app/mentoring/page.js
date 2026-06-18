@@ -80,7 +80,7 @@ export default function MentoringPage() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-base)', fontFamily: 'var(--font-sans)' }}>
       <Sidebar />
-      <main style={{ marginLeft: '240px', flex: 1, padding: '32px' }}>
+      <main style={{ marginLeft: 'var(--sidebar-width, 240px)', flex: 1, padding: '32px' }}>
 
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: '24px' }}>

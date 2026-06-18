@@ -54,7 +54,7 @@ export default function NotifikasiPage() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-base)', fontFamily: 'var(--font-sans)' }}>
       <Sidebar />
-      <main style={{ marginLeft: '240px', flex: 1, padding: '32px', maxWidth: '800px' }}>
+      <main style={{ marginLeft: 'var(--sidebar-width, 240px)', flex: 1, padding: '32px', maxWidth: '800px' }}>
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '28px' }}>
           <div>
             <h1 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', display: 'flex', alignItems: 'center', gap: '10px' }}>

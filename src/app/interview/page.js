@@ -257,7 +257,7 @@ Format JSON yang harus dikembalikan:
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: c.bg, fontFamily: 'Inter, sans-serif' }}>
       <Sidebar />
-      <main style={{ marginLeft: '220px', flex: 1, padding: '0', display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+      <main style={{ marginLeft: 'var(--sidebar-width, 240px)', flex: 1, padding: '0', display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
 
         {/* Header */}
         <div style={{ padding: '16px 24px', borderBottom: `1px solid ${c.border}`, background: c.card, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>

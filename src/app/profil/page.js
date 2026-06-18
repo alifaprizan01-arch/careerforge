@@ -53,7 +53,7 @@ export default function MyProfilePage() {
   const Wrapper = ({ children }) => (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-base)', fontFamily: 'var(--font-sans)' }}>
       <Sidebar />
-      <main style={{ marginLeft: '240px', flex: 1, padding: '32px' }}>
+      <main style={{ marginLeft: 'var(--sidebar-width, 240px)', flex: 1, padding: '32px' }}>
         <div style={{ maxWidth: '860px', margin: '0 auto' }}>{children}</div>
       </main>
     </div>

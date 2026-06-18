@@ -75,7 +75,7 @@ export default function AuthPage() {
 
       {/* Left Panel */}
       <motion.div initial={{ x: -40, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ duration: 0.5 }}
-        style={{ flex: 1, background: 'linear-gradient(145deg, #0F172A 0%, #1E3A5F 50%, #1D4ED8 100%)', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px', color: '#fff', position: 'relative', overflow: 'hidden' }}>
+        style={{ flex: 1, background: 'linear-gradient(145deg, rgba(30,58,138,0.85) 0%, rgba(37,99,235,0.76) 55%, rgba(59,130,246,0.70) 100%), url(/Hana_2.png)', backgroundSize: 'cover', backgroundPosition: 'center', display: 'flex', flexDirection: 'column', justifyContent: 'center', padding: '60px', color: '#fff', position: 'relative', overflow: 'hidden' }}>
 
         {/* Background decoration */}
         <div style={{ position: 'absolute', top: '-100px', right: '-100px', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(37,99,235,0.2) 0%, transparent 70%)', borderRadius: '50%' }} />

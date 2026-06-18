@@ -13,6 +13,7 @@ import { useSidebar } from '../../lib/sidebarContext';
 const navItems = [
   { href: '/', icon: '▦', label: 'Beranda', exact: true },
   { href: '/cv-builder', icon: '✨', label: 'CV Builder' },
+  { href: '/dokumen', icon: '📁', label: 'Dokumen' },
   { href: '/lamaran', icon: '📋', label: 'Lamaran' },
   { href: '/trayek', icon: '💼', label: 'Lowongan' },
   { href: '/mentoring', icon: '🎤', label: 'Mentoring' },
@@ -70,16 +71,18 @@ export default function Sidebar() {
   const handleLogout = () => { logout(); router.push('/auth'); };
   const initials = user?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2) || '?';
   const portal = user?.role && portalLinks[user.role] ? portalLinks[user.role] : null;
-  const roleLabel = user?.role ? roleLabels[user.role] : { text: 'Member', bg: theme.bgLight, color: theme.lightText };
+  const roleLabel = (user?.role && roleLabels[user.role]) ? roleLabels[user.role] : { text: user?.role || 'Member', bg: theme.bgLight, color: theme.lightText };
 
   const isActive = (href, exact) => exact ? pathname === href : pathname === href || (href !== '/' && pathname.startsWith(href));
 
   return (
     <>
-      {/* Tombol buka (mengambang) — tampil saat sidebar tertutup, di SEMUA halaman */}
+      {/* Tombol buka (handle) — tampil saat sidebar tertutup di SEMUA halaman; di tepi kiri-tengah agar tidak menutupi logo/judul */}
       {!isOpen && (
         <button onClick={toggleSidebar} aria-label="Buka menu"
-          style={{ position: 'fixed', top: '14px', left: '14px', zIndex: 200, width: '42px', height: '42px', borderRadius: '10px', border: `1px solid ${theme.border}`, background: theme.white, color: theme.darkText, cursor: 'pointer', fontSize: '18px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 14px rgba(0,0,0,0.15)' }}>
+          style={{ position: 'fixed', top: '50%', left: 0, transform: 'translateY(-50%)', zIndex: 200, width: '30px', height: '64px', borderRadius: '0 12px 12px 0', border: `1px solid ${theme.border}`, borderLeft: 'none', background: theme.white, color: theme.darkText, cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '2px 2px 12px rgba(0,0,0,0.12)', transition: 'width 0.15s, background-color 0.15s' }}
+          onMouseEnter={e => { e.currentTarget.style.background = theme.bgLight; e.currentTarget.style.width = '38px'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = theme.white; e.currentTarget.style.width = '30px'; }}>
           ☰
         </button>
       )}

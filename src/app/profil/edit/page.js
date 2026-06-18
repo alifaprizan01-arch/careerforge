@@ -312,7 +312,7 @@ export default function ProfilPage() {
         />
       )}
 
-      <main style={{ marginLeft: '220px', flex: 1, padding: '28px 32px' }}>
+      <main style={{ marginLeft: 'var(--sidebar-width, 240px)', flex: 1, padding: '28px 32px' }}>
         <div style={{ marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '16px', flexWrap: 'wrap' }}>
           <div>
             <h1 style={{ fontSize: '22px', fontWeight: 700, color: '#0F172A', marginBottom: '4px' }}>Profil Saya</h1>

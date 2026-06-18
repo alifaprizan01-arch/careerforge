@@ -114,14 +114,14 @@ export default function MentorProfilPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: c.bg, fontFamily: 'Inter, sans-serif' }}>
-      <div style={{ background: isDark ? '#1E293B' : '#1E3A5F', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ background: 'linear-gradient(135deg,#065F46 0%,#16A34A 100%)', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 10px rgba(22,163,74,0.25)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <Link href="/mentor" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '13px' }}>← Dashboard</Link>
           <span style={{ color: 'rgba(255,255,255,0.3)' }}>/</span>
           <span style={{ color: '#fff', fontWeight: 600, fontSize: '14px' }}>Edit Profil Mentor</span>
         </div>
         <motion.button whileTap={{ scale: 0.97 }} onClick={handleSave} disabled={saving}
-          style={{ padding: '9px 20px', borderRadius: '8px', border: 'none', background: saving ? '#93C5FD' : '#2563EB', color: '#fff', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
+          style={{ padding: '9px 20px', borderRadius: '8px', border: 'none', background: saving ? '#86EFAC' : '#16A34A', color: '#fff', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
           {saving ? 'Menyimpan...' : '💾 Simpan Perubahan'}
         </motion.button>
       </div>
@@ -142,14 +142,14 @@ export default function MentorProfilPage() {
               <div style={{ background: c.card, borderRadius: '12px', border: `1px solid ${c.border}`, padding: '20px', display: 'flex', gap: '16px', alignItems: 'center' }}>
                 <div style={{ position: 'relative', flexShrink: 0 }}>
                   {avatarUrl ? (
-                    <img src={avatarUrl} style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: `3px solid ${c.blue}44` }} />
+                    <img src={avatarUrl} style={{ width: '80px', height: '80px', borderRadius: '50%', objectFit: 'cover', border: `3px solid ${c.green}44` }} />
                   ) : (
-                    <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg,#2563EB,#1D4ED8)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '28px' }}>
+                    <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg,#16A34A,#15803D)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '28px' }}>
                       {form.full_name?.slice(0,1) || '?'}
                     </div>
                   )}
                   <motion.button whileTap={{ scale: 0.95 }} onClick={() => fileInputRef.current?.click()} disabled={uploadingPhoto}
-                    style={{ position: 'absolute', bottom: 0, right: 0, width: '28px', height: '28px', borderRadius: '50%', background: c.blue, border: `2px solid ${c.card}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '13px' }}
+                    style={{ position: 'absolute', bottom: 0, right: 0, width: '28px', height: '28px', borderRadius: '50%', background: c.green, border: `2px solid ${c.card}`, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '13px' }}
                     title="Ganti foto">
                     {uploadingPhoto ? '⏳' : '📷'}
                   </motion.button>
@@ -204,7 +204,7 @@ export default function MentorProfilPage() {
                     {form.expertise_tags && (
                       <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: '8px' }}>
                         {form.expertise_tags.split(',').map((t, i) => t.trim() && (
-                          <span key={i} style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px', background: c.blueLight, color: c.blue }}>#{t.trim()}</span>
+                          <span key={i} style={{ fontSize: '11px', padding: '3px 10px', borderRadius: '20px', background: c.greenLight, color: c.green }}>#{t.trim()}</span>
                         ))}
                       </div>
                     )}
@@ -218,7 +218,7 @@ export default function MentorProfilPage() {
               </div>
 
               <motion.button whileTap={{ scale: 0.97 }} onClick={handleSave} disabled={saving}
-                style={{ padding: '14px', borderRadius: '10px', border: 'none', background: saving ? '#93C5FD' : c.blue, color: '#fff', fontWeight: 700, fontSize: '15px', cursor: 'pointer' }}>
+                style={{ padding: '14px', borderRadius: '10px', border: 'none', background: saving ? '#86EFAC' : c.green, color: '#fff', fontWeight: 700, fontSize: '15px', cursor: 'pointer' }}>
                 {saving ? 'Menyimpan...' : '💾 Simpan Perubahan'}
               </motion.button>
             </div>

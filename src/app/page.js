@@ -48,6 +48,7 @@ const emojiFor = (name) => {
 export default function Home() {
   const router = useRouter();
   const { user, loaded } = useUser();
+  const [heroSeed] = useState(() => Math.random());
   const { isDark } = useTheme();
 
   // State Utama
@@ -165,7 +166,7 @@ export default function Home() {
   };
 
   const initials = n => n?.split(' ').map(x => x[0]).join('').toUpperCase().slice(0, 2) || '?';
-  const hasHero = !!banner?.hero_image_url;
+  const adminHero = banner?.hero_image_url || null;
   const paletteAt = (i) => (isDark ? PALETTES_DARK : PALETTES_LIGHT)[i % 5];
   const visualFor = (name) => {
     let h = 0; for (const ch of (name || '')) h += ch.charCodeAt(0);
@@ -176,6 +177,19 @@ export default function Home() {
   if (!user) return <Landing />;
 
   const isAdmin = ['admin', 'superadmin'].includes((user.role || '').toLowerCase()) || user.is_admin === true;
+
+  // Background hero sesuai peran (user diacak antara 2 gambar)
+  const roleBg = {
+    mentor: ['/BackGround_1.png'],
+    company: ['/BackGround_2.png'],
+    admin: ['/BackGround_3.png'],
+    superadmin: ['/BackGround_3.png'],
+    user: ['/BackGround_4.png', '/BackGround_5.png'],
+  };
+  const roleKey = (user.role || '').toLowerCase();
+  const roleImgs = roleBg[roleKey] || roleBg.user;
+  const heroImg = roleImgs[Math.floor(heroSeed * roleImgs.length)] || adminHero;
+  const hasHero = !!heroImg;
 
   const heroStats = [
     { label: 'Pelatihan diikuti', value: userTrainings.length, emoji: '📚', color: 'var(--text-brand)' },
@@ -258,24 +272,24 @@ export default function Home() {
         </header>
 
         {/* HERO SECTION */}
-        <section style={{ position: 'relative', display: 'flex', alignItems: 'center', padding: '56px 48px', background: hasHero ? '#0F172A' : 'var(--surface-secondary)', backgroundImage: hasHero ? `url(${banner.hero_image_url})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center', justifyContent: 'space-between', gap: '40px', flexWrap: 'wrap', overflow: 'hidden' }}>
-          {hasHero && <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(15,23,42,0.88) 0%, rgba(15,23,42,0.6) 60%, rgba(15,23,42,0.35) 100%)' }} />}
+        <section style={{ position: 'relative', display: 'flex', alignItems: 'center', padding: '56px 48px', margin: '20px 24px 0', borderRadius: '24px', background: hasHero ? '#E2E8F0' : 'var(--surface-secondary)', backgroundImage: hasHero ? `url(${heroImg})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center', justifyContent: 'space-between', gap: '40px', flexWrap: 'wrap', overflow: 'hidden', boxShadow: 'var(--shadow-md)' }}>
+          {hasHero && <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(255,255,255,0.74) 0%, rgba(255,255,255,0.42) 48%, rgba(255,255,255,0.12) 100%)' }} />}
 
           <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} style={{ position: 'relative', zIndex: 1, maxWidth: '520px', flex: '1 1 420px' }}>
-            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: hasHero ? 'rgba(255,255,255,0.2)' : 'var(--surface-brand)', borderRadius: '6px', padding: '5px 10px', marginBottom: '14px' }}>
-              <span style={{ fontSize: '12px', color: hasHero ? '#fff' : 'var(--text-brand)', fontWeight: 700, letterSpacing: '0.02em' }}>Selamat datang, {user.full_name?.split(' ')[0]} 👋</span>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: hasHero ? 'rgba(255,255,255,0.88)' : 'var(--surface-brand)', borderRadius: '6px', padding: '5px 10px', marginBottom: '14px', boxShadow: hasHero ? '0 2px 6px rgba(0,0,0,0.06)' : 'none' }}>
+              <span style={{ fontSize: '12px', color: hasHero ? '#6D28D9' : 'var(--text-brand)', fontWeight: 700, letterSpacing: '0.02em' }}>Selamat datang, {user.full_name?.split(' ')[0]} 👋</span>
             </div>
-            <h1 style={{ fontSize: '38px', fontWeight: 800, lineHeight: 1.15, marginBottom: '16px', color: hasHero ? '#fff' : 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+            <h1 style={{ fontSize: '38px', fontWeight: 800, lineHeight: 1.15, marginBottom: '16px', color: hasHero ? '#1E293B' : 'var(--text-primary)', letterSpacing: '-0.02em' }}>
               Temukan ribuan kursus, mulai belajar hari ini
             </h1>
-            <p style={{ fontSize: '16px', color: hasHero ? 'rgba(255,255,255,0.9)' : 'var(--text-secondary)', marginBottom: '24px', lineHeight: 1.6 }}>
+            <p style={{ fontSize: '16px', color: hasHero ? '#334155' : 'var(--text-secondary)', marginBottom: '24px', lineHeight: 1.6 }}>
               Materi terbaik langsung dari instruktur ahli untuk mendukung perjalanan karier Anda.
             </p>
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
               <button onClick={() => router.push('/pelatihan')} style={{ padding: '13px 24px', background: 'var(--brand-600)', color: '#fff', border: 'none', borderRadius: '10px', fontWeight: 700, fontSize: '15px', cursor: 'pointer', fontFamily: 'var(--font-sans)', boxShadow: 'var(--shadow-brand)' }}>
                 Jelajahi Kursus →
               </button>
-              <button onClick={() => router.push('/lowongan')} style={{ padding: '13px 24px', background: hasHero ? 'rgba(255,255,255,0.95)' : 'var(--surface-primary)', color: hasHero ? '#0F172A' : 'var(--text-primary)', border: hasHero ? 'none' : '1px solid var(--border-default)', borderRadius: '10px', fontWeight: 600, fontSize: '15px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+              <button onClick={() => router.push('/lowongan')} style={{ padding: '13px 24px', background: hasHero ? 'rgba(255,255,255,0.95)' : 'var(--surface-primary)', color: hasHero ? '#1E293B' : 'var(--text-primary)', border: hasHero ? '1px solid rgba(0,0,0,0.08)' : '1px solid var(--border-default)', borderRadius: '10px', fontWeight: 600, fontSize: '15px', cursor: 'pointer', fontFamily: 'var(--font-sans)', boxShadow: hasHero ? '0 2px 8px rgba(0,0,0,0.08)' : 'none' }}>
                 Lihat Lowongan
               </button>
             </div>

@@ -110,7 +110,7 @@ export default function MentorBookingsPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: c.bg, fontFamily: 'Inter, sans-serif' }}>
-      <div style={{ background: isDark ? '#1E293B' : '#1E3A5F', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ background: 'linear-gradient(135deg,#065F46 0%,#16A34A 100%)', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 10px rgba(22,163,74,0.25)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <Link href="/mentor" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '13px' }}>← Dashboard</Link>
           <span style={{ color: 'rgba(255,255,255,0.3)' }}>/</span>
@@ -130,9 +130,9 @@ export default function MentorBookingsPage() {
               const count = f === 'semua' ? bookings.length : bookings.filter(b => b.status === f).length;
               return (
                 <motion.button key={f} whileTap={{ scale: 0.95 }} onClick={() => setFilter(f)} style={{
-                  padding: '7px 14px', borderRadius: '20px', border: `1px solid ${filter === f ? (sc?.color || c.blue) : c.border}`,
-                  background: filter === f ? (sc?.bg || c.blueLight) : 'transparent',
-                  color: filter === f ? (sc?.color || c.blue) : c.muted, fontSize: '13px', cursor: 'pointer', fontWeight: 500,
+                  padding: '7px 14px', borderRadius: '20px', border: `1px solid ${filter === f ? (sc?.color || c.green) : c.border}`,
+                  background: filter === f ? (sc?.bg || c.greenLight) : 'transparent',
+                  color: filter === f ? (sc?.color || c.green) : c.muted, fontSize: '13px', cursor: 'pointer', fontWeight: 500,
                 }}>{f === 'semua' ? `Semua (${count})` : `${sc?.icon} ${f} (${count})`}</motion.button>
               );
             })}
@@ -156,12 +156,12 @@ export default function MentorBookingsPage() {
                     onClick={() => { setSelected(b); setMeetingLink(b.meeting_link || ''); setRejectionReason(''); }}
                     whileHover={{ y: -1 }}
                     style={{ background: c.card, borderRadius: '10px', padding: '14px 16px', cursor: 'pointer',
-                      border: isSelected ? `2px solid ${c.blue}` : `1px solid ${c.border}`,
-                      boxShadow: isSelected ? `0 0 0 3px ${c.blue}15` : 'none',
+                      border: isSelected ? `2px solid ${c.green}` : `1px solid ${c.border}`,
+                      boxShadow: isSelected ? `0 0 0 3px ${c.green}15` : 'none',
                       opacity: b.status === 'Dibatalkan' || b.status === 'Ditolak' ? 0.7 : 1 }}>
                     <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
                       {b.users?.avatar_url ? <img src={b.users.avatar_url} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} /> :
-                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg,#2563EB,#1D4ED8)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 600, fontSize: '11px', flexShrink: 0 }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg,#16A34A,#15803D)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 600, fontSize: '11px', flexShrink: 0 }}>
                           {b.users?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2)}
                         </div>}
                       <div style={{ flex: 1, minWidth: 0 }}>

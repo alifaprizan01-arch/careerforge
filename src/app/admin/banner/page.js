@@ -85,7 +85,7 @@ export default function AdminBannerPage() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-base)', fontFamily: 'var(--font-sans)' }}>
       <Sidebar />
-      <main style={{ marginLeft: '240px', flex: 1, padding: '32px', maxWidth: '900px' }}>
+      <main style={{ marginLeft: 'var(--sidebar-width, 240px)', flex: 1, padding: '32px', maxWidth: '900px' }}>
 
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: '24px' }}>
           <button onClick={() => router.push('/')} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '13px', marginBottom: '8px', fontFamily: 'var(--font-sans)' }}>← Kembali ke Beranda</button>

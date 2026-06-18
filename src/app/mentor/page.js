@@ -15,6 +15,7 @@ export default function MentorDashboard() {
   const [bookings, setBookings] = useState([]);
   const [stats, setStats] = useState({ total: 0, menunggu: 0, dikonfirmasi: 0, selesai: 0, pendapatan: 0 });
   const [loading, setLoading] = useState(true);
+  const [updatingId, setUpdatingId] = useState(null);
 
   useEffect(() => { if (loaded && !user) router.push('/auth'); }, [loaded, user]);
   useEffect(() => {
@@ -39,6 +40,22 @@ export default function MentorDashboard() {
       });
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
+  };
+
+  const updateBookingStatus = async (id, status) => {
+    setUpdatingId(id);
+    const { error } = await supabase.from('mentor_bookings').update({ status }).eq('id', id);
+    setUpdatingId(null);
+    if (error) { console.error(error); return; }
+    const next = bookings.map(b => b.id === id ? { ...b, status } : b);
+    setBookings(next);
+    setStats({
+      total: next.length,
+      menunggu: next.filter(x => x.status === 'Menunggu').length,
+      dikonfirmasi: next.filter(x => x.status === 'Dikonfirmasi').length,
+      selesai: next.filter(x => x.status === 'Selesai').length,
+      pendapatan: next.filter(x => x.status === 'Selesai').reduce((s, x) => s + (x.total_price || 0), 0),
+    });
   };
 
   const bg = isDark ? '#0F172A' : '#F8FAFC';
@@ -117,7 +134,9 @@ export default function MentorDashboard() {
             { label: 'Pendapatan', value: stats.selesai > 0 ? `Rp ${(stats.pendapatan/1000).toFixed(0)}rb` : 'Rp 0', icon: '💰', color: '#16A34A' },
           ].map((s, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.07 }}
-              style={{ background: card, borderRadius: '10px', border: `1px solid ${border}`, padding: '16px', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+              whileHover={{ y: -3 }} onClick={() => router.push('/mentor/bookings')}
+              style={{ background: card, borderRadius: '10px', border: `1px solid ${border}`, borderTop: `3px solid ${s.color}`, padding: '16px', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', cursor: 'pointer', transition: 'box-shadow 0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.10)'} onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)'}>
               <div style={{ fontSize: '24px', marginBottom: '8px' }}>{s.icon}</div>
               <div style={{ fontSize: '20px', fontWeight: 800, color: s.color, letterSpacing: '-0.02em', lineHeight: 1 }}>{loading ? '—' : s.value}</div>
               <div style={{ fontSize: '11px', color: muted, marginTop: '4px', fontWeight: 500 }}>{s.label}</div>
@@ -167,7 +186,21 @@ export default function MentorDashboard() {
                     <div style={{ fontSize: '13px', fontWeight: 600, color: text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{b.users?.full_name}</div>
                     <div style={{ fontSize: '11px', color: muted }}>{b.topic} • {new Date(b.booking_date + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'short' })} {b.booking_time}</div>
                   </div>
-                  <span className={`badge ${statusBadge(b.status)}`}>{b.status}</span>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px', flexShrink: 0 }}>
+                    <span className={`badge ${statusBadge(b.status)}`}>{b.status}</span>
+                    {b.status === 'Menunggu' && (
+                      <div style={{ display: 'flex', gap: '6px' }}>
+                        <button onClick={() => updateBookingStatus(b.id, 'Dikonfirmasi')} disabled={updatingId === b.id}
+                          title="Konfirmasi" style={{ width: '26px', height: '26px', borderRadius: '7px', border: 'none', background: '#16A34A', color: '#fff', cursor: updatingId === b.id ? 'wait' : 'pointer', fontSize: '13px', fontWeight: 700 }}>✓</button>
+                        <button onClick={() => updateBookingStatus(b.id, 'Ditolak')} disabled={updatingId === b.id}
+                          title="Tolak" style={{ width: '26px', height: '26px', borderRadius: '7px', border: `1px solid ${border}`, background: subtle, color: '#DC2626', cursor: updatingId === b.id ? 'wait' : 'pointer', fontSize: '13px', fontWeight: 700 }}>✕</button>
+                      </div>
+                    )}
+                    {b.status === 'Dikonfirmasi' && (
+                      <button onClick={() => updateBookingStatus(b.id, 'Selesai')} disabled={updatingId === b.id}
+                        style={{ padding: '4px 10px', borderRadius: '7px', border: 'none', background: '#2563EB', color: '#fff', cursor: updatingId === b.id ? 'wait' : 'pointer', fontSize: '11px', fontWeight: 700 }}>Tandai Selesai</button>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>

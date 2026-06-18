@@ -4,14 +4,15 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { supabase } from '../../lib/supabaseClient';
 
-function FooterLink({ href, onClick, children }) {
+function FooterLink({ href, onClick, disabled, children }) {
   const [hover, setHover] = useState(false);
   const style = {
-    color: hover ? '#FFFFFF' : '#94A3B8',
-    fontSize: '13px', textDecoration: 'none', cursor: 'pointer',
+    color: disabled ? '#475569' : (hover ? '#FFFFFF' : '#94A3B8'),
+    fontSize: '13px', textDecoration: 'none', cursor: disabled ? 'default' : 'pointer',
     display: 'block', padding: '5px 0', transition: 'color 0.15s', lineHeight: 1.4,
   };
-  const handlers = { onMouseEnter: () => setHover(true), onMouseLeave: () => setHover(false) };
+  const handlers = disabled ? {} : { onMouseEnter: () => setHover(true), onMouseLeave: () => setHover(false) };
+  if (disabled) return <span style={style}>{children}</span>;
   if (onClick) return <span style={style} onClick={onClick} {...handlers}>{children}</span>;
   return <Link href={href || '#'} style={style} {...handlers}>{children}</Link>;
 }
@@ -59,7 +60,7 @@ export default function Footer() {
           {/* Fitur CareerForge */}
           <div style={colStyle}>
             <div style={headerStyle}>Fitur CareerForge</div>
-            <FooterLink href="/lowongan">Lowongan Kerja</FooterLink>
+            <FooterLink href="/trayek">Lowongan Kerja</FooterLink>
             <FooterLink href="/lamaran">Lamaran Saya</FooterLink>
             <FooterLink href="/mentoring">Mentoring</FooterLink>
             <FooterLink href="/interview">Interview AI</FooterLink>
@@ -70,20 +71,20 @@ export default function Footer() {
           {/* Perusahaan */}
           <div style={colStyle}>
             <div style={headerStyle}>Perusahaan</div>
-            <FooterLink href="#">Tentang Kami</FooterLink>
-            <FooterLink href="#">Karier</FooterLink>
-            <FooterLink href="#">Hubungi Kami</FooterLink>
-            <FooterLink href="#">Blog</FooterLink>
-            <FooterLink href="#">Bantuan & Dukungan</FooterLink>
+            <FooterLink href="/tentang">Tentang Kami</FooterLink>
+            <FooterLink href="/karier">Karier</FooterLink>
+            <FooterLink href="/hubungi">Hubungi Kami</FooterLink>
+            <FooterLink href="/blog">Blog</FooterLink>
+            <FooterLink href="/bantuan">Bantuan & Dukungan</FooterLink>
           </div>
 
           {/* Legal & Aksesibilitas */}
           <div style={colStyle}>
             <div style={headerStyle}>Legal & Aksesibilitas</div>
-            <FooterLink href="#">Kebijakan Privasi</FooterLink>
-            <FooterLink href="#">Syarat & Ketentuan</FooterLink>
-            <FooterLink href="#">Pernyataan Aksesibilitas</FooterLink>
-            <FooterLink href="#">Peta Situs</FooterLink>
+            <FooterLink href="/privasi">Kebijakan Privasi</FooterLink>
+            <FooterLink href="/syarat">Syarat & Ketentuan</FooterLink>
+            <FooterLink href="/aksesibilitas">Pernyataan Aksesibilitas</FooterLink>
+            <FooterLink href="/peta-situs">Peta Situs</FooterLink>
           </div>
         </div>
       </div>

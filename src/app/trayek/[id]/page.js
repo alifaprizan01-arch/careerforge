@@ -20,19 +20,24 @@ export default function DetailLowonganPage() {
   const [coverLetter, setCoverLetter] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [msg, setMsg] = useState('');
+  const [userDocs, setUserDocs] = useState([]);
+  const [attachments, setAttachments] = useState({});
+  const [uploadingLabel, setUploadingLabel] = useState(null);
 
   useEffect(() => { if (loaded && !user) router.push('/auth'); }, [loaded, user]);
   useEffect(() => { if (user && id) fetchData(); }, [user, id]);
 
   const fetchData = async () => {
     setLoading(true);
-    const [{ data: j }, { data: app }] = await Promise.all([
+    const [{ data: j }, { data: app }, { data: docs }] = await Promise.all([
       supabase.from('trayek').select('*').eq('id', id).single(),
       supabase.from('applications').select('*').eq('user_id', user.id).eq('trayek_id', id).maybeSingle(),
+      supabase.from('user_documents').select('*').eq('user_id', user.id).order('uploaded_at', { ascending: false }),
     ]);
     if (!j) { setNotFound(true); setLoading(false); return; }
     setJob(j);
     setApplication(app || null);
+    setUserDocs(docs || []);
     setLoading(false);
   };
 
@@ -44,13 +49,42 @@ export default function DetailLowonganPage() {
     return `s/d Rp ${fmt(max)}`;
   };
 
+  const requiredDocs = Array.isArray(job?.required_documents) ? job.required_documents.filter(Boolean) : [];
+  const setAttachment = (label, val) => setAttachments(prev => ({ ...prev, [label]: val }));
+
+  const handleUploadFor = async (label, file) => {
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) { setMsg('✕ Ukuran file maksimal 5MB'); return; }
+    setUploadingLabel(label); setMsg('');
+    const ext = file.name.split('.').pop();
+    const path = `lamaran-${user.id}-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage.from('documents').upload(path, file, { upsert: true });
+    if (upErr) { setMsg('✕ Gagal upload: ' + upErr.message); setUploadingLabel(null); return; }
+    const { data } = supabase.storage.from('documents').getPublicUrl(path);
+    setAttachment(label, { file_name: file.name, file_url: data.publicUrl, file_type: file.type || ext });
+    setUploadingLabel(null);
+  };
+
   const handleApply = async () => {
+    const missing = requiredDocs.filter(d => !attachments[d]);
+    if (missing.length > 0) { setMsg('✕ Lengkapi dulu dokumen wajib: ' + missing.join(', ')); return; }
+
     setSubmitting(true); setMsg('');
     const { data, error } = await supabase.from('applications')
       .insert([{ user_id: user.id, trayek_id: job.id, status: 'Menunggu', cover_letter: coverLetter, applied_at: new Date().toISOString() }])
       .select('*').single();
+    if (error) { setSubmitting(false); setMsg('✕ Gagal mengirim lamaran: ' + error.message); return; }
+
+    if (requiredDocs.length > 0) {
+      const rows = requiredDocs.map(label => {
+        const att = attachments[label];
+        return { application_id: data.id, user_id: user.id, file_name: `${label} — ${att.file_name}`, file_url: att.file_url, file_type: att.file_type || null };
+      });
+      const { error: docErr } = await supabase.from('application_documents').insert(rows);
+      if (docErr) { setSubmitting(false); setApplication(data); setShowForm(false); setMsg('⚠ Lamaran terkirim, tetapi dokumen gagal disimpan: ' + docErr.message); return; }
+    }
+
     setSubmitting(false);
-    if (error) { setMsg('✕ Gagal mengirim lamaran: ' + error.message); return; }
     setApplication(data);
     setShowForm(false);
     setMsg('✓ Lamaran berhasil dikirim!');
@@ -162,6 +196,47 @@ export default function DetailLowonganPage() {
                 </motion.button>
               ) : (
                 <motion.div key="form" initial={{ opacity: 0, height: 0 }} animate={{ opacity: 1, height: 'auto' }}>
+                  {requiredDocs.length > 0 && (
+                    <div style={{ marginBottom: '14px' }}>
+                      <label style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)', display: 'block', marginBottom: '8px' }}>Dokumen Wajib</label>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {requiredDocs.map((label) => {
+                          const att = attachments[label];
+                          return (
+                            <div key={label} style={{ border: `1px solid ${att ? 'var(--border-brand)' : 'var(--border-default)'}`, borderRadius: '10px', padding: '10px 12px', background: att ? 'var(--surface-brand)' : 'var(--surface-secondary)' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                                <span style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-primary)' }}>{att ? '✓ ' : '• '}{label}</span>
+                                {att && <button onClick={() => setAttachment(label, undefined)} style={{ background: 'none', border: 'none', color: 'var(--text-error)', cursor: 'pointer', fontSize: '12px', fontWeight: 600 }}>Ganti</button>}
+                              </div>
+                              {att ? (
+                                <div style={{ fontSize: '12px', color: 'var(--text-secondary)', wordBreak: 'break-all' }}>📎 {att.file_name}</div>
+                              ) : (
+                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+                                  <select onChange={e => {
+                                      const doc = userDocs.find(d => String(d.id) === e.target.value);
+                                      if (doc) setAttachment(label, { file_name: doc.name, file_url: doc.file_url, file_type: doc.file_type });
+                                    }}
+                                    defaultValue=""
+                                    style={{ flex: 1, minWidth: '140px', padding: '7px 10px', borderRadius: '7px', border: '1px solid var(--border-default)', background: 'var(--surface-primary)', color: 'var(--text-primary)', fontSize: '12px', fontFamily: 'var(--font-sans)' }}>
+                                    <option value="">Pilih dari dokumen saya…</option>
+                                    {userDocs.map(d => <option key={d.id} value={d.id}>{d.name} ({d.doc_category})</option>)}
+                                  </select>
+                                  <label style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '7px 12px', borderRadius: '7px', border: '1px solid var(--brand-600)', background: 'var(--surface-primary)', color: 'var(--text-brand)', fontSize: '12px', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+                                    {uploadingLabel === label ? '⏳…' : '⬆ Upload'}
+                                    <input type="file" accept="image/*,application/pdf" disabled={!!uploadingLabel}
+                                      onChange={e => handleUploadFor(label, e.target.files?.[0])} style={{ display: 'none' }} />
+                                  </label>
+                                </div>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                      {userDocs.length === 0 && (
+                        <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '6px' }}>Belum punya dokumen tersimpan? Upload langsung di tiap slot, atau kelola di halaman <span onClick={() => router.push('/dokumen')} style={{ color: 'var(--text-brand)', cursor: 'pointer', fontWeight: 600 }}>Dokumen</span>.</p>
+                      )}
+                    </div>
+                  )}
                   <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', display: 'block', marginBottom: '6px' }}>Cover Letter (opsional)</label>
                   <textarea value={coverLetter} onChange={e => setCoverLetter(e.target.value)} rows={5}
                     placeholder="Ceritakan singkat kenapa Anda cocok untuk posisi ini..."

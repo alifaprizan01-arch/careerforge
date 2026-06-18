@@ -112,7 +112,7 @@ export default function BookingPage({ params: paramsPromise }) {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: c.bg, fontFamily: 'Inter, sans-serif' }}>
       <Sidebar />
-      <main style={{ marginLeft: '220px', flex: 1, padding: '28px 32px', maxWidth: 'calc(100vw - 220px)' }}>
+      <main style={{ marginLeft: 'var(--sidebar-width, 240px)', flex: 1, padding: '28px 32px', maxWidth: 'calc(100vw - var(--sidebar-width, 240px))' }}>
 
         <div style={{ marginBottom: '20px' }}>
           <Link href="/mentoring" style={{ color: c.blue, textDecoration: 'none', fontSize: '13px' }}>← Kembali ke Mentoring</Link>

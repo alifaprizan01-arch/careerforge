@@ -222,7 +222,7 @@ export default function CVBuilderPage() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-base)', fontFamily: 'var(--font-sans)' }}>
       <Sidebar />
-      <main style={{ marginLeft: '240px', flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+      <main style={{ marginLeft: 'var(--sidebar-width, 240px)', flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
 
         {/* Header */}
         <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border-default)', background: 'var(--surface-primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, boxShadow: 'var(--shadow-xs)' }}>
