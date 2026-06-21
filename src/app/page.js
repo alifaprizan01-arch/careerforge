@@ -11,7 +11,9 @@ import { useTheme } from '../lib/themeContext';
 import Landing from './components/Landing';
 import Sidebar from './components/Sidebar';
 import { useSidebar } from '../lib/sidebarContext';
+import { useLang } from '../lib/langContext';
 import Footer from './components/Footer';
+import PromoBanner from './components/Promobanner';
 
 /* ---- Visual helper: warna + emoji per kategori (aman untuk dark mode) ---- */
 const PALETTES_LIGHT = [
@@ -67,8 +69,7 @@ export default function Home() {
 
   // State Sidebar & Promo
   const { isOpen: sidebarOpen, toggle: toggleSidebar } = useSidebar();
-  const [timeLeft, setTimeLeft] = useState('00:00:00');
-  const [banner, setBanner] = useState(null);
+  const { t } = useLang();
   
   // 2. STATE BARU UNTUK NOTIFIKASI
   const [unreadCount, setUnreadCount] = useState(0);
@@ -98,32 +99,6 @@ export default function Home() {
       
     return () => supabase.removeChannel(channel);
   }, [user]);
-
-  // Ambil konfigurasi banner promo dari database (diatur admin)
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase.from('promo_banner').select('*').eq('id', 1).single();
-      if (data) setBanner(data);
-    })();
-  }, []);
-
-  // Countdown asli
-  useEffect(() => {
-    const pad = (n) => String(n).padStart(2, '0');
-    const tick = () => {
-      const now = new Date();
-      const end = new Date(now);
-      end.setHours(23, 59, 59, 999);
-      let diff = Math.max(0, end - now);
-      const h = Math.floor(diff / 3600000); diff -= h * 3600000;
-      const m = Math.floor(diff / 60000); diff -= m * 60000;
-      const s = Math.floor(diff / 1000);
-      setTimeLeft(`${pad(h)}:${pad(m)}:${pad(s)}`);
-    };
-    tick();
-    const id = setInterval(tick, 1000);
-    return () => clearInterval(id);
-  }, []);
 
   const fetchAll = async () => {
     setLoading(true);
@@ -166,7 +141,7 @@ export default function Home() {
   };
 
   const initials = n => n?.split(' ').map(x => x[0]).join('').toUpperCase().slice(0, 2) || '?';
-  const adminHero = banner?.hero_image_url || null;
+  const adminHero = null; // gambar promo dipindah ke komponen PromoBanner
   const paletteAt = (i) => (isDark ? PALETTES_DARK : PALETTES_LIGHT)[i % 5];
   const visualFor = (name) => {
     let h = 0; for (const ch of (name || '')) h += ch.charCodeAt(0);
@@ -215,26 +190,25 @@ export default function Home() {
         {/* NAVBAR ATAS */}
         <header style={{ display: 'flex', alignItems: 'center', padding: '12px 24px', borderBottom: '1px solid var(--border-default)', gap: '20px', background: 'var(--surface-primary)', position: 'sticky', top: 0, zIndex: 99 }}>
 
-
           <div onClick={() => router.push('/')} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
             <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: 'var(--brand-600)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '13px' }}>CF</div>
             <span style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>CareerForge</span>
           </div>
 
           <button onClick={() => router.push('/pelatihan')} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: 500 }}>
-            Kategori ▾
+            {t('Kategori')} ▾
           </button>
 
           <div style={{ flex: 1, position: 'relative' }}>
             <input type="text" value={search} onChange={e => setSearch(e.target.value)}
-              placeholder="Cari kursus atau pelatihan apa saja..."
+              placeholder={t('Cari kursus atau pelatihan apa saja...')}
               style={{ width: '100%', padding: '11px 14px 11px 42px', borderRadius: '24px', border: '1.5px solid var(--border-default)', fontSize: '14px', background: 'var(--surface-secondary)', color: 'var(--text-primary)', outline: 'none', fontFamily: 'var(--font-sans)' }} />
             <span style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-tertiary)' }}>🔍</span>
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '20px', fontSize: '14px' }}>
             <Link href="/pelatihan" style={{ textDecoration: 'none', color: 'var(--text-secondary)', fontWeight: 500 }}>
-              📚 Pelatihanku ({userTrainings.length})
+              📚 {t('Pelatihanku')} ({userTrainings.length})
             </Link>
             <Link href="/interview" style={{ textDecoration: 'none', color: 'var(--text-brand)', fontWeight: 700 }}>
               🤖 Interview AI
@@ -256,18 +230,6 @@ export default function Home() {
                 )}
               </AnimatePresence>
             </Link>
-
-            <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}
-              onClick={() => router.push('/profil')}
-              style={{ width: '36px', height: '36px', borderRadius: '50%', cursor: 'pointer', overflow: 'hidden', border: '2px solid var(--brand-600)', flexShrink: 0 }}>
-              {user.avatar_url ? (
-                <img src={user.avatar_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} alt="Avatar" />
-              ) : (
-                <div style={{ width: '100%', height: '100%', background: 'var(--brand-600)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '12px' }}>
-                  {initials(user.full_name)}
-                </div>
-              )}
-            </motion.div>
           </div>
         </header>
 
@@ -277,34 +239,34 @@ export default function Home() {
 
           <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} style={{ position: 'relative', zIndex: 1, maxWidth: '520px', flex: '1 1 420px' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: hasHero ? 'rgba(255,255,255,0.88)' : 'var(--surface-brand)', borderRadius: '6px', padding: '5px 10px', marginBottom: '14px', boxShadow: hasHero ? '0 2px 6px rgba(0,0,0,0.06)' : 'none' }}>
-              <span style={{ fontSize: '12px', color: hasHero ? '#6D28D9' : 'var(--text-brand)', fontWeight: 700, letterSpacing: '0.02em' }}>Selamat datang, {user.full_name?.split(' ')[0]} 👋</span>
+              <span style={{ fontSize: '12px', color: hasHero ? '#6D28D9' : 'var(--text-brand)', fontWeight: 700, letterSpacing: '0.02em' }}>{t('Selamat datang')}, {user.full_name?.split(' ')[0]} 👋</span>
             </div>
             <h1 style={{ fontSize: '38px', fontWeight: 800, lineHeight: 1.15, marginBottom: '16px', color: hasHero ? '#1E293B' : 'var(--text-primary)', letterSpacing: '-0.02em' }}>
-              Temukan ribuan kursus, mulai belajar hari ini
+              {t('Temukan ribuan kursus, mulai belajar hari ini')}
             </h1>
             <p style={{ fontSize: '16px', color: hasHero ? '#334155' : 'var(--text-secondary)', marginBottom: '24px', lineHeight: 1.6 }}>
-              Materi terbaik langsung dari instruktur ahli untuk mendukung perjalanan karier Anda.
+              {t('Materi terbaik langsung dari instruktur ahli untuk mendukung perjalanan karier Anda.')}
             </p>
             <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
               <button onClick={() => router.push('/pelatihan')} style={{ padding: '13px 24px', background: 'var(--brand-600)', color: '#fff', border: 'none', borderRadius: '10px', fontWeight: 700, fontSize: '15px', cursor: 'pointer', fontFamily: 'var(--font-sans)', boxShadow: 'var(--shadow-brand)' }}>
-                Jelajahi Kursus →
+                {t('Jelajahi Kursus')} →
               </button>
               <button onClick={() => router.push('/lowongan')} style={{ padding: '13px 24px', background: hasHero ? 'rgba(255,255,255,0.95)' : 'var(--surface-primary)', color: hasHero ? '#1E293B' : 'var(--text-primary)', border: hasHero ? '1px solid rgba(0,0,0,0.08)' : '1px solid var(--border-default)', borderRadius: '10px', fontWeight: 600, fontSize: '15px', cursor: 'pointer', fontFamily: 'var(--font-sans)', boxShadow: hasHero ? '0 2px 8px rgba(0,0,0,0.08)' : 'none' }}>
-                Lihat Lowongan
+                {t('Lihat Lowongan')}
               </button>
             </div>
           </motion.div>
 
           <motion.div initial={{ opacity: 0, scale: 0.96 }} animate={{ opacity: 1, scale: 1 }} transition={{ delay: 0.1 }}
             style={{ position: 'relative', zIndex: 1, flex: '1 1 320px', maxWidth: '420px', background: 'var(--surface-primary)', border: '1px solid var(--border-default)', borderRadius: '18px', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
-            <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>Ringkasan Aktivitas Anda</div>
+            <div style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-secondary)', marginBottom: '16px', textTransform: 'uppercase', letterSpacing: '0.06em' }}>{t('Ringkasan Aktivitas Anda')}</div>
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               {heroStats.map((s, i) => (
                 <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                   <div style={{ width: '46px', height: '46px', borderRadius: '12px', background: 'var(--surface-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0 }}>{s.emoji}</div>
                   <div>
                     <div style={{ fontSize: '24px', fontWeight: 800, lineHeight: 1, color: s.color }}>{s.value}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '3px' }}>{s.label}</div>
+                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '3px' }}>{t(s.label)}</div>
                   </div>
                 </div>
               ))}
@@ -312,46 +274,8 @@ export default function Home() {
           </motion.div>
         </section>
 
-        {/* ===== BANNER PROMO ===== */}
-        {banner && banner.active && (
-          <div style={{ padding: '28px 24px 0', maxWidth: '1400px', width: '100%', margin: '0 auto' }}>
-            <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }}
-              style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '28px', background: banner.bg_color || 'linear-gradient(120deg, #F97316, #FB923C)', borderRadius: '20px', padding: '28px 34px', flexWrap: 'wrap', overflow: 'hidden' }}>
-
-              {isAdmin && (
-                <button onClick={() => router.push('/admin/banner')} title="Edit banner"
-                  style={{ position: 'absolute', top: '14px', right: '16px', background: 'rgba(255,255,255,0.25)', color: '#fff', border: 'none', padding: '6px 12px', borderRadius: '8px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
-                  ✎ Edit
-                </button>
-              )}
-
-              <div style={{ flex: '1 1 360px' }}>
-                <span style={{ display: 'inline-block', background: 'rgba(255,255,255,0.25)', color: '#fff', fontSize: '12px', fontWeight: 700, padding: '4px 12px', borderRadius: '6px', marginBottom: '12px', letterSpacing: '0.02em' }}>Promo Spesial</span>
-                <h2 style={{ fontSize: '24px', fontWeight: 800, color: '#fff', lineHeight: 1.2, marginBottom: '8px' }}>{banner.title}</h2>
-                {banner.subtitle && <p style={{ fontSize: '14px', color: 'rgba(255,255,255,0.92)', lineHeight: 1.6, marginBottom: '18px', maxWidth: '480px' }}>{banner.subtitle}</p>}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '16px', flexWrap: 'wrap' }}>
-                  {banner.button_text && (
-                    <button onClick={() => router.push(banner.button_link || '/pelatihan')} style={{ background: '#fff', color: '#C2410C', border: 'none', padding: '11px 24px', borderRadius: '10px', fontWeight: 700, fontSize: '14px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
-                      {banner.button_text}
-                    </button>
-                  )}
-                  {banner.show_countdown && (
-                    <span style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#fff', fontSize: '13px', fontWeight: 600 }}>
-                      Berakhir dalam
-                      <span style={{ fontFamily: 'monospace', background: 'rgba(0,0,0,0.22)', padding: '4px 10px', borderRadius: '6px', letterSpacing: '0.05em' }}>{timeLeft}</span>
-                    </span>
-                  )}
-                </div>
-              </div>
-
-              <div style={{ flex: '0 0 auto', width: '260px', height: '160px', borderRadius: '16px', background: banner.image_url ? '#fff' : 'rgba(255,255,255,0.18)', padding: banner.image_url ? '10px' : 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '64px', overflow: 'hidden', boxShadow: banner.image_url ? '0 10px 28px rgba(0,0,0,0.20)' : 'none' }}>
-                {banner.image_url
-                  ? <img src={banner.image_url} alt="Promo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '8px' }} />
-                  : '🚀'}
-              </div>
-            </motion.div>
-          </div>
-        )}
+        {/* ===== BANNER PROMO (CAROUSEL) ===== */}
+        <PromoBanner />
 
         {/* ===== CAROUSEL: Pelajari skill penting ===== */}
         {courseCats.length > 0 && (
@@ -414,14 +338,14 @@ export default function Home() {
             
             {/* Teks Kiri */}
             <div style={{ flex: '1 1 450px' }}>
-              <h2 style={{ fontSize: '32px', fontWeight: 800, marginBottom: '16px' }}>Coba Simulasi Interview Dengan AI</h2>
+              <h2 style={{ fontSize: '32px', fontWeight: 800, marginBottom: '16px' }}>{t('Coba Simulasi Interview Dengan AI')}</h2>
               <p style={{ fontSize: '16px', color: '#D1D5DB', marginBottom: '24px' }}>
-                Siapkan skill Anda untuk interview yang lebih profesional. Dapatkan akses ke berbagai bidang pekerjaan yang terasa nyata.
+                {t('Siapkan skill Anda untuk interview yang lebih profesional. Dapatkan akses ke berbagai bidang pekerjaan yang terasa nyata.')}
               </p>
               
               <button onClick={() => router.push('/interview')} 
                 style={{ padding: '12px 24px', background: '#FFF', color: '#111827', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>
-                Mulai Interview AI →
+                {t('Mulai Interview AI')} →
               </button>
             </div>
 
@@ -446,7 +370,7 @@ export default function Home() {
         <main ref={gridRef} style={{ padding: '40px 24px', display: 'grid', gridTemplateColumns: '1fr 3fr', gap: '40px', maxWidth: '1400px', width: '100%', margin: '0 auto' }}>
 
           <div>
-            <h2 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '18px', letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>Kategori Utama</h2>
+            <h2 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '18px', letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>{t('Kategori Utama')}</h2>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               {[{ name: 'semua', label: 'Semua', emoji: '✨' }, ...courseCats.map(c => ({ name: c, label: c, emoji: emojiFor(c) }))].map((cat) => {
                 const active = homeCat === cat.name;
@@ -457,8 +381,8 @@ export default function Home() {
                     onMouseEnter={e => { if (!active) { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = 'var(--shadow-md)'; } }}
                     onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'var(--shadow-xs)'; }}>
                     <div style={{ width: '42px', height: '42px', margin: '0 auto 8px', borderRadius: '50%', background: iconBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>{cat.emoji}</div>
-                    <div style={{ fontSize: '12px', fontWeight: 700, color: active ? 'var(--text-brand)' : 'var(--text-primary)' }}>{cat.label}</div>
-                    {cat.name !== 'semua' && <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '3px' }}>{countFor(cat.name)} kursus</div>}
+                    <div style={{ fontSize: '12px', fontWeight: 700, color: active ? 'var(--text-brand)' : 'var(--text-primary)' }}>{t(cat.label)}</div>
+                    {cat.name !== 'semua' && <div style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '3px' }}>{countFor(cat.name)} {t('kursus')}</div>}
                   </div>
                 );
               })}
@@ -468,10 +392,10 @@ export default function Home() {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '18px', flexWrap: 'wrap', gap: '8px' }}>
               <h2 style={{ fontSize: '18px', fontWeight: 800, letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>
-                {homeCat === 'semua' ? 'Kursus Utama & Rekomendasi Untuk Anda' : `Kursus ${homeCat}`}
+                {homeCat === 'semua' ? t('Kursus Utama & Rekomendasi Untuk Anda') : `${t('Kursus')} ${homeCat}`}
                 <span style={{ fontSize: '13px', fontWeight: 500, color: 'var(--text-tertiary)', marginLeft: '8px' }}>({filteredTrainings.length})</span>
               </h2>
-              <Link href="/pelatihan" style={{ fontSize: '13px', color: 'var(--text-brand)', fontWeight: 600, textDecoration: 'none' }}>Lihat semua →</Link>
+              <Link href="/pelatihan" style={{ fontSize: '13px', color: 'var(--text-brand)', fontWeight: 600, textDecoration: 'none' }}>{t('Lihat semua')} →</Link>
             </div>
 
             {loading ? (
@@ -481,11 +405,11 @@ export default function Home() {
             ) : filteredTrainings.length === 0 ? (
               <div style={{ background: 'var(--surface-primary)', border: '1px solid var(--border-default)', borderRadius: '14px', padding: '48px', textAlign: 'center' }}>
                 <div style={{ fontSize: '36px', marginBottom: '10px', opacity: 0.4 }}>🔍</div>
-                <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>Tidak ada kursus yang cocok</h3>
-                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '14px' }}>Coba kategori lain atau ubah kata kunci pencarian.</p>
+                <h3 style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)' }}>{t('Tidak ada kursus yang cocok')}</h3>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '14px' }}>{t('Coba kategori lain atau ubah kata kunci pencarian.')}</p>
                 <button onClick={() => { setHomeCat('semua'); setSearch(''); }}
                   style={{ padding: '8px 18px', borderRadius: '8px', border: 'none', background: 'var(--brand-600)', color: '#fff', fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
-                  Tampilkan semua
+                  {t('Tampilkan semua')}
                 </button>
               </div>
             ) : (
@@ -504,7 +428,7 @@ export default function Home() {
                       <div style={{ position: 'relative', height: '120px', background: v.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px' }}>
                         {v.emoji}
                         <button onClick={(e) => { e.stopPropagation(); toggleSaved(course.id); }}
-                          aria-label={isSaved ? 'Hapus dari simpanan' : 'Simpan kursus'}
+                          aria-label={isSaved ? t('Hapus dari simpanan') : t('Simpan kursus')}
                           style={{ position: 'absolute', top: '10px', right: '10px', width: '30px', height: '30px', borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.9)', color: isSaved ? '#EF4444' : 'var(--text-tertiary)', cursor: 'pointer', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-xs)' }}>
                           {isSaved ? '♥' : '♡'}
                         </button>
@@ -514,14 +438,14 @@ export default function Home() {
                         <div>
                           {course.training_categories?.name && <span className="badge badge-blue" style={{ marginBottom: '6px', display: 'inline-flex' }}>{course.training_categories.name}</span>}
                           <h3 style={{ fontSize: '14px', fontWeight: 800, margin: '4px 0', lineHeight: 1.3, color: 'var(--text-primary)' }}>{course.title}</h3>
-                          <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', margin: '0 0 6px' }}>{course.instructor || 'Instruktur Ahli'}</p>
+                          <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', margin: '0 0 6px' }}>{course.instructor || t('Instruktur Ahli')}</p>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', color: 'var(--text-warning)', fontWeight: 700 }}>
                             <span>4.8</span><span>⭐</span><span style={{ color: 'var(--text-tertiary)', fontWeight: 400 }}>(12)</span>
                           </div>
                         </div>
                         <div style={{ marginTop: '12px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                           <span style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-primary)' }}>Rp 149.000</span>
-                          <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-brand)' }}>Lihat →</span>
+                          <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-brand)' }}>{t('Lihat')} →</span>
                         </div>
                       </div>
                     </motion.div>

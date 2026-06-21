@@ -22,6 +22,8 @@ export default function CompanyLowonganPage() {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [counts, setCounts] = useState({});
+  const [search, setSearch] = useState('');
 
   useEffect(() => { if (loaded && (!user || user.role !== 'company')) router.push('/'); }, [loaded, user]);
   useEffect(() => { if (user?.role === 'company') fetchTrayek(); }, [user]);
@@ -35,7 +37,15 @@ export default function CompanyLowonganPage() {
         .eq('company_user_id', user.id)
         .order('id', { ascending: false });
       if (error) console.error('Fetch error:', error);
-      setTrayek((data || []).filter(item => item != null));
+      const jobs = (data || []).filter(item => item != null);
+      setTrayek(jobs);
+      const jobIds = jobs.map(j => j.id);
+      if (jobIds.length) {
+        const { data: apps } = await supabase.from('applications').select('trayek_id').in('trayek_id', jobIds);
+        const cmap = {};
+        (apps || []).forEach(a => { cmap[a.trayek_id] = (cmap[a.trayek_id] || 0) + 1; });
+        setCounts(cmap);
+      } else { setCounts({}); }
     } catch (e) {
       console.error(e);
       setTrayek([]);
@@ -84,8 +94,8 @@ export default function CompanyLowonganPage() {
     bg: isDark ? '#0F172A' : '#F8FAFC', card: isDark ? '#1E293B' : '#fff',
     border: isDark ? '#334155' : '#E2E8F0', text: isDark ? '#F1F5F9' : '#0F172A',
     muted: isDark ? '#94A3B8' : '#64748B', input: isDark ? '#0F172A' : '#F8FAFC',
-    inputText: isDark ? '#F1F5F9' : '#0F172A', blue: isDark ? '#3B82F6' : '#2563EB',
-    blueLight: isDark ? '#1E3A5F' : '#EFF6FF',
+    inputText: isDark ? '#F1F5F9' : '#0F172A', blue: isDark ? '#FB923C' : '#EA580C',
+    blueLight: isDark ? '#7C2D12' : '#FFF7ED',
   };
 
   const inp = { width: '100%', padding: '10px 14px', borderRadius: '8px', border: `1px solid ${c.border}`, fontSize: '14px', outline: 'none', background: c.input, color: c.inputText, fontFamily: 'Inter, sans-serif', boxSizing: 'border-box' };
@@ -94,14 +104,14 @@ export default function CompanyLowonganPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: c.bg, fontFamily: 'Inter, sans-serif' }}>
-      <div style={{ background: isDark ? '#1E293B' : '#1E3A5F', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ background: 'linear-gradient(135deg,#9A3412 0%,#EA580C 100%)', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 10px rgba(234,88,12,0.25)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <Link href="/company" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '13px' }}>← Dashboard</Link>
           <span style={{ color: 'rgba(255,255,255,0.3)' }}>/</span>
           <span style={{ color: '#fff', fontWeight: 600, fontSize: '14px' }}>Lowongan Saya</span>
         </div>
         <motion.button whileTap={{ scale: 0.97 }} onClick={() => { setShowForm(true); setEditItem(null); setForm(emptyForm); }}
-          style={{ padding: '9px 20px', borderRadius: '8px', border: 'none', background: '#2563EB', color: '#fff', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
+          style={{ padding: '9px 20px', borderRadius: '8px', border: 'none', background: '#EA580C', color: '#fff', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
           + Buat Lowongan
         </motion.button>
       </div>
@@ -158,7 +168,7 @@ export default function CompanyLowonganPage() {
                   </div>
                   <div style={{ padding: '16px 24px', borderTop: `1px solid ${c.border}`, display: 'flex', gap: '10px', position: 'sticky', bottom: 0, background: c.card }}>
                     <button onClick={() => { setShowForm(false); setEditItem(null); }} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: `1px solid ${c.border}`, background: 'transparent', color: c.muted, fontSize: '14px', cursor: 'pointer' }}>Batal</button>
-                    <motion.button whileTap={{ scale: 0.97 }} onClick={handleSave} disabled={saving} style={{ flex: 2, padding: '10px', borderRadius: '8px', border: 'none', background: saving ? '#93C5FD' : c.blue, color: '#fff', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}>
+                    <motion.button whileTap={{ scale: 0.97 }} onClick={handleSave} disabled={saving} style={{ flex: 2, padding: '10px', borderRadius: '8px', border: 'none', background: saving ? '#FDBA74' : c.blue, color: '#fff', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}>
                       {saving ? 'Menyimpan...' : editItem ? '💾 Perbarui' : '+ Buat Lowongan'}
                     </motion.button>
                   </div>
@@ -185,6 +195,15 @@ export default function CompanyLowonganPage() {
             )}
           </AnimatePresence>
 
+          {!loading && trayek.length > 0 && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: c.card, border: `1px solid ${c.border}`, borderRadius: '10px', padding: '10px 14px', marginBottom: '14px' }}>
+              <span style={{ color: c.muted }}>🔍</span>
+              <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari lowongan berdasarkan posisi atau perusahaan..."
+                style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: '14px', color: c.text, fontFamily: 'inherit' }} />
+              {search && <button onClick={() => setSearch('')} style={{ border: 'none', background: 'transparent', color: c.muted, cursor: 'pointer', fontSize: '13px' }}>✕</button>}
+            </div>
+          )}
+
           {loading ? <p style={{ color: c.muted }}>Memuat...</p> :
           trayek.length === 0 ? (
             <div style={{ background: c.card, borderRadius: '12px', border: `1px solid ${c.border}`, padding: '80px', textAlign: 'center' }}>
@@ -194,9 +213,11 @@ export default function CompanyLowonganPage() {
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-              {trayek.filter(item => item != null).map((item, i) => (
+              {trayek.filter(item => item != null && (!search || (item.tujuan||'').toLowerCase().includes(search.toLowerCase()) || (item.company||'').toLowerCase().includes(search.toLowerCase()))).map((item, i) => (
                 <motion.div key={item.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                  style={{ background: c.card, borderRadius: '12px', border: `1px solid ${c.border}`, padding: '18px 20px' }}>
+                  whileHover={{ y: -2 }}
+                  style={{ background: c.card, borderRadius: '12px', border: `1px solid ${c.border}`, padding: '18px 20px', boxShadow: '0 1px 3px rgba(0,0,0,0.05)', transition: 'box-shadow 0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.10)'} onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.05)'}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px' }}>
                     <div style={{ width: '48px', height: '48px', borderRadius: '10px', background: c.blueLight, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '14px', color: c.blue, flexShrink: 0 }}>
                       {item.tujuan?.slice(0,2).toUpperCase()}
@@ -208,6 +229,10 @@ export default function CompanyLowonganPage() {
                         <span style={{ fontSize: '11px', padding: '2px 8px', borderRadius: '20px', background: c.blueLight, color: c.blue, fontWeight: 500 }}>{item.jenis || 'Full Time'}</span>
                         {item.salary_min && <span style={{ fontSize: '12px', color: c.muted }}>💰 Rp {(item.salary_min/1000000).toFixed(0)}jt{item.salary_max ? `-${(item.salary_max/1000000).toFixed(0)}jt` : '+'}</span>}
                         {item.deadline && <span style={{ fontSize: '12px', color: c.muted }}>⏰ {new Date(item.deadline).toLocaleDateString('id-ID')}</span>}
+                        <span onClick={() => router.push('/company/lamaran')} title="Lihat pelamar"
+                          style={{ fontSize: '12px', padding: '2px 10px', borderRadius: '20px', background: c.blueLight, color: c.blue, fontWeight: 600, cursor: 'pointer' }}>
+                          👥 {counts[item.id] || 0} pelamar
+                        </span>
                       </div>
                       {Array.isArray(item.required_documents) && item.required_documents.length > 0 && (
                         <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>

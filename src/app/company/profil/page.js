@@ -94,19 +94,22 @@ export default function CompanyProfilPage() {
     bg: isDark ? '#0F172A' : '#F8FAFC', card: isDark ? '#1E293B' : '#fff',
     border: isDark ? '#334155' : '#E2E8F0', text: isDark ? '#F1F5F9' : '#0F172A',
     muted: isDark ? '#94A3B8' : '#64748B', input: isDark ? '#0F172A' : '#F8FAFC',
-    inputText: isDark ? '#F1F5F9' : '#0F172A', blue: isDark ? '#3B82F6' : '#2563EB',
-    blueLight: isDark ? '#1E3A5F' : '#EFF6FF', green: isDark ? '#4ADE80' : '#16A34A',
+    inputText: isDark ? '#F1F5F9' : '#0F172A', blue: isDark ? '#FB923C' : '#EA580C',
+    blueLight: isDark ? '#7C2D12' : '#FFF7ED', green: isDark ? '#4ADE80' : '#16A34A',
     greenLight: isDark ? '#14532D' : '#F0FDF4',
   };
 
   const inp = { width: '100%', padding: '11px 14px', borderRadius: '8px', border: `1px solid ${c.border}`, fontSize: '14px', outline: 'none', background: c.input, color: c.inputText, fontFamily: 'Inter, sans-serif', boxSizing: 'border-box' };
+
+  const profileFields = [form.company_name, form.full_name, form.location, form.phone, form.bio, avatarUrl];
+  const completeness = Math.round((profileFields.filter(v => v && String(v).trim()).length / profileFields.length) * 100);
 
   if (!loaded || !user || user.role !== 'company') return null;
 
   return (
     <div style={{ minHeight: '100vh', background: c.bg, fontFamily: 'Inter, sans-serif' }}>
       {/* Header */}
-      <div style={{ background: isDark ? '#1E293B' : '#1E3A5F', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ background: 'linear-gradient(135deg,#9A3412 0%,#EA580C 100%)', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 10px rgba(234,88,12,0.25)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <Link href="/company" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '13px' }}>← Dashboard Perusahaan</Link>
           <span style={{ color: 'rgba(255,255,255,0.3)' }}>/</span>
@@ -133,7 +136,7 @@ export default function CompanyProfilPage() {
                 {avatarUrl ? (
                   <img src={avatarUrl} style={{ width: '96px', height: '96px', borderRadius: '16px', objectFit: 'cover', border: `3px solid ${c.blue}44` }} />
                 ) : (
-                  <div style={{ width: '96px', height: '96px', borderRadius: '16px', background: 'linear-gradient(135deg,#7C3AED,#6D28D9)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '32px' }}>
+                  <div style={{ width: '96px', height: '96px', borderRadius: '16px', background: 'linear-gradient(135deg,#EA580C,#C2410C)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '32px' }}>
                     {form.company_name?.slice(0,1) || '🏢'}
                   </div>
                 )}
@@ -156,8 +159,18 @@ export default function CompanyProfilPage() {
                 </div>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'flex-end' }}>
-                <span style={{ background: isDark ? '#2E1065' : '#F5F3FF', color: isDark ? '#C084FC' : '#7C3AED', fontSize: '11px', padding: '4px 10px', borderRadius: '20px', fontWeight: 600 }}>🏢 PERUSAHAAN</span>
+                <span style={{ background: isDark ? '#7C2D12' : '#FFF7ED', color: isDark ? '#FB923C' : '#EA580C', fontSize: '11px', padding: '4px 10px', borderRadius: '20px', fontWeight: 600 }}>🏢 PERUSAHAAN</span>
               </div>
+            </div>
+            <div style={{ marginTop: '20px', paddingTop: '18px', borderTop: `1px solid ${c.border}` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 600, color: c.text }}>Kelengkapan Profil</span>
+                <span style={{ fontSize: '12px', fontWeight: 800, color: completeness === 100 ? c.green : c.blue }}>{completeness}%</span>
+              </div>
+              <div style={{ height: '8px', borderRadius: '4px', background: isDark ? '#334155' : '#F1F5F9', overflow: 'hidden' }}>
+                <motion.div animate={{ width: `${completeness}%` }} transition={{ duration: 0.4 }} style={{ height: '100%', background: completeness === 100 ? c.green : c.blue, borderRadius: '4px' }} />
+              </div>
+              {completeness < 100 && <p style={{ fontSize: '11px', color: c.muted, marginTop: '6px' }}>Lengkapi logo, nama perusahaan, lokasi, telepon, dan deskripsi agar profil lebih menarik bagi pelamar.</p>}
             </div>
           </div>
 
@@ -206,7 +219,7 @@ export default function CompanyProfilPage() {
                     <div style={{ fontSize: '11px', color: c.muted, textAlign: 'right', marginTop: '4px' }}>{form.bio.length} karakter</div>
                   </div>
                   <motion.button whileTap={{ scale: 0.97 }} onClick={handleSave} disabled={saving}
-                    style={{ padding: '12px 28px', borderRadius: '8px', border: 'none', background: saving ? '#93C5FD' : c.blue, color: '#fff', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}>
+                    style={{ padding: '12px 28px', borderRadius: '8px', border: 'none', background: saving ? '#FDBA74' : c.blue, color: '#fff', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}>
                     {saving ? 'Menyimpan...' : '💾 Simpan Perubahan'}
                   </motion.button>
                 </motion.div>
@@ -228,7 +241,7 @@ export default function CompanyProfilPage() {
                     </div>
                   </div>
                   <motion.button whileTap={{ scale: 0.97 }} onClick={handleSave} disabled={saving}
-                    style={{ padding: '12px 28px', borderRadius: '8px', border: 'none', background: saving ? '#93C5FD' : c.blue, color: '#fff', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}>
+                    style={{ padding: '12px 28px', borderRadius: '8px', border: 'none', background: saving ? '#FDBA74' : c.blue, color: '#fff', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}>
                     {saving ? 'Menyimpan...' : '💾 Simpan Perubahan'}
                   </motion.button>
                 </motion.div>
@@ -252,7 +265,7 @@ export default function CompanyProfilPage() {
                       </div>
                     ))}
                     <motion.button whileTap={{ scale: 0.97 }} onClick={handleChangePassword} disabled={changingPassword}
-                      style={{ padding: '12px', borderRadius: '8px', border: 'none', background: changingPassword ? '#93C5FD' : c.blue, color: '#fff', fontWeight: 600, fontSize: '14px', cursor: 'pointer', marginTop: '4px' }}>
+                      style={{ padding: '12px', borderRadius: '8px', border: 'none', background: changingPassword ? '#FDBA74' : c.blue, color: '#fff', fontWeight: 600, fontSize: '14px', cursor: 'pointer', marginTop: '4px' }}>
                       {changingPassword ? 'Mengubah...' : '🔒 Ubah Password'}
                     </motion.button>
                   </div>

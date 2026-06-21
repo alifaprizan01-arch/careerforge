@@ -1,516 +1,391 @@
 'use client';
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../../lib/supabaseClient';
 import { useUser } from '../../../lib/userContext';
 import { useTheme } from '../../../lib/themeContext';
+import PageTransition from '../../components/PageTransition';
 
-export default function PelatihanDetailPage({ params }) {
+const emptyTraining = { title: '', category_id: '', description: '', thumbnail_url: '' };
+const emptyModule = { title: '', content_url: '', duration_mins: '' };
+
+export default function AdminPelatihanPage() {
   const router = useRouter();
   const { user, loaded } = useUser();
   const { isDark } = useTheme();
-  const { id } = use(params);
-  const trainingId = parseInt(id);
-
-  const [training, setTraining] = useState(null);
-  const [modules, setModules] = useState([]);
-  const [userTraining, setUserTraining] = useState(null);
-  const [moduleProgress, setModuleProgress] = useState({});
-  const [activeModule, setActiveModule] = useState(null);
-  const [activeTab, setActiveTab] = useState('video');
-  const [quizzes, setQuizzes] = useState([]);
-  const [quizAnswers, setQuizAnswers] = useState({});
-  const [quizSubmitted, setQuizSubmitted] = useState(false);
-  const [quizResult, setQuizResult] = useState(null);
-  const [quizAttempts, setQuizAttempts] = useState([]);
-  const [submittingQuiz, setSubmittingQuiz] = useState(false);
+  const [trainings, setTrainings] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [catFilter, setCatFilter] = useState('all');
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [msg, setMsg] = useState('');
-  const [quizTimeLeft, setQuizTimeLeft] = useState(null);
 
-  useEffect(() => { if (loaded && !user) router.push('/auth'); }, [loaded, user]);
-  useEffect(() => { if (user && trainingId) fetchAll(); }, [user, trainingId]);
+  // Training form (add/edit)
+  const [showForm, setShowForm] = useState(false);
+  const [editItem, setEditItem] = useState(null);
+  const [form, setForm] = useState(emptyTraining);
+  const [saving, setSaving] = useState(false);
 
-  const fetchAll = async () => {
+  // Module manager
+  const [moduleFor, setModuleFor] = useState(null);
+  const [modules, setModules] = useState([]);
+  const [loadingModules, setLoadingModules] = useState(false);
+  const [moduleForm, setModuleForm] = useState(emptyModule);
+  const [moduleFile, setModuleFile] = useState(null);
+  const [savingModule, setSavingModule] = useState(false);
+
+  useEffect(() => { if (loaded && (!user || user.role !== 'admin')) router.push('/'); }, [loaded, user]);
+  useEffect(() => { if (user?.role === 'admin') { fetchTrainings(); fetchCategories(); } }, [user]);
+
+  const fetchTrainings = async () => {
     setLoading(true);
     try {
-      const [{ data: tr }, { data: mods }, { data: ut }, { data: mp }] = await Promise.all([
-        supabase.from('trainings').select('*, training_categories(name)').eq('id', trainingId).single(),
-        supabase.from('training_modules').select('*').eq('training_id', trainingId).order('order_index'),
-        supabase.from('user_trainings').select('*').eq('user_id', user.id).eq('training_id', trainingId).single(),
-        supabase.from('user_module_progress').select('*').eq('user_id', user.id).eq('training_id', trainingId),
-      ]);
-      setTraining(tr);
-      setModules(mods || []);
-      setUserTraining(ut);
-      const progressMap = {};
-      (mp || []).forEach(p => { progressMap[p.module_id] = p; });
-      setModuleProgress(progressMap);
-      if (mods?.length > 0) {
-        const firstIncomplete = mods.find(m => !progressMap[m.id]?.is_completed) || mods[0];
-        setActiveModule(firstIncomplete);
-        fetchModuleQuizzes(firstIncomplete.id);
-      }
-    } catch (e) { console.error(e); }
+      const { data, error } = await supabase
+        .from('trainings')
+        .select('*, training_categories(name), training_modules(count), user_trainings(count)')
+        .order('id', { ascending: false });
+      if (error) console.error('Fetch error:', error);
+      setTrainings((data || []).filter(t => t != null));
+    } catch (e) { console.error(e); setTrainings([]); }
     finally { setLoading(false); }
   };
 
-  const fetchModuleQuizzes = async (moduleId) => {
-    const [{ data: q }, { data: attempts }] = await Promise.all([
-      supabase.from('training_quizzes').select('*').eq('module_id', moduleId).order('order_index'),
-      supabase.from('user_quiz_attempts').select('*').eq('user_id', user.id).eq('module_id', moduleId).order('completed_at', { ascending: false }),
-    ]);
-    setQuizzes(q || []);
-    setQuizAttempts(attempts || []);
-    setQuizAnswers({});
-    setQuizSubmitted(false);
-    setQuizResult(null);
-    if (attempts?.length > 0 && attempts[0].passed) {
-      setQuizSubmitted(true);
-      setQuizResult(attempts[0]);
-    }
+  const fetchCategories = async () => {
+    const { data } = await supabase.from('training_categories').select('id, name').order('name');
+    setCategories(data || []);
   };
 
-  const selectModule = (mod) => {
-    setActiveModule(mod);
-    setActiveTab('video');
-    fetchModuleQuizzes(mod.id);
+  const flash = (m) => { setMsg(m); setTimeout(() => setMsg(''), 4000); };
+
+  // ---- Training add/edit ----
+  const openAdd = () => { setEditItem(null); setForm(emptyTraining); setShowForm(true); };
+  const openEdit = (t) => {
+    setEditItem(t);
+    setForm({ title: t.title || '', category_id: t.category_id || '', description: t.description || '', thumbnail_url: t.thumbnail_url || '' });
+    setShowForm(true);
   };
 
-  const markModuleComplete = async (moduleId) => {
+  const saveTraining = async () => {
+    if (!form.title.trim()) { flash('Gagal: Judul pelatihan wajib diisi.'); return; }
+    setSaving(true);
     try {
-      const { data } = await supabase.from('user_module_progress').upsert({
-        user_id: user.id, module_id: moduleId, training_id: trainingId,
-        is_completed: true, completed_at: new Date().toISOString(),
-      }, { onConflict: 'user_id,module_id' }).select().single();
-      setModuleProgress(prev => ({ ...prev, [moduleId]: data }));
-      // Update overall progress
-      const completedCount = Object.values({ ...moduleProgress, [moduleId]: { is_completed: true } }).filter(p => p.is_completed).length;
-      const totalModules = modules.length;
-      const progress = totalModules > 0 ? Math.round((completedCount / totalModules) * 100) : 0;
-      await supabase.from('user_trainings').update({ progress, ...(progress >= 100 ? { completed_at: new Date().toISOString() } : {}) }).eq('user_id', user.id).eq('training_id', trainingId);
-      setUserTraining(prev => ({ ...prev, progress }));
-      setMsg('✓ Modul selesai!');
-      setTimeout(() => setMsg(''), 3000);
-    } catch (e) { console.error(e); }
-  };
-
-  const submitQuiz = async (force = false) => {
-    const _max = activeModule?.quiz_max_attempts || 0;
-    if (_max > 0 && quizAttempts.length >= _max && !quizAttempts.some(a => a.passed)) {
-      setMsg('Kesempatan mengerjakan kuis sudah habis.');
-      setTimeout(() => setMsg(''), 3000);
-      return;
-    }
-    if (!force && Object.keys(quizAnswers).length < quizzes.length) {
-      setMsg('Jawab semua soal terlebih dahulu.');
-      setTimeout(() => setMsg(''), 3000);
-      return;
-    }
-    setSubmittingQuiz(true);
-    try {
-      let correct = 0;
-      quizzes.forEach(q => {
-        if (quizAnswers[q.id]?.toLowerCase() === q.correct_answer.toLowerCase()) correct++;
-      });
-      const score = Math.round((correct / quizzes.length) * 100);
-      const passed = score >= 70;
-      const attemptNumber = (quizAttempts.length || 0) + 1;
-      const { data: attempt } = await supabase.from('user_quiz_attempts').insert([{
-        user_id: user.id, module_id: activeModule.id, training_id: trainingId,
-        answers: quizAnswers, score, passed, attempt_number: attemptNumber,
-      }]).select().single();
-      setQuizResult(attempt);
-      setQuizSubmitted(true);
-      setQuizAttempts(prev => [attempt, ...prev]);
-      if (passed) {
-        await markModuleComplete(activeModule.id);
-        setMsg(`🎉 Lulus! Skor: ${score}/100`);
+      const payload = {
+        title: form.title.trim(),
+        category_id: form.category_id ? parseInt(form.category_id) : null,
+        description: form.description || null,
+        thumbnail_url: form.thumbnail_url || null,
+      };
+      if (editItem) {
+        const { error } = await supabase.from('trainings').update(payload).eq('id', editItem.id);
+        if (error) throw error;
+        flash('Pelatihan berhasil diperbarui!');
       } else {
-        setMsg(`Skor: ${score}/100. Minimal 70 untuk lulus. Coba lagi!`);
+        const { error } = await supabase.from('trainings').insert([payload]);
+        if (error) throw error;
+        flash('Pelatihan berhasil ditambahkan!');
       }
-      setTimeout(() => setMsg(''), 5000);
-    } catch (e) { console.error(e); }
-    finally { setSubmittingQuiz(false); }
+      setShowForm(false); setEditItem(null); setForm(emptyTraining);
+      fetchTrainings();
+    } catch (e) { flash('Gagal: ' + e.message); }
+    finally { setSaving(false); }
   };
 
-  const retryQuiz = () => {
-    setQuizAnswers({});
-    setQuizSubmitted(false);
-    setQuizResult(null);
+  const handleDelete = async (id) => {
+    try {
+      const { error } = await supabase.from('trainings').delete().eq('id', id);
+      if (error) throw error;
+      setTrainings(prev => prev.filter(t => t.id !== id));
+      flash('Pelatihan berhasil dihapus.');
+    } catch (e) { flash('Gagal menghapus (mungkin masih punya modul/peserta terkait): ' + e.message); }
+    setDeleteConfirm(null);
   };
 
-  // ===== Timer kuis =====
-  const formatTime = (secs) => {
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
-    return `${m}:${s.toString().padStart(2, '0')}`;
+  // ---- Module manager ----
+  const openModules = async (t) => {
+    setModuleFor(t); setModuleForm(emptyModule); setModuleFile(null); setModules([]); setLoadingModules(true);
+    const { data } = await supabase.from('training_modules').select('*').eq('training_id', t.id).order('order_index');
+    setModules(data || []);
+    setLoadingModules(false);
   };
 
-  // Mulai / reset timer saat masuk tab kuis
-  useEffect(() => {
-    const limitMin = activeModule?.quiz_time_limit || 0;
-    if (activeTab === 'kuis' && !quizSubmitted && quizzes.length > 0 && limitMin > 0) {
-      setQuizTimeLeft(limitMin * 60);
-    } else {
-      setQuizTimeLeft(null);
-    }
-  }, [activeTab, activeModule?.id, quizSubmitted, quizzes.length]);
-
-  // Hitung mundur tiap detik; auto-submit saat habis
-  useEffect(() => {
-    if (quizTimeLeft === null) return;
-    if (quizTimeLeft <= 0) { submitQuiz(true); setQuizTimeLeft(null); return; }
-    const t = setTimeout(() => setQuizTimeLeft(s => (s === null ? null : s - 1)), 1000);
-    return () => clearTimeout(t);
-  }, [quizTimeLeft]);
-
-  const getYouTubeEmbedUrl = (url) => {
-    if (!url) return null;
-    const match = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/)([a-zA-Z0-9_-]+)/);
-    return match ? `https://www.youtube.com/embed/${match[1]}` : url;
+  const addModule = async () => {
+    if (!moduleForm.title.trim()) { flash('Gagal: Judul modul wajib diisi.'); return; }
+    setSavingModule(true);
+    try {
+      let contentUrl = moduleForm.content_url || null;
+      if (moduleFile) {
+        const safe = moduleFile.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+        const path = `training-modules/${moduleFor.id}/${Date.now()}-${safe}`;
+        const { error: upErr } = await supabase.storage.from('training-materials').upload(path, moduleFile, { upsert: true });
+        if (upErr) throw upErr;
+        const { data: urlData } = supabase.storage.from('training-materials').getPublicUrl(path);
+        contentUrl = urlData.publicUrl;
+      }
+      const nextOrder = modules.length ? Math.max(...modules.map(m => m.order_index || 0)) + 1 : 1;
+      const payload = {
+        training_id: moduleFor.id,
+        title: moduleForm.title.trim(),
+        content_url: contentUrl,
+        duration_mins: moduleForm.duration_mins ? parseInt(moduleForm.duration_mins) : null,
+        order_index: nextOrder,
+      };
+      const { error } = await supabase.from('training_modules').insert([payload]);
+      if (error) throw error;
+      setModuleForm(emptyModule); setModuleFile(null);
+      const { data } = await supabase.from('training_modules').select('*').eq('training_id', moduleFor.id).order('order_index');
+      setModules(data || []);
+      fetchTrainings();
+    } catch (e) { flash('Gagal menambah modul: ' + e.message); }
+    finally { setSavingModule(false); }
   };
 
-  const completedModules = Object.values(moduleProgress).filter(p => p.is_completed).length;
-  const overallProgress = modules.length > 0 ? Math.round((completedModules / modules.length) * 100) : 0;
-  const maxAttempts = activeModule?.quiz_max_attempts || 0; // 0 = tak terbatas
-  const attemptsUsed = quizAttempts.length;
-  const hasPassedQuiz = quizAttempts.some(a => a.passed);
-  const attemptsLeft = maxAttempts > 0 ? Math.max(0, maxAttempts - attemptsUsed) : Infinity;
-  const attemptsExhausted = maxAttempts > 0 && attemptsUsed >= maxAttempts && !hasPassedQuiz;
+  const deleteModule = async (id) => {
+    try {
+      const { error } = await supabase.from('training_modules').delete().eq('id', id);
+      if (error) throw error;
+      setModules(prev => prev.filter(m => m.id !== id));
+      fetchTrainings();
+    } catch (e) { flash('Gagal menghapus modul: ' + e.message); }
+  };
 
   const c = {
     bg: isDark ? '#0F172A' : '#F8FAFC', card: isDark ? '#1E293B' : '#fff',
     border: isDark ? '#334155' : '#E2E8F0', text: isDark ? '#F1F5F9' : '#0F172A',
-    muted: isDark ? '#94A3B8' : '#64748B', subtle: isDark ? '#334155' : '#F1F5F9',
-    brand: isDark ? '#3B82F6' : '#2563EB', brandBg: isDark ? 'rgba(37,99,235,0.15)' : '#EFF6FF',
-    green: isDark ? '#4ADE80' : '#16A34A', greenBg: isDark ? 'rgba(22,163,74,0.15)' : '#F0FDF4',
+    muted: isDark ? '#94A3B8' : '#64748B', input: isDark ? '#0F172A' : '#F8FAFC', inputText: isDark ? '#F1F5F9' : '#0F172A',
+    slate: isDark ? '#94A3B8' : '#475569', slateBg: isDark ? 'rgba(148,163,184,0.15)' : '#F1F5F9',
   };
+  const inp = { width: '100%', padding: '10px 14px', borderRadius: '8px', border: `1px solid ${c.border}`, fontSize: '14px', outline: 'none', background: c.input, color: c.inputText, fontFamily: 'inherit', boxSizing: 'border-box' };
 
-  if (!loaded || !user) return null;
+  const modCount = t => t.training_modules?.[0]?.count ?? 0;
+  const enrolledCount = t => t.user_trainings?.[0]?.count ?? 0;
 
-  if (loading) return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: c.bg, alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-sans)' }}>
-      <div style={{ textAlign: 'center' }}>
-        <div style={{ width: '40px', height: '40px', border: `3px solid ${c.border}`, borderTopColor: c.brand, borderRadius: '50%', animation: 'spin 0.7s linear infinite', margin: '0 auto 16px' }} />
-        <p style={{ color: c.muted, fontSize: '14px' }}>Memuat pelatihan...</p>
-      </div>
-    </div>
+  const usedCategories = ['all', ...Array.from(new Set(trainings.map(t => t.training_categories?.name).filter(Boolean)))];
+  const filtered = trainings.filter(t =>
+    (!search || (t.title || '').toLowerCase().includes(search.toLowerCase()))
+    && (catFilter === 'all' || t.training_categories?.name === catFilter)
   );
+  const totalModules = trainings.reduce((s, t) => s + modCount(t), 0);
+  const totalEnrolled = trainings.reduce((s, t) => s + enrolledCount(t), 0);
 
-  if (!training) return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: c.bg, alignItems: 'center', justifyContent: 'center', fontFamily: 'var(--font-sans)' }}>
-      <div style={{ textAlign: 'center' }}>
-        <p style={{ color: c.muted }}>Pelatihan tidak ditemukan.</p>
-        <Link href="/pelatihan" style={{ color: c.brand, textDecoration: 'none', fontWeight: 600 }}>← Kembali</Link>
-      </div>
-    </div>
-  );
+  if (!loaded || !user || user.role !== 'admin') return null;
 
   return (
-    <div style={{ minHeight: '100vh', background: c.bg, fontFamily: 'Plus Jakarta Sans, Inter, sans-serif' }}>
-      {/* Top bar */}
-      <div style={{ background: c.card, borderBottom: `1px solid ${c.border}`, padding: '0 24px', height: '56px', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', position: 'sticky', top: 0, zIndex: 100 }}>
-        <Link href="/pelatihan" style={{ color: c.muted, textDecoration: 'none', fontSize: '13px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px' }}>← Pelatihan</Link>
-        <span style={{ color: c.border }}>|</span>
-        <span style={{ fontSize: '14px', fontWeight: 700, color: c.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{training.title}</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: c.subtle, padding: '5px 12px', borderRadius: '20px', border: `1px solid ${c.border}` }}>
-            <div style={{ width: '80px', height: '6px', background: c.border, borderRadius: '3px', overflow: 'hidden' }}>
-              <div style={{ width: `${overallProgress}%`, height: '100%', background: overallProgress >= 100 ? c.green : c.brand, borderRadius: '3px', transition: 'width 0.5s' }} />
-            </div>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: overallProgress >= 100 ? c.green : c.brand }}>{overallProgress}%</span>
-          </div>
-          <span style={{ fontSize: '12px', color: c.muted }}>{completedModules}/{modules.length} modul</span>
+    <div style={{ minHeight: '100vh', background: c.bg, fontFamily: 'Inter, sans-serif' }}>
+      {/* Header */}
+      <div style={{ background: 'linear-gradient(135deg,#334155 0%,#1E293B 100%)', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 10px rgba(15,23,42,0.25)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.08em', padding: '4px 10px', borderRadius: '6px', background: 'rgba(255,255,255,0.18)', color: '#fff' }}>🛡️ ADMIN</span>
+          <Link href="/admin" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '13px' }}>← Dashboard</Link>
+          <span style={{ color: 'rgba(255,255,255,0.3)' }}>/</span>
+          <span style={{ color: '#fff', fontWeight: 600, fontSize: '14px' }}>Kelola Pelatihan</span>
         </div>
+        <motion.button whileTap={{ scale: 0.97 }} onClick={openAdd}
+          style={{ padding: '9px 18px', borderRadius: '8px', border: 'none', background: '#fff', color: '#1E293B', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>
+          ➕ Tambah Pelatihan
+        </motion.button>
       </div>
 
-      {msg && (
-        <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }}
-          style={{ padding: '10px 24px', background: msg.includes('Lulus') || msg.includes('selesai') ? c.greenBg : msg.includes('Minimal') || msg.includes('Jawab') ? 'var(--warning-50)' : c.greenBg, borderBottom: `1px solid ${c.border}`, color: msg.includes('Minimal') || msg.includes('Jawab') ? 'var(--warning-600)' : c.green, fontSize: '13px', fontWeight: 600 }}>
-          {msg}
-        </motion.div>
-      )}
+      <main style={{ padding: '28px 32px', maxWidth: '1200px', margin: '0 auto' }}>
+        <PageTransition>
+          {msg && <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ padding: '12px 16px', background: msg.includes('Gagal') ? (isDark ? '#450A0A' : '#FEF2F2') : c.slateBg, border: `1px solid ${msg.includes('Gagal') ? '#DC2626' : c.slate}44`, borderRadius: '8px', color: msg.includes('Gagal') ? '#DC2626' : c.slate, marginBottom: '20px', fontSize: '13px', fontWeight: 500 }}>{msg}</motion.div>}
 
-      <div style={{ display: 'flex', height: 'calc(100vh - 56px)', overflow: 'hidden' }}>
-
-        {/* Left sidebar - module list */}
-        <div style={{ width: '280px', background: c.card, borderRight: `1px solid ${c.border}`, display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
-          <div style={{ padding: '14px 16px', borderBottom: `1px solid ${c.border}`, background: c.subtle }}>
-            <h3 style={{ fontSize: '13px', fontWeight: 700, color: c.text, marginBottom: '2px' }}>Daftar Modul</h3>
-            <p style={{ fontSize: '11px', color: c.muted }}>{completedModules} dari {modules.length} selesai</p>
-          </div>
-          <div style={{ flex: 1, overflowY: 'auto' }}>
-            {modules.length === 0 ? (
-              <div style={{ padding: '40px 20px', textAlign: 'center' }}>
-                <div style={{ fontSize: '32px', marginBottom: '10px', opacity: 0.3 }}>📭</div>
-                <p style={{ fontSize: '13px', color: c.muted }}>Belum ada modul</p>
-              </div>
-            ) : modules.map((mod, i) => {
-              const isActive = activeModule?.id === mod.id;
-              const isCompleted = moduleProgress[mod.id]?.is_completed;
-              return (
-                <motion.div key={mod.id} onClick={() => selectModule(mod)}
-                  style={{ padding: '13px 16px', cursor: 'pointer', borderBottom: `1px solid ${c.border}`, background: isActive ? c.brandBg : 'transparent', borderLeft: `3px solid ${isActive ? c.brand : 'transparent'}`, transition: 'all 0.15s' }}
-                  onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = c.subtle; }}
-                  onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}>
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-start' }}>
-                    <div style={{ width: '28px', height: '28px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, flexShrink: 0,
-                      background: isCompleted ? c.green : isActive ? c.brand : c.subtle,
-                      color: isCompleted || isActive ? '#fff' : c.muted,
-                      border: `2px solid ${isCompleted ? c.green : isActive ? c.brand : c.border}`,
-                    }}>
-                      {isCompleted ? '✓' : i + 1}
-                    </div>
-                    <div style={{ flex: 1, minWidth: 0 }}>
-                      <p style={{ fontSize: '13px', fontWeight: isActive ? 700 : 500, color: isActive ? c.brand : c.text, margin: '0 0 4px', lineHeight: 1.3, overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{mod.title}</p>
-                      <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: c.muted }}>
-                        {mod.video_url && <span>🎬 Video</span>}
-                        {mod.content && <span>📄 Materi</span>}
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              );
-            })}
-          </div>
-        </div>
-
-        {/* Main content */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-          {activeModule ? (
-            <>
-              {/* Module header */}
-              <div style={{ padding: '16px 24px', borderBottom: `1px solid ${c.border}`, background: c.card, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
+          {/* Summary stats */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '20px' }}>
+            {[
+              { label: 'Total Pelatihan', value: trainings.length, icon: '🎓' },
+              { label: 'Total Modul', value: totalModules, icon: '📚' },
+              { label: 'Total Peserta', value: totalEnrolled, icon: '👥' },
+            ].map((s, i) => (
+              <div key={i} style={{ background: c.card, borderRadius: '10px', borderWidth: '1px', borderStyle: 'solid', borderColor: c.border, borderTopWidth: '3px', borderTopColor: c.slate, padding: '16px 18px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <div style={{ fontSize: '24px' }}>{s.icon}</div>
                 <div>
-                  <h2 style={{ fontSize: '17px', fontWeight: 800, color: c.text, marginBottom: '2px', letterSpacing: '-0.01em' }}>{activeModule.title}</h2>
-                  {activeModule.description && <p style={{ fontSize: '13px', color: c.muted }}>{activeModule.description}</p>}
+                  <div style={{ fontSize: '22px', fontWeight: 800, color: c.text, lineHeight: 1 }}>{loading ? '—' : s.value}</div>
+                  <div style={{ fontSize: '12px', color: c.muted, marginTop: '3px' }}>{s.label}</div>
                 </div>
-                {moduleProgress[activeModule.id]?.is_completed ? (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 14px', borderRadius: '20px', background: c.greenBg, color: c.green, fontSize: '13px', fontWeight: 700, border: `1px solid ${c.green}44` }}>✓ Selesai</span>
-                ) : (
-                  <motion.button whileTap={{ scale: 0.97 }} onClick={() => markModuleComplete(activeModule.id)}
-                    style={{ padding: '8px 18px', borderRadius: '8px', border: 'none', background: c.brand, color: '#fff', fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 14px rgba(37,99,235,0.25)' }}>
-                    ✓ Tandai Selesai
-                  </motion.button>
-                )}
               </div>
+            ))}
+          </div>
 
-              {/* Content tabs */}
-              <div style={{ borderBottom: `1px solid ${c.border}`, background: c.card, padding: '0 24px', display: 'flex', gap: '0', flexShrink: 0 }}>
-                {[
-                  { id: 'video', label: '🎬 Video', show: !!activeModule.video_url },
-                  { id: 'materi', label: '📄 Materi', show: !!activeModule.content },
-                  { id: 'kuis', label: `❓ Kuis (${quizzes.length})`, show: quizzes.length > 0 },
-                ].filter(t => t.show).map(tab => (
-                  <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
-                    padding: '12px 18px', border: 'none', background: 'transparent', fontSize: '13px', fontWeight: activeTab === tab.id ? 700 : 400, cursor: 'pointer', fontFamily: 'inherit',
-                    color: activeTab === tab.id ? c.brand : c.muted,
-                    borderBottom: `2px solid ${activeTab === tab.id ? c.brand : 'transparent'}`,
-                    marginBottom: '-1px', transition: 'all 0.15s',
-                  }}>{tab.label}</button>
-                ))}
-              </div>
+          {/* Search */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: c.card, border: `1px solid ${c.border}`, borderRadius: '10px', padding: '10px 16px', marginBottom: '12px' }}>
+            <span style={{ color: c.muted }}>🔍</span>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari pelatihan berdasarkan judul..." style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '14px', flex: 1, color: c.text, fontFamily: 'inherit' }} />
+            <span style={{ fontSize: '13px', color: c.muted }}>{filtered.length} pelatihan</span>
+          </div>
 
-              {/* Content area */}
-              <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
-                <AnimatePresence mode="wait">
-
-                  {/* Video tab */}
-                  {activeTab === 'video' && activeModule.video_url && (
-                    <motion.div key="video" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-                      <div style={{ borderRadius: '14px', overflow: 'hidden', boxShadow: '0 8px 32px rgba(0,0,0,0.15)', marginBottom: '20px', background: '#000', position: 'relative', paddingTop: '56.25%' }}>
-                        <iframe src={getYouTubeEmbedUrl(activeModule.video_url)} title={activeModule.title}
-                          style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', border: 'none' }}
-                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowFullScreen />
-                      </div>
-                      {activeModule.video_duration > 0 && (
-                        <p style={{ fontSize: '13px', color: c.muted }}>⏱️ Durasi: {Math.floor(activeModule.video_duration/60)} menit {activeModule.video_duration % 60} detik</p>
-                      )}
-                      {quizzes.length > 0 && !moduleProgress[activeModule.id]?.is_completed && (
-                        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }}
-                          style={{ marginTop: '20px', padding: '16px 20px', background: c.brandBg, borderRadius: '12px', border: `1px solid ${c.brand}44`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                          <div>
-                            <p style={{ fontSize: '14px', fontWeight: 700, color: c.brand, marginBottom: '2px' }}>Kerjakan kuis untuk menyelesaikan modul ini</p>
-                            <p style={{ fontSize: '12px', color: c.muted }}>{quizzes.length} soal • Minimal skor 70 untuk lulus</p>
-                          </div>
-                          <button onClick={() => setActiveTab('kuis')} style={{ padding: '8px 18px', borderRadius: '8px', border: 'none', background: c.brand, color: '#fff', fontWeight: 700, fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', whiteSpace: 'nowrap' }}>
-                            Kerjakan Kuis →
-                          </button>
-                        </motion.div>
-                      )}
-                    </motion.div>
-                  )}
-
-                  {/* Materi tab */}
-                  {activeTab === 'materi' && activeModule.content && (
-                    <motion.div key="materi" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-                      <div style={{ background: c.card, borderRadius: '14px', border: `1px solid ${c.border}`, padding: '28px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-                        <div style={{ fontSize: '15px', color: c.text, lineHeight: 1.8, whiteSpace: 'pre-wrap', fontFamily: 'inherit' }}>
-                          {activeModule.content}
-                        </div>
-                      </div>
-                    </motion.div>
-                  )}
-
-                  {/* Kuis tab */}
-                  {activeTab === 'kuis' && (
-                    <motion.div key="kuis" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}>
-                      {quizzes.length === 0 ? (
-                        <div style={{ textAlign: 'center', padding: '60px' }}>
-                          <div style={{ fontSize: '48px', marginBottom: '14px', opacity: 0.3 }}>❓</div>
-                          <p style={{ color: c.muted }}>Belum ada soal kuis untuk modul ini</p>
-                        </div>
-                      ) : quizSubmitted && quizResult ? (
-                        <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                          style={{ maxWidth: '580px', margin: '0 auto' }}>
-                          {/* Result card */}
-                          <div style={{ background: quizResult.passed ? c.greenBg : 'var(--warning-50)', borderRadius: '16px', padding: '32px', textAlign: 'center', marginBottom: '24px', border: `1px solid ${quizResult.passed ? c.green : 'var(--warning-600)'}44` }}>
-                            <div style={{ fontSize: '56px', marginBottom: '12px' }}>{quizResult.passed ? '🎉' : '📚'}</div>
-                            <div style={{ fontSize: '48px', fontWeight: 800, color: quizResult.passed ? c.green : 'var(--warning-600)', marginBottom: '8px', letterSpacing: '-0.03em' }}>{quizResult.score}</div>
-                            <div style={{ fontSize: '16px', color: c.text, fontWeight: 700, marginBottom: '4px' }}>{quizResult.passed ? 'Selamat! Kamu Lulus! 🎊' : 'Belum Lulus'}</div>
-                            <p style={{ fontSize: '13px', color: c.muted }}>{quizResult.passed ? 'Modul ini telah ditandai selesai' : 'Skor minimal 70. Pelajari materi kembali dan coba lagi.'}</p>
-                          </div>
-
-                          {/* Answer review */}
-                          <h3 style={{ fontSize: '15px', fontWeight: 700, color: c.text, marginBottom: '16px' }}>Review Jawaban</h3>
-                          {quizzes.map((q, i) => {
-                            const userAns = quizResult.answers?.[q.id];
-                            const isCorrect = userAns?.toLowerCase() === q.correct_answer.toLowerCase();
-                            return (
-                              <div key={q.id} style={{ background: c.card, borderRadius: '12px', border: `1px solid ${isCorrect ? c.green : 'var(--error-600)'}44`, padding: '16px', marginBottom: '10px' }}>
-                                <p style={{ fontSize: '14px', fontWeight: 600, color: c.text, marginBottom: '10px' }}>{i+1}. {q.question}</p>
-                                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '8px' }}>
-                                  {['a','b','c','d'].map(opt => {
-                                    const optText = q[`option_${opt}`];
-                                    if (!optText) return null;
-                                    const isUserAns = userAns?.toLowerCase() === opt;
-                                    const isCorrectAns = q.correct_answer.toLowerCase() === opt;
-                                    return (
-                                      <div key={opt} style={{ padding: '6px 12px', borderRadius: '8px', fontSize: '13px', fontWeight: isUserAns || isCorrectAns ? 600 : 400,
-                                        background: isCorrectAns ? c.greenBg : isUserAns && !isCorrect ? 'var(--error-50)' : c.subtle,
-                                        color: isCorrectAns ? c.green : isUserAns && !isCorrect ? 'var(--error-600)' : c.muted,
-                                        border: `1px solid ${isCorrectAns ? c.green : isUserAns && !isCorrect ? 'var(--error-600)' : c.border}44`,
-                                      }}>
-                                        {opt.toUpperCase()}. {optText} {isCorrectAns ? '✓' : isUserAns && !isCorrect ? '✗' : ''}
-                                      </div>
-                                    );
-                                  })}
-                                </div>
-                                {q.explanation && <p style={{ fontSize: '12px', color: c.muted, padding: '8px 12px', background: c.subtle, borderRadius: '8px', margin: 0 }}>💡 {q.explanation}</p>}
-                              </div>
-                            );
-                          })}
-
-                          {!quizResult.passed && attemptsLeft > 0 && (
-                            <button onClick={retryQuiz} style={{ width: '100%', marginTop: '16px', padding: '12px', borderRadius: '10px', border: 'none', background: c.brand, color: '#fff', fontWeight: 700, fontSize: '14px', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 14px rgba(37,99,235,0.25)' }}>
-                              🔄 Coba Lagi{maxAttempts > 0 ? ` (sisa ${attemptsLeft})` : ''}
-                            </button>
-                          )}
-                          {!quizResult.passed && attemptsLeft <= 0 && (
-                            <div style={{ marginTop: '16px', padding: '14px', borderRadius: '10px', background: 'var(--error-50)', border: '1px solid var(--error-600)44', color: 'var(--error-600)', fontWeight: 600, fontSize: '13px', textAlign: 'center' }}>
-                              🔒 Kesempatan habis. Kamu sudah mencoba {attemptsUsed} kali dan belum mencapai skor minimal.
-                            </div>
-                          )}
-                        </motion.div>
-                      ) : (
-                        <div style={{ maxWidth: '640px', margin: '0 auto' }}>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
-                            <div>
-                              <h2 style={{ fontSize: '18px', fontWeight: 800, color: c.text, marginBottom: '3px' }}>Kuis Modul</h2>
-                              <p style={{ fontSize: '13px', color: c.muted }}>{quizzes.length} soal • Minimal 70 untuk lulus{maxAttempts > 0 ? ` • Percobaan ${attemptsUsed}/${maxAttempts}` : ''}</p>
-                            </div>
-                            {quizAttempts.length > 0 && (
-                              <div style={{ textAlign: 'right' }}>
-                                <div style={{ fontSize: '11px', color: c.muted }}>Percobaan sebelumnya</div>
-                                <div style={{ fontSize: '13px', fontWeight: 600, color: c.text }}>Tertinggi: {Math.max(...quizAttempts.map(a => a.score))}</div>
-                              </div>
-                            )}
-                          </div>
-
-                          {attemptsExhausted ? (
-                            <div style={{ background: c.card, borderRadius: '14px', border: '1px solid var(--error-600)44', padding: '40px', textAlign: 'center' }}>
-                              <div style={{ fontSize: '48px', marginBottom: '12px' }}>🔒</div>
-                              <h3 style={{ fontSize: '17px', fontWeight: 800, color: c.text, marginBottom: '6px' }}>Kesempatan Habis</h3>
-                              <p style={{ fontSize: '13px', color: c.muted }}>Kamu sudah mengerjakan kuis ini {attemptsUsed} kali dan belum mencapai skor minimal 70. Pelajari kembali materinya, ya.</p>
-                              {quizAttempts.length > 0 && <p style={{ fontSize: '13px', fontWeight: 700, color: c.text, marginTop: '10px' }}>Skor tertinggimu: {Math.max(...quizAttempts.map(a => a.score))}/100</p>}
-                            </div>
-                          ) : (
-                          <>
-                          {quizTimeLeft !== null && (
-                            <div style={{ position: 'sticky', top: 0, zIndex: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', padding: '12px', borderRadius: '12px', marginBottom: '16px', fontWeight: 800, fontSize: '18px', fontVariantNumeric: 'tabular-nums',
-                              background: quizTimeLeft <= 30 ? 'var(--error-50)' : c.brandBg,
-                              color: quizTimeLeft <= 30 ? 'var(--error-600)' : c.brand,
-                              border: `1px solid ${quizTimeLeft <= 30 ? 'var(--error-600)' : c.brand}44` }}>
-                              ⏱️ Sisa waktu: {formatTime(quizTimeLeft)}
-                            </div>
-                          )}
-                          {quizzes.map((q, i) => (
-                            <motion.div key={q.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-                              style={{ background: c.card, borderRadius: '12px', border: `1px solid ${quizAnswers[q.id] ? c.brand : c.border}`, padding: '20px', marginBottom: '14px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', transition: 'border-color 0.15s' }}>
-                              <p style={{ fontSize: '15px', fontWeight: 700, color: c.text, marginBottom: '14px', lineHeight: 1.4 }}>
-                                <span style={{ color: c.brand, marginRight: '8px' }}>{i+1}.</span>{q.question}
-                              </p>
-                              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                                {['a','b','c','d'].map(opt => {
-                                  const optText = q[`option_${opt}`];
-                                  if (!optText) return null;
-                                  const isSelected = quizAnswers[q.id] === opt;
-                                  return (
-                                    <motion.div key={opt} whileTap={{ scale: 0.98 }} onClick={() => setQuizAnswers(prev => ({ ...prev, [q.id]: opt }))}
-                                      style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 16px', borderRadius: '10px', cursor: 'pointer', border: `2px solid ${isSelected ? c.brand : c.border}`, background: isSelected ? c.brandBg : 'transparent', transition: 'all 0.15s' }}>
-                                      <div style={{ width: '26px', height: '26px', borderRadius: '50%', border: `2px solid ${isSelected ? c.brand : c.border}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '12px', fontWeight: 700, flexShrink: 0, background: isSelected ? c.brand : 'transparent', color: isSelected ? '#fff' : c.muted }}>
-                                        {opt.toUpperCase()}
-                                      </div>
-                                      <span style={{ fontSize: '14px', color: isSelected ? c.brand : c.text, fontWeight: isSelected ? 600 : 400 }}>{optText}</span>
-                                    </motion.div>
-                                  );
-                                })}
-                              </div>
-                            </motion.div>
-                          ))}
-
-                          <div style={{ padding: '16px', background: c.card, borderRadius: '12px', border: `1px solid ${c.border}`, marginBottom: '16px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '13px', color: c.muted }}>
-                              {Object.keys(quizAnswers).length} dari {quizzes.length} soal dijawab
-                            </span>
-                            <div style={{ display: 'flex', gap: '6px' }}>
-                              {quizzes.map(q => (
-                                <div key={q.id} style={{ width: '10px', height: '10px', borderRadius: '50%', background: quizAnswers[q.id] ? c.brand : c.border }} />
-                              ))}
-                            </div>
-                          </div>
-
-                          <motion.button whileTap={{ scale: 0.97 }} onClick={submitQuiz} disabled={submittingQuiz || Object.keys(quizAnswers).length < quizzes.length}
-                            style={{ width: '100%', padding: '14px', borderRadius: '11px', border: 'none', fontWeight: 700, fontSize: '15px', cursor: Object.keys(quizAnswers).length < quizzes.length ? 'not-allowed' : 'pointer', fontFamily: 'inherit', transition: 'all 0.15s',
-                              background: Object.keys(quizAnswers).length < quizzes.length ? c.subtle : c.brand,
-                              color: Object.keys(quizAnswers).length < quizzes.length ? c.muted : '#fff',
-                              boxShadow: Object.keys(quizAnswers).length >= quizzes.length ? '0 4px 14px rgba(37,99,235,0.3)' : 'none',
-                            }}>
-                            {submittingQuiz ? '⏳ Menilai...' : `Kumpulkan Jawaban (${Object.keys(quizAnswers).length}/${quizzes.length})`}
-                          </motion.button>
-                          </>
-                          )}
-                        </div>
-                      )}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </>
-          ) : (
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: c.muted, textAlign: 'center' }}>
-              <div>
-                <div style={{ fontSize: '48px', marginBottom: '14px', opacity: 0.3 }}>📖</div>
-                <p style={{ fontSize: '15px', fontWeight: 600, color: c.text, marginBottom: '6px' }}>Pilih modul untuk mulai belajar</p>
-                <p style={{ fontSize: '13px' }}>Atau admin perlu menambahkan modul ke pelatihan ini</p>
-              </div>
+          {/* Category filter */}
+          {usedCategories.length > 1 && (
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
+              {usedCategories.map(cat => (
+                <button key={cat} onClick={() => setCatFilter(cat)} style={{
+                  padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                  border: `1px solid ${catFilter === cat ? c.slate : c.border}`,
+                  background: catFilter === cat ? c.slateBg : 'transparent',
+                  color: catFilter === cat ? c.slate : c.muted,
+                }}>{cat === 'all' ? 'Semua Kategori' : cat}</button>
+              ))}
             </div>
           )}
-        </div>
-      </div>
+
+          {/* List */}
+          {loading ? <p style={{ color: c.muted }}>Memuat...</p> :
+          filtered.length === 0 ? (
+            <div style={{ background: c.card, borderRadius: '12px', border: `1px solid ${c.border}`, padding: '70px', textAlign: 'center' }}>
+              <div style={{ fontSize: '48px', marginBottom: '12px' }}>🎓</div>
+              <p style={{ color: c.muted, marginBottom: '16px' }}>{trainings.length === 0 ? 'Belum ada pelatihan.' : 'Tidak ada pelatihan yang cocok.'}</p>
+              {trainings.length === 0 && <motion.button whileTap={{ scale: 0.97 }} onClick={openAdd} style={{ padding: '10px 22px', borderRadius: '8px', border: 'none', background: c.slate, color: '#fff', fontWeight: 600, cursor: 'pointer' }}>➕ Tambah Pelatihan</motion.button>}
+            </div>
+          ) : (
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(330px, 1fr))', gap: '14px' }}>
+              {filtered.map((t, i) => (
+                <motion.div key={t.id} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
+                  whileHover={{ y: -3 }}
+                  style={{ background: c.card, borderRadius: '12px', border: `1px solid ${c.border}`, padding: '18px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', transition: 'box-shadow 0.2s', display: 'flex', flexDirection: 'column', gap: '12px' }}
+                  onMouseEnter={e => e.currentTarget.style.boxShadow = '0 8px 22px rgba(0,0,0,0.10)'} onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)'}>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+                    <div style={{ width: '46px', height: '46px', borderRadius: '10px', background: c.slateBg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', flexShrink: 0, overflow: 'hidden' }}>
+                      {t.thumbnail_url ? <img src={t.thumbnail_url} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : '🎓'}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h3 style={{ fontSize: '15px', fontWeight: 700, color: c.text, marginBottom: '6px', lineHeight: 1.3 }}>{t.title || 'Tanpa Judul'}</h3>
+                      {t.training_categories?.name && (
+                        <span style={{ fontSize: '11px', padding: '2px 10px', borderRadius: '20px', background: c.slateBg, color: c.slate, fontWeight: 600 }}>{t.training_categories.name}</span>
+                      )}
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '14px', fontSize: '12px', color: c.muted }}>
+                    <span>📚 {modCount(t)} modul</span>
+                    <span>👥 {enrolledCount(t)} peserta</span>
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginTop: 'auto' }}>
+                    <motion.button whileTap={{ scale: 0.97 }} onClick={() => openModules(t)}
+                      style={{ flex: 1, minWidth: '100px', padding: '8px', borderRadius: '8px', border: 'none', background: c.slate, color: '#fff', fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}>
+                      🧩 Kelola Modul
+                    </motion.button>
+                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => openEdit(t)}
+                      style={{ padding: '8px 12px', borderRadius: '8px', border: `1px solid ${c.slate}`, background: 'transparent', color: c.slate, fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}>✏️ Edit</motion.button>
+                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => router.push(`/pelatihan/${t.id}`)}
+                      style={{ padding: '8px 12px', borderRadius: '8px', border: `1px solid ${c.border}`, background: 'transparent', color: c.muted, fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}>👁️</motion.button>
+                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => setDeleteConfirm(t)}
+                      style={{ padding: '8px 12px', borderRadius: '8px', border: '1px solid #DC2626', background: 'transparent', color: '#DC2626', fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit' }}>🗑️</motion.button>
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </PageTransition>
+      </main>
+
+      {/* ===== Add/Edit Training Modal ===== */}
+      <AnimatePresence>
+        {showForm && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setShowForm(false)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+            <motion.div initial={{ scale: 0.92, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.92, y: 10 }} onClick={e => e.stopPropagation()}
+              style={{ background: c.card, borderRadius: '14px', padding: '24px', maxWidth: '480px', width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
+              <h3 style={{ fontSize: '17px', fontWeight: 700, color: c.text, marginBottom: '18px' }}>{editItem ? '✏️ Edit Pelatihan' : '➕ Tambah Pelatihan'}</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: c.muted, marginBottom: '6px' }}>Judul Pelatihan *</label>
+                  <input style={inp} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Contoh: Dasar Pemrograman Web" />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: c.muted, marginBottom: '6px' }}>Kategori</label>
+                  <select style={inp} value={form.category_id} onChange={e => setForm({ ...form, category_id: e.target.value })}>
+                    <option value="">— Pilih kategori —</option>
+                    {categories.map(cat => <option key={cat.id} value={cat.id}>{cat.name}</option>)}
+                  </select>
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: c.muted, marginBottom: '6px' }}>Deskripsi</label>
+                  <textarea style={{ ...inp, resize: 'vertical', minHeight: '90px', lineHeight: 1.6 }} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Penjelasan singkat tentang pelatihan ini..." />
+                </div>
+                <div>
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: c.muted, marginBottom: '6px' }}>URL Thumbnail (opsional)</label>
+                  <input style={inp} value={form.thumbnail_url} onChange={e => setForm({ ...form, thumbnail_url: e.target.value })} placeholder="https://..." />
+                </div>
+              </div>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
+                <button onClick={() => setShowForm(false)} style={{ flex: 1, padding: '11px', borderRadius: '8px', border: `1px solid ${c.border}`, background: 'transparent', color: c.muted, cursor: 'pointer', fontWeight: 500 }}>Batal</button>
+                <motion.button whileTap={{ scale: 0.97 }} onClick={saveTraining} disabled={saving} style={{ flex: 2, padding: '11px', borderRadius: '8px', border: 'none', background: saving ? '#94A3B8' : c.slate, color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{saving ? 'Menyimpan...' : (editItem ? '💾 Simpan Perubahan' : '➕ Tambah Pelatihan')}</motion.button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ===== Module Manager Modal ===== */}
+      <AnimatePresence>
+        {moduleFor && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setModuleFor(null)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+            <motion.div initial={{ scale: 0.92, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.92, y: 10 }} onClick={e => e.stopPropagation()}
+              style={{ background: c.card, borderRadius: '14px', padding: '24px', maxWidth: '560px', width: '100%', maxHeight: '90vh', overflowY: 'auto' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '6px' }}>
+                <h3 style={{ fontSize: '17px', fontWeight: 700, color: c.text }}>🧩 Kelola Modul</h3>
+                <button onClick={() => setModuleFor(null)} style={{ border: 'none', background: 'transparent', color: c.muted, fontSize: '18px', cursor: 'pointer' }}>✕</button>
+              </div>
+              <p style={{ fontSize: '13px', color: c.muted, marginBottom: '18px' }}>{moduleFor.title}</p>
+
+              {/* Existing modules */}
+              {loadingModules ? <p style={{ color: c.muted, fontSize: '13px' }}>Memuat modul...</p> :
+              modules.length === 0 ? <p style={{ color: c.muted, fontSize: '13px', marginBottom: '16px' }}>Belum ada modul. Tambahkan di bawah.</p> : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '18px' }}>
+                  {modules.map((m, idx) => (
+                    <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 12px', borderRadius: '8px', border: `1px solid ${c.border}`, background: c.input }}>
+                      <span style={{ width: '24px', height: '24px', borderRadius: '50%', background: c.slateBg, color: c.slate, fontSize: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>{idx + 1}</span>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ fontSize: '13px', fontWeight: 600, color: c.text, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{m.title}</div>
+                        <div style={{ fontSize: '11px', color: c.muted }}>{m.duration_mins ? `${m.duration_mins} menit` : 'Durasi -'}{m.content_url ? ' • 📎 ada materi' : ''}</div>
+                      </div>
+                      {m.content_url && <a href={m.content_url} target="_blank" rel="noreferrer" style={{ border: `1px solid ${c.border}`, color: c.slate, borderRadius: '6px', padding: '4px 8px', fontSize: '11px', textDecoration: 'none' }}>Lihat</a>}
+                      <button onClick={() => deleteModule(m.id)} style={{ border: '1px solid #DC2626', background: 'transparent', color: '#DC2626', borderRadius: '6px', padding: '4px 8px', fontSize: '11px', cursor: 'pointer' }}>Hapus</button>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {/* Add module form */}
+              <div style={{ borderTop: `1px solid ${c.border}`, paddingTop: '16px' }}>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: c.text, marginBottom: '10px' }}>Tambah Modul Baru</div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  <input style={inp} value={moduleForm.title} onChange={e => setModuleForm({ ...moduleForm, title: e.target.value })} placeholder="Judul modul *" />
+                  <input style={inp} value={moduleForm.content_url} onChange={e => setModuleForm({ ...moduleForm, content_url: e.target.value })} placeholder="URL video/link (opsional jika mengunggah file)" />
+                  <div style={{ border: `1px dashed ${c.border}`, borderRadius: '8px', padding: '12px', background: c.input }}>
+                    <div style={{ fontSize: '12px', color: c.muted, marginBottom: '8px' }}>📎 Unggah file materi (PDF / PPT / PPTX) — dapat dibuka & dipelajari peserta</div>
+                    <input type="file" accept=".pdf,.ppt,.pptx,application/pdf,application/vnd.ms-powerpoint,application/vnd.openxmlformats-officedocument.presentationml.presentation"
+                      onChange={e => setModuleFile(e.target.files?.[0] || null)} style={{ fontSize: '12px', color: c.text, maxWidth: '100%' }} />
+                    {moduleFile && <div style={{ marginTop: '8px', fontSize: '12px', color: c.slate, display: 'flex', alignItems: 'center', gap: '8px' }}>📄 {moduleFile.name} <button onClick={() => setModuleFile(null)} style={{ border: 'none', background: 'transparent', color: c.muted, cursor: 'pointer' }}>✕</button></div>}
+                  </div>
+                  <input style={inp} type="number" value={moduleForm.duration_mins} onChange={e => setModuleForm({ ...moduleForm, duration_mins: e.target.value })} placeholder="Durasi (menit)" />
+                  <motion.button whileTap={{ scale: 0.97 }} onClick={addModule} disabled={savingModule} style={{ padding: '10px', borderRadius: '8px', border: 'none', background: savingModule ? '#94A3B8' : c.slate, color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{savingModule ? (moduleFile ? 'Mengunggah...' : 'Menambah...') : '➕ Tambah Modul'}</motion.button>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ===== Delete confirm ===== */}
+      <AnimatePresence>
+        {deleteConfirm && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setDeleteConfirm(null)}
+            style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1100, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }} onClick={e => e.stopPropagation()}
+              style={{ background: c.card, borderRadius: '14px', padding: '24px', maxWidth: '380px', width: '100%' }}>
+              <h3 style={{ fontSize: '16px', fontWeight: 700, color: c.text, marginBottom: '8px' }}>Hapus pelatihan?</h3>
+              <p style={{ fontSize: '13px', color: c.muted, marginBottom: '18px' }}>"{deleteConfirm.title}" akan dihapus permanen.</p>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <button onClick={() => setDeleteConfirm(null)} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: `1px solid ${c.border}`, background: 'transparent', color: c.muted, cursor: 'pointer' }}>Batal</button>
+                <button onClick={() => handleDelete(deleteConfirm.id)} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', background: '#DC2626', color: '#fff', fontWeight: 600, cursor: 'pointer' }}>Hapus</button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

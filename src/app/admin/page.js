@@ -20,6 +20,7 @@ export default function AdminDashboard() {
   const [sending, setSending] = useState(false);
   const [msg, setMsg] = useState('');
   const [allUsers, setAllUsers] = useState([]);
+  const [userSearch, setUserSearch] = useState('');
 
   useEffect(() => { if (loaded && !user) router.push('/auth'); }, [loaded, user]);
   useEffect(() => {
@@ -75,10 +76,12 @@ export default function AdminDashboard() {
   if (!loaded || !user || user.role !== 'admin') return null;
 
   const menuCards = [
-    { href: '/admin/lowongan', icon: '💼', label: 'Kelola Lowongan', value: stats.trayek, unit: 'lowongan', color: '#2563EB', bg: isDark ? 'rgba(37,99,235,0.15)' : '#EFF6FF' },
+    { href: '/admin/lowongan', icon: '💼', label: 'Kelola Lowongan', value: stats.trayek, unit: 'lowongan', color: '#475569', bg: isDark ? 'rgba(71,85,105,0.15)' : '#F1F5F9' },
     { href: '/admin/users', icon: '👥', label: 'Kelola User', value: stats.users, unit: 'user', color: '#16A34A', bg: isDark ? 'rgba(22,163,74,0.15)' : '#F0FDF4' },
     { href: '/admin/lamaran', icon: '📋', label: 'Kelola Lamaran', value: stats.applications, unit: 'lamaran', color: '#7C3AED', bg: isDark ? 'rgba(124,58,237,0.15)' : '#F5F3FF' },
     { href: '/admin/pelatihan', icon: '🎓', label: 'Kelola Pelatihan', value: stats?.trainings || 0, unit: 'pelatihan', color: '#16A34A', bg: isDark ? 'rgba(22,163,74,0.15)' : '#F0FDF4' },
+    { href: '/admin/banner', icon: '🖼️', label: 'Kelola Banner', value: null, unit: 'banner promo', color: '#2563EB', bg: isDark ? 'rgba(37,99,235,0.15)' : '#EFF6FF' },
+    { href: '/admin/pesan-masuk', icon: '📥', label: 'Pesan Masuk', value: null, unit: 'kontak & karier', color: '#0EA5E9', bg: isDark ? 'rgba(14,165,233,0.15)' : '#F0F9FF' },
     { icon: '📢', label: 'Broadcast Notif', value: stats.notifications, unit: 'terkirim', color: '#D97706', bg: isDark ? 'rgba(217,119,6,0.15)' : '#FFFBEB', onClick: () => setShowBroadcast(true) },
   ];
 
@@ -87,7 +90,7 @@ export default function AdminDashboard() {
       {/* Header */}
       <div style={{ background: isDark ? '#1E293B' : '#fff', borderBottom: `1px solid ${border}`, padding: '0 32px', display: 'flex', alignItems: 'center', height: '64px', gap: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginRight: 'auto' }}>
-          <div style={{ width: '32px', height: '32px', background: 'linear-gradient(135deg,#2563EB,#1D4ED8)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '13px' }}>CF</div>
+          <div style={{ width: '32px', height: '32px', background: 'linear-gradient(135deg,#475569,#334155)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '13px' }}>CF</div>
           <div>
             <div style={{ fontWeight: 800, fontSize: '14px', color: text, letterSpacing: '-0.01em' }}>CareerForge</div>
             <div style={{ fontSize: '10px', color: muted, fontWeight: 500, letterSpacing: '0.04em' }}>ADMIN PANEL</div>
@@ -97,7 +100,7 @@ export default function AdminDashboard() {
           <button onClick={toggleTheme} style={{ width: '32px', height: '32px', borderRadius: '8px', border: `1px solid ${border}`, background: subtle, cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
             {isDark ? '☀️' : '🌙'}
           </button>
-          <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '6px', background: '#2563EB', color: '#fff', fontWeight: 700, letterSpacing: '0.04em' }}>SUPERADMIN</span>
+          <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '6px', background: '#475569', color: '#fff', fontWeight: 700, letterSpacing: '0.04em' }}>SUPERADMIN</span>
           <span style={{ fontSize: '13px', color: text, fontWeight: 500 }}>{user.full_name}</span>
           <Link href="/" style={{ padding: '7px 14px', borderRadius: '8px', border: `1px solid ${border}`, color: muted, fontSize: '12px', textDecoration: 'none', fontWeight: 500, background: subtle }}>← App Utama</Link>
         </div>
@@ -116,15 +119,17 @@ export default function AdminDashboard() {
         {/* Stats */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '12px', marginBottom: '24px' }}>
           {[
-            { label: 'Total User', value: stats.users, icon: '👥', color: '#2563EB' },
-            { label: 'Lowongan', value: stats.trayek, icon: '💼', color: '#16A34A' },
-            { label: 'Lamaran', value: stats.applications, icon: '📋', color: '#7C3AED' },
-            { label: 'Pelatihan', value: stats.trainings, icon: '🎓', color: '#D97706' },
-            { label: 'Mentor', value: stats.mentors, icon: '🎤', color: '#DC2626' },
-            { label: 'Notifikasi', value: stats.notifications, icon: '🔔', color: muted },
+            { label: 'Total User', value: stats.users, icon: '👥', color: '#475569', onClick: () => router.push('/admin/users') },
+            { label: 'Lowongan', value: stats.trayek, icon: '💼', color: '#16A34A', onClick: () => router.push('/admin/lowongan') },
+            { label: 'Lamaran', value: stats.applications, icon: '📋', color: '#7C3AED', onClick: () => router.push('/admin/lamaran') },
+            { label: 'Pelatihan', value: stats.trainings, icon: '🎓', color: '#D97706', onClick: () => router.push('/admin/pelatihan') },
+            { label: 'Mentor', value: stats.mentors, icon: '🎤', color: '#DC2626', onClick: () => router.push('/admin/users') },
+            { label: 'Notifikasi', value: stats.notifications, icon: '🔔', color: muted, onClick: () => setShowBroadcast(true) },
           ].map((s, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-              style={{ background: card, borderRadius: '10px', border: `1px solid ${border}`, padding: '16px', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
+              whileHover={{ y: -3 }} onClick={s.onClick}
+              style={{ background: card, borderRadius: '10px', borderWidth: '1px', borderStyle: 'solid', borderColor: border, borderTopWidth: '3px', borderTopColor: s.color, padding: '16px', textAlign: 'center', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', cursor: 'pointer', transition: 'box-shadow 0.15s' }}
+              onMouseEnter={e => e.currentTarget.style.boxShadow = '0 8px 20px rgba(0,0,0,0.10)'} onMouseLeave={e => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0,0,0,0.06)'}>
               <div style={{ fontSize: '24px', marginBottom: '8px' }}>{s.icon}</div>
               <div style={{ fontSize: '22px', fontWeight: 800, color: s.color, letterSpacing: '-0.03em', lineHeight: 1 }}>{loading ? '—' : s.value}</div>
               <div style={{ fontSize: '11px', color: muted, marginTop: '4px', fontWeight: 500 }}>{s.label}</div>
@@ -141,7 +146,7 @@ export default function AdminDashboard() {
               style={{ background: card, borderRadius: '12px', border: `1px solid ${border}`, padding: '22px', cursor: 'pointer', transition: 'all 0.2s', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
               <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: item.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px', marginBottom: '14px' }}>{item.icon}</div>
               <h3 style={{ fontSize: '14px', fontWeight: 700, color: text, marginBottom: '4px', letterSpacing: '-0.01em' }}>{item.label}</h3>
-              <p style={{ fontSize: '13px', color: item.color, fontWeight: 600, margin: 0 }}>{loading ? '—' : item.value} {item.unit}</p>
+              <p style={{ fontSize: '13px', color: item.color, fontWeight: 600, margin: 0 }}>{loading ? '—' : (item.value ?? 'Atur')} {item.unit}</p>
             </motion.div>
           ))}
         </div>
@@ -152,12 +157,12 @@ export default function AdminDashboard() {
           <div style={{ background: card, borderRadius: '12px', border: `1px solid ${border}`, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
             <div style={{ padding: '16px 20px', borderBottom: `1px solid ${border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ fontSize: '14px', fontWeight: 700, color: text, letterSpacing: '-0.01em' }}>Lamaran Terbaru</h3>
-              <Link href="/admin/lamaran" style={{ fontSize: '12px', color: '#2563EB', fontWeight: 600, textDecoration: 'none' }}>Lihat semua →</Link>
+              <Link href="/admin/lamaran" style={{ fontSize: '12px', color: '#475569', fontWeight: 600, textDecoration: 'none' }}>Lihat semua →</Link>
             </div>
             {loading ? <div style={{ padding: '20px' }}>{[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: '48px', marginBottom: '8px' }} />)}</div> :
             recentApps.length === 0 ? <div style={{ padding: '40px', textAlign: 'center', color: muted, fontSize: '13px' }}>Belum ada lamaran.</div> :
             recentApps.map((app, i) => (
-              <div key={app.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', borderBottom: i < recentApps.length - 1 ? `1px solid ${border}` : 'none', transition: 'background 0.15s' }}
+              <div key={app.id} onClick={() => router.push('/admin/lamaran')} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 20px', borderBottom: i < recentApps.length - 1 ? `1px solid ${border}` : 'none', transition: 'background 0.15s', cursor: 'pointer' }}
                 onMouseEnter={e => e.currentTarget.style.background = subtle}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                 <div>
@@ -173,14 +178,20 @@ export default function AdminDashboard() {
           <div style={{ background: card, borderRadius: '12px', border: `1px solid ${border}`, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
             <div style={{ padding: '16px 20px', borderBottom: `1px solid ${border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ fontSize: '14px', fontWeight: 700, color: text, letterSpacing: '-0.01em' }}>User Terbaru</h3>
-              <Link href="/admin/users" style={{ fontSize: '12px', color: '#2563EB', fontWeight: 600, textDecoration: 'none' }}>Lihat semua →</Link>
+              <Link href="/admin/users" style={{ fontSize: '12px', color: '#475569', fontWeight: 600, textDecoration: 'none' }}>Lihat semua →</Link>
             </div>
-            {recentUsers.map((u, i) => (
-              <div key={u.id} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 20px', borderBottom: i < recentUsers.length - 1 ? `1px solid ${border}` : 'none', transition: 'background 0.15s' }}
+            <div style={{ padding: '10px 16px', borderBottom: `1px solid ${border}`, display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span style={{ color: muted, fontSize: '13px' }}>🔍</span>
+              <input value={userSearch} onChange={e => setUserSearch(e.target.value)} placeholder="Cari user (nama atau email)..."
+                style={{ flex: 1, border: 'none', outline: 'none', background: 'transparent', fontSize: '13px', color: text, fontFamily: 'inherit' }} />
+              {userSearch && <button onClick={() => setUserSearch('')} style={{ border: 'none', background: 'transparent', color: muted, cursor: 'pointer', fontSize: '12px' }}>✕</button>}
+            </div>
+            {recentUsers.filter(u => !userSearch || (u.full_name||'').toLowerCase().includes(userSearch.toLowerCase()) || (u.email||'').toLowerCase().includes(userSearch.toLowerCase())).map((u, i, arr) => (
+              <div key={u.id} onClick={() => router.push('/admin/users')} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 20px', borderBottom: i < arr.length - 1 ? `1px solid ${border}` : 'none', transition: 'background 0.15s', cursor: 'pointer' }}
                 onMouseEnter={e => e.currentTarget.style.background = subtle}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                 {u.avatar_url ? <img src={u.avatar_url} style={{ width: '30px', height: '30px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} /> :
-                  <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: 'linear-gradient(135deg,#2563EB,#1D4ED8)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '10px', flexShrink: 0 }}>
+                  <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: 'linear-gradient(135deg,#475569,#334155)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '10px', flexShrink: 0 }}>
                     {u.full_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2)}
                   </div>}
                 <div style={{ flex: 1, minWidth: 0 }}>
@@ -204,7 +215,7 @@ export default function AdminDashboard() {
               <div style={{ textAlign: 'center', marginBottom: '22px' }}>
                 <div style={{ fontSize: '40px', marginBottom: '10px' }}>📢</div>
                 <h3 style={{ fontSize: '18px', fontWeight: 800, color: text, marginBottom: '4px', letterSpacing: '-0.02em' }}>Broadcast Notifikasi</h3>
-                <p style={{ fontSize: '13px', color: muted }}>Kirim ke <strong style={{ color: '#2563EB' }}>{allUsers.length} user</strong> sekaligus</p>
+                <p style={{ fontSize: '13px', color: muted }}>Kirim ke <strong style={{ color: '#475569' }}>{allUsers.length} user</strong> sekaligus</p>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
                 <div>
@@ -221,7 +232,7 @@ export default function AdminDashboard() {
               <div style={{ display: 'flex', gap: '10px' }}>
                 <button onClick={() => setShowBroadcast(false)} style={{ flex: 1, padding: '11px', borderRadius: '9px', border: `1px solid ${border}`, background: 'transparent', color: muted, fontSize: '14px', cursor: 'pointer', fontFamily: 'inherit', fontWeight: 500 }}>Batal</button>
                 <motion.button whileTap={{ scale: 0.97 }} onClick={sendBroadcast} disabled={sending}
-                  style={{ flex: 2, padding: '11px', borderRadius: '9px', border: 'none', background: sending ? '#93C5FD' : 'linear-gradient(135deg,#2563EB,#1D4ED8)', color: '#fff', fontWeight: 700, fontSize: '14px', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 14px rgba(37,99,235,0.25)' }}>
+                  style={{ flex: 2, padding: '11px', borderRadius: '9px', border: 'none', background: sending ? '#93C5FD' : 'linear-gradient(135deg,#475569,#334155)', color: '#fff', fontWeight: 700, fontSize: '14px', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 14px rgba(71,85,105,0.3)' }}>
                   {sending ? 'Mengirim...' : `📤 Kirim ke ${allUsers.length} User`}
                 </motion.button>
               </div>

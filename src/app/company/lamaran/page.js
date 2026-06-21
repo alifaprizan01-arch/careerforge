@@ -23,6 +23,7 @@ export default function CompanyLamaranPage() {
   const [interviewDate, setInterviewDate] = useState('');
   const [savingNotes, setSavingNotes] = useState(false);
   const [docs, setDocs] = useState([]);
+  const [previewDoc, setPreviewDoc] = useState(null);
 
   useEffect(() => { if (loaded && !user) router.push('/auth'); }, [loaded, user]);
   useEffect(() => {
@@ -107,6 +108,7 @@ export default function CompanyLamaranPage() {
     inputText: isDark ? '#F1F5F9' : '#0F172A', blue: isDark ? '#3B82F6' : '#2563EB',
     blueLight: isDark ? '#1E3A5F' : '#EFF6FF', green: isDark ? '#4ADE80' : '#16A34A',
     greenLight: isDark ? '#14532D' : '#F0FDF4',
+    orange: isDark ? '#FB923C' : '#EA580C', orangeLight: isDark ? '#7C2D12' : '#FFF7ED',
   };
 
   const statusConfig = {
@@ -132,7 +134,7 @@ export default function CompanyLamaranPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: c.bg, fontFamily: 'Inter, sans-serif' }}>
-      <div style={{ background: isDark ? '#1E293B' : '#1E3A5F', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ background: 'linear-gradient(135deg,#9A3412 0%,#EA580C 100%)', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 10px rgba(234,88,12,0.25)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <Link href="/company" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '13px' }}>← Dashboard</Link>
           <span style={{ color: 'rgba(255,255,255,0.3)' }}>/</span>
@@ -143,7 +145,7 @@ export default function CompanyLamaranPage() {
 
       <main style={{ padding: '20px 24px', maxWidth: '1400px', margin: '0 auto' }}>
         <PageTransition>
-          {msg && <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ padding: '12px 16px', background: c.blueLight, border: `1px solid ${c.blue}44`, borderRadius: '8px', color: c.blue, marginBottom: '16px', fontSize: '13px' }}>{msg}</motion.div>}
+          {msg && <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ padding: '12px 16px', background: c.orangeLight, border: `1px solid ${c.orange}44`, borderRadius: '8px', color: c.orange, marginBottom: '16px', fontSize: '13px' }}>{msg}</motion.div>}
 
           {/* Filter */}
           <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -156,9 +158,9 @@ export default function CompanyLamaranPage() {
               const count = f === 'semua' ? applications.length : applications.filter(a => a.status === f).length;
               return (
                 <motion.button key={f} whileTap={{ scale: 0.95 }} onClick={() => setFilter(f)} style={{
-                  padding: '6px 14px', borderRadius: '20px', border: `1px solid ${filter === f ? (sc?.color || c.blue) : c.border}`,
-                  background: filter === f ? (sc?.bg || c.blueLight) : 'transparent',
-                  color: filter === f ? (sc?.color || c.blue) : c.muted, fontSize: '12px', cursor: 'pointer', fontWeight: 500,
+                  padding: '6px 14px', borderRadius: '20px', border: `1px solid ${filter === f ? (sc?.color || c.orange) : c.border}`,
+                  background: filter === f ? (sc?.bg || c.orangeLight) : 'transparent',
+                  color: filter === f ? (sc?.color || c.orange) : c.muted, fontSize: '12px', cursor: 'pointer', fontWeight: 500,
                 }}>{f === 'semua' ? `Semua (${count})` : `${sc?.icon} ${f} (${count})`}</motion.button>
               );
             })}
@@ -182,11 +184,11 @@ export default function CompanyLamaranPage() {
                   <motion.div key={app.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
                     onClick={() => selectApp(app)} whileHover={{ y: -1 }}
                     style={{ background: c.card, borderRadius: '10px', padding: '14px 16px', cursor: 'pointer',
-                      border: isSelected ? `2px solid ${c.blue}` : `1px solid ${c.border}`,
-                      boxShadow: isSelected ? `0 0 0 3px ${c.blue}22` : 'none' }}>
+                      border: isSelected ? `2px solid ${c.orange}` : `1px solid ${c.border}`,
+                      boxShadow: isSelected ? `0 0 0 3px ${c.orange}22` : 'none' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                       {app.users?.avatar_url ? <img src={app.users.avatar_url} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} /> :
-                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg,#2563EB,#1D4ED8)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 600, fontSize: '12px', flexShrink: 0 }}>
+                        <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg,#EA580C,#C2410C)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 600, fontSize: '12px', flexShrink: 0 }}>
                           {app.users?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2)}
                         </div>}
                       <div style={{ flex: 1, minWidth: 0 }}>
@@ -194,8 +196,16 @@ export default function CompanyLamaranPage() {
                         <div style={{ fontSize: '11px', color: c.muted }}>→ {app.trayek?.tujuan}</div>
                         <div style={{ fontSize: '11px', color: c.muted }}>{new Date(app.applied_at).toLocaleDateString('id-ID')}</div>
                       </div>
-                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px' }}>
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '6px' }}>
                         <span style={{ fontSize: '10px', padding: '2px 8px', borderRadius: '20px', background: sc.bg, color: sc.color, fontWeight: 500, whiteSpace: 'nowrap' }}>{sc.icon} {app.status}</span>
+                        {app.status === 'Menunggu' && (
+                          <div style={{ display: 'flex', gap: '5px' }}>
+                            <button onClick={(e) => { e.stopPropagation(); updateStatus(app.id, 'Diterima'); }} disabled={updating === app.id}
+                              title="Terima" style={{ width: '24px', height: '24px', borderRadius: '6px', border: 'none', background: c.green, color: '#fff', cursor: updating === app.id ? 'wait' : 'pointer', fontSize: '12px', fontWeight: 700 }}>✓</button>
+                            <button onClick={(e) => { e.stopPropagation(); updateStatus(app.id, 'Ditolak'); }} disabled={updating === app.id}
+                              title="Tolak" style={{ width: '24px', height: '24px', borderRadius: '6px', border: `1px solid ${c.border}`, background: 'transparent', color: '#DC2626', cursor: updating === app.id ? 'wait' : 'pointer', fontSize: '12px', fontWeight: 700 }}>✕</button>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </motion.div>
@@ -211,8 +221,8 @@ export default function CompanyLamaranPage() {
                 {/* Applicant header */}
                 <div style={{ padding: '20px 24px', borderBottom: `1px solid ${c.border}`, background: isDark ? '#1E293B' : '#F8FAFC' }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', marginBottom: '16px' }}>
-                    {selected.users?.avatar_url ? <img src={selected.users.avatar_url} style={{ width: '56px', height: '56px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: `3px solid ${c.blue}44` }} /> :
-                      <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'linear-gradient(135deg,#2563EB,#1D4ED8)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '18px', flexShrink: 0 }}>
+                    {selected.users?.avatar_url ? <img src={selected.users.avatar_url} style={{ width: '56px', height: '56px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: `3px solid ${c.orange}44` }} /> :
+                      <div style={{ width: '56px', height: '56px', borderRadius: '50%', background: 'linear-gradient(135deg,#EA580C,#C2410C)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '18px', flexShrink: 0 }}>
                         {selected.users?.full_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2)}
                       </div>}
                     <div style={{ flex: 1 }}>
@@ -275,17 +285,17 @@ export default function CompanyLamaranPage() {
                     ) : (
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                         {docs.map(doc => (
-                          <motion.a key={doc.id} href={doc.file_url} target="_blank" rel="noopener noreferrer" whileHover={{ y: -1 }}
-                            style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', background: isDark ? '#0F172A' : '#F8FAFC', borderRadius: '8px', border: `1px solid ${c.border}`, textDecoration: 'none' }}>
-                            <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: c.blueLight, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>
+                          <motion.div key={doc.id} onClick={() => setPreviewDoc(doc)} whileHover={{ y: -1 }}
+                            style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '12px 14px', background: isDark ? '#0F172A' : '#F8FAFC', borderRadius: '8px', border: `1px solid ${c.border}`, textDecoration: 'none', cursor: 'pointer' }}>
+                            <div style={{ width: '36px', height: '36px', borderRadius: '8px', background: c.orangeLight, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0 }}>
                               {doc.doc_type === 'cv' ? '📄' : doc.doc_type === 'portfolio' ? '🗂️' : doc.doc_type === 'certificate' ? '🏆' : '📎'}
                             </div>
-                            <div style={{ flex: 1 }}>
-                              <div style={{ fontSize: '13px', fontWeight: 600, color: c.text }}>{doc.file_name}</div>
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div style={{ fontSize: '13px', fontWeight: 600, color: c.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{doc.file_name}</div>
                               <div style={{ fontSize: '11px', color: c.muted }}>{docTypeLabel(doc.doc_type)} • {doc.file_size ? `${(doc.file_size/1024).toFixed(0)} KB` : ''}</div>
                             </div>
-                            <span style={{ fontSize: '12px', color: c.blue, fontWeight: 500 }}>Lihat →</span>
-                          </motion.a>
+                            <span style={{ fontSize: '12px', color: c.orange, fontWeight: 600, flexShrink: 0 }}>Pratinjau →</span>
+                          </motion.div>
                         ))}
                       </div>
                     )}
@@ -308,7 +318,7 @@ export default function CompanyLamaranPage() {
                           style={{ ...inp, resize: 'vertical', lineHeight: 1.6 }} />
                       </div>
                       <motion.button whileTap={{ scale: 0.97 }} onClick={saveNotes} disabled={savingNotes}
-                        style={{ padding: '10px', borderRadius: '8px', border: 'none', background: savingNotes ? '#93C5FD' : c.blue, color: '#fff', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
+                        style={{ padding: '10px', borderRadius: '8px', border: 'none', background: savingNotes ? '#FDBA74' : c.orange, color: '#fff', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
                         {savingNotes ? 'Menyimpan...' : '💾 Simpan Catatan & Jadwal'}
                       </motion.button>
                     </div>
@@ -324,6 +334,34 @@ export default function CompanyLamaranPage() {
             )}
           </div>
         </PageTransition>
+
+        {/* Modal pratinjau dokumen */}
+        <AnimatePresence>
+          {previewDoc && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setPreviewDoc(null)}
+              style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '24px' }}>
+              <motion.div initial={{ scale: 0.96, y: 10 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.96, opacity: 0 }} onClick={(e) => e.stopPropagation()}
+                style={{ background: c.card, borderRadius: '14px', width: '100%', maxWidth: '840px', height: '86vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', border: `1px solid ${c.border}`, boxShadow: '0 20px 50px rgba(0,0,0,0.35)' }}>
+                <div style={{ padding: '14px 18px', borderBottom: `1px solid ${c.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px' }}>
+                  <div style={{ fontSize: '14px', fontWeight: 700, color: c.text, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>📎 {previewDoc.file_name}</div>
+                  <div style={{ display: 'flex', gap: '8px', flexShrink: 0 }}>
+                    <a href={previewDoc.file_url} target="_blank" rel="noopener noreferrer" style={{ padding: '7px 14px', borderRadius: '8px', background: c.orange, color: '#fff', fontSize: '12px', fontWeight: 600, textDecoration: 'none' }}>Buka di tab baru ↗</a>
+                    <button onClick={() => setPreviewDoc(null)} style={{ padding: '7px 14px', borderRadius: '8px', border: `1px solid ${c.border}`, background: 'transparent', color: c.muted, fontSize: '12px', fontWeight: 600, cursor: 'pointer' }}>Tutup ✕</button>
+                  </div>
+                </div>
+                <div style={{ flex: 1, background: isDark ? '#0F172A' : '#F1F5F9', overflow: 'auto' }}>
+                  {/\.(png|jpe?g|gif|webp|svg|bmp)$/i.test(previewDoc.file_url || '') ? (
+                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px', boxSizing: 'border-box' }}>
+                      <img src={previewDoc.file_url} alt={previewDoc.file_name} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: '8px' }} />
+                    </div>
+                  ) : (
+                    <iframe src={previewDoc.file_url} title="Pratinjau dokumen" style={{ width: '100%', height: '100%', border: 'none' }} />
+                  )}
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
       </main>
     </div>
   );

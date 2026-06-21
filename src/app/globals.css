@@ -158,6 +158,8 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  /* Transisi tema hanya di permukaan utama, tidak di setiap node */
+  transition: background-color 0.2s ease, color 0.15s ease;
 }
 
 /* ===== TYPOGRAPHY ===== */
@@ -298,7 +300,8 @@ h1, h2, h3, h4, h5, h6 {
   font-size: var(--text-base); font-weight: var(--font-medium);
   color: var(--text-secondary); text-decoration: none;
   border-left: 2px solid transparent;
-  transition: all var(--transition-base); cursor: pointer;
+  transition: background-color var(--transition-base), color var(--transition-base);
+  cursor: pointer;
 }
 .nav-item:hover { background: var(--surface-secondary); color: var(--text-primary); }
 .nav-item.active {
@@ -314,7 +317,7 @@ h1, h2, h3, h4, h5, h6 {
   padding: var(--space-5);
   display: flex; align-items: center; gap: var(--space-4);
   box-shadow: var(--shadow-sm);
-  transition: all var(--transition-slow);
+  transition: box-shadow var(--transition-slow), transform var(--transition-slow);
 }
 .stat-card:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
 .stat-icon {
@@ -329,7 +332,7 @@ h1, h2, h3, h4, h5, h6 {
 .table-container { background: var(--surface-primary); border: 1px solid var(--border-default); border-radius: var(--radius-lg); overflow: hidden; box-shadow: var(--shadow-sm); }
 .table-header { display: grid; padding: 12px 20px; background: var(--surface-secondary); border-bottom: 1px solid var(--border-default); }
 .table-header span { font-size: var(--text-xs); font-weight: var(--font-semibold); color: var(--text-tertiary); text-transform: uppercase; letter-spacing: 0.06em; }
-.table-row { display: grid; padding: 14px 20px; border-bottom: 1px solid var(--border-subtle); transition: background var(--transition-fast); align-items: center; }
+.table-row { display: grid; padding: 14px 20px; border-bottom: 1px solid var(--border-subtle); transition: background-color var(--transition-fast); align-items: center; }
 .table-row:last-child { border-bottom: none; }
 .table-row:hover { background: var(--surface-secondary); }
 
@@ -352,10 +355,41 @@ h1, h2, h3, h4, h5, h6 {
 .empty-state-title { font-size: var(--text-lg); font-weight: var(--font-semibold); color: var(--text-primary); margin-bottom: var(--space-2); }
 .empty-state-desc { font-size: var(--text-base); color: var(--text-secondary); }
 
-/* ===== TRANSITIONS ===== */
-* { transition: background-color 0.2s ease, border-color 0.2s ease, color 0.15s ease; }
-img, button, a, input, textarea, select { transition: none; }
-button { transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease, opacity 0.15s ease; }
+/* ===== TRANSITIONS (THEME SWITCH) ===== */
+/*
+  Transisi warna saat ganti tema hanya menempel pada permukaan struktural
+  (body + class .card/.nav-item/dst di atas), BUKAN pada setiap elemen (`*`).
+  Ini menghilangkan beban transisi di ribuan node yang bikin scroll patah-patah.
+
+  OPSIONAL (toggle tema tetap mulus tanpa beban saat idle):
+  Tambahkan class "theme-switching" ke <html> sesaat ketika tema diganti,
+  lalu hapus setelah ~300ms di lib/themeContext.js. Aturan di bawah hanya
+  aktif selama class itu ada, jadi tidak membebani scroll sama sekali.
+*/
+.section, .table-row, .input {
+  transition-property: background-color, border-color, color, box-shadow;
+  transition-duration: 0.2s;
+  transition-timing-function: ease;
+}
+
+html.theme-switching,
+html.theme-switching *:not(svg):not(path) {
+  transition: background-color 0.25s ease, border-color 0.25s ease, color 0.2s ease !important;
+}
+
+button {
+  transition: background-color 0.15s ease, box-shadow 0.15s ease, transform 0.1s ease, opacity 0.15s ease;
+}
+
+/* Hormati preferensi pengguna yang mengurangi animasi */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
 
 /* ===== MOBILE ===== */
 @media (max-width: 768px) {

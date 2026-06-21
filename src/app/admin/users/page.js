@@ -15,6 +15,7 @@ export default function AdminUsersPage() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [roleFilter, setRoleFilter] = useState('all');
   const [updating, setUpdating] = useState(null);
   const [msg, setMsg] = useState('');
   const [notifForm, setNotifForm] = useState({ title: '', message: '', targetUserId: null });
@@ -63,18 +64,21 @@ export default function AdminUsersPage() {
     bg: isDark ? '#0F172A' : '#F8FAFC', card: isDark ? '#1E293B' : '#fff',
     border: isDark ? '#334155' : '#E2E8F0', text: isDark ? '#F1F5F9' : '#0F172A',
     muted: isDark ? '#94A3B8' : '#64748B', input: isDark ? '#0F172A' : '#F8FAFC',
-    inputText: isDark ? '#F1F5F9' : '#0F172A', blue: isDark ? '#3B82F6' : '#2563EB',
-    blueLight: isDark ? '#1E3A5F' : '#EFF6FF',
+    inputText: isDark ? '#F1F5F9' : '#0F172A', blue: isDark ? '#94A3B8' : '#475569',
+    blueLight: isDark ? '#334155' : '#F1F5F9',
   };
 
   const inputStyle = { width: '100%', padding: '10px 14px', borderRadius: '8px', border: `1px solid ${c.border}`, fontSize: '14px', outline: 'none', background: c.input, color: c.inputText, fontFamily: 'Inter, sans-serif', boxSizing: 'border-box' };
-  const filtered = users.filter(u => !search || u.full_name?.toLowerCase().includes(search.toLowerCase()) || u.email?.toLowerCase().includes(search.toLowerCase()));
+  const filtered = users.filter(u =>
+    (!search || u.full_name?.toLowerCase().includes(search.toLowerCase()) || u.email?.toLowerCase().includes(search.toLowerCase()))
+    && (roleFilter === 'all' || (u.role || 'user') === roleFilter)
+  );
 
   if (!loaded || !user || user.role !== 'admin') return null;
 
   return (
     <div style={{ minHeight: '100vh', background: c.bg, fontFamily: 'Inter, sans-serif' }}>
-      <div style={{ background: isDark ? 'linear-gradient(135deg,#172554,#1E3A8A)' : 'linear-gradient(135deg,#1E40AF,#2563EB)', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ background: 'linear-gradient(135deg,#334155 0%,#1E293B 100%)', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 10px rgba(15,23,42,0.25)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <span style={{ fontSize: '10px', fontWeight: 800, letterSpacing: '0.08em', padding: '4px 10px', borderRadius: '6px', background: 'rgba(255,255,255,0.18)', color: '#fff' }}>🛡️ ADMIN</span>
           <Link href="/admin" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '13px' }}>← Dashboard</Link>
@@ -82,7 +86,7 @@ export default function AdminUsersPage() {
           <span style={{ color: '#fff', fontWeight: 600, fontSize: '14px' }}>Kelola User</span>
         </div>
         <motion.button whileTap={{ scale: 0.97 }} onClick={() => { setNotifForm({ title: '', message: '', targetUserId: null }); setShowNotifModal(true); }}
-          style={{ padding: '9px 20px', borderRadius: '8px', border: 'none', background: '#2563EB', color: '#fff', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
+          style={{ padding: '9px 20px', borderRadius: '8px', border: 'none', background: '#475569', color: '#fff', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
           📢 Broadcast Notifikasi
         </motion.button>
       </div>
@@ -124,6 +128,17 @@ export default function AdminUsersPage() {
             <span style={{ fontSize: '13px', color: c.muted }}>{filtered.length} user</span>
           </div>
 
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '20px' }}>
+            {['all','user','company','mentor','admin'].map(r => (
+              <button key={r} onClick={() => setRoleFilter(r)} style={{
+                padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit',
+                border: `1px solid ${roleFilter === r ? '#475569' : c.border}`,
+                background: roleFilter === r ? (isDark ? '#334155' : '#F1F5F9') : 'transparent',
+                color: roleFilter === r ? c.text : c.muted,
+              }}>{r === 'all' ? 'Semua' : r.charAt(0).toUpperCase() + r.slice(1)}</button>
+            ))}
+          </div>
+
           <div style={{ background: c.card, borderRadius: '12px', border: `1px solid ${c.border}`, overflow: 'hidden' }}>
             <div style={{ padding: '14px 20px', borderBottom: `1px solid ${c.border}`, display: 'grid', gridTemplateColumns: '1fr 180px 80px 80px 150px', gap: '12px' }}>
               {['User', 'Email', 'Lamaran', 'Role', 'Aksi'].map(h => (
@@ -133,10 +148,11 @@ export default function AdminUsersPage() {
             {loading ? <div style={{ padding: '40px', textAlign: 'center', color: c.muted }}>Memuat...</div> :
             filtered.map((u, i) => (
               <motion.div key={u.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
-                style={{ padding: '12px 20px', borderBottom: i < filtered.length - 1 ? `1px solid ${c.border}` : 'none', display: 'grid', gridTemplateColumns: '1fr 180px 80px 80px 150px', gap: '12px', alignItems: 'center' }}>
+                style={{ padding: '12px 20px', borderBottom: i < filtered.length - 1 ? `1px solid ${c.border}` : 'none', display: 'grid', gridTemplateColumns: '1fr 180px 80px 80px 150px', gap: '12px', alignItems: 'center', transition: 'background 0.15s' }}
+                onMouseEnter={e => e.currentTarget.style.background = isDark ? '#334155' : '#F8FAFC'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                   {u.avatar_url ? <img src={u.avatar_url} style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} /> :
-                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg,#2563EB,#1D4ED8)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 600, fontSize: '11px', flexShrink: 0 }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg,#475569,#334155)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 600, fontSize: '11px', flexShrink: 0 }}>
                       {u.full_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2)}
                     </div>}
                   <div style={{ minWidth: 0 }}>

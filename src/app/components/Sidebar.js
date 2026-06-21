@@ -8,6 +8,7 @@ import { supabase } from '../../lib/supabaseClient';
 import { useUser } from '../../lib/userContext';
 import { useTheme } from '../../lib/themeContext';
 import { useSidebar } from '../../lib/sidebarContext';
+import { useLang } from '../../lib/langContext';
 
 // 1. MENU DIURUTKAN DARI A - Z (Beranda tetap di atas sebagai standar UX)
 const navItems = [
@@ -40,6 +41,7 @@ export default function Sidebar() {
   const { user, logout } = useUser();
   const { isDark, toggleTheme } = useTheme();
   const sidebarCtx = useSidebar();
+  const { t } = useLang();
   const isOpen = sidebarCtx ? sidebarCtx.isOpen : true;
   const toggleSidebar = sidebarCtx ? sidebarCtx.toggle : () => {};
   const [unreadCount, setUnreadCount] = useState(0);
@@ -112,9 +114,6 @@ export default function Sidebar() {
             <div style={{ fontWeight: 800, fontSize: '15px', color: theme.darkText, letterSpacing: '-0.02em' }}>CareerForge</div>
             <div style={{ fontSize: '10px', color: theme.lightText, fontWeight: 700, letterSpacing: '0.04em' }}>SDGs 8</div>
           </div>
-          <button onClick={toggleTheme} style={{ width: '28px', height: '28px', border: `1px solid ${theme.border}`, background: theme.bgLight, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: theme.darkText, borderRadius: '4px', flexShrink: 0 }}>
-            {isDark ? '☀️' : '🌙'}
-          </button>
         </div>
 
         {/* Portal Akses Cepat */}
@@ -122,7 +121,7 @@ export default function Sidebar() {
           <div style={{ padding: '12px 16px', borderBottom: `1px solid ${theme.border}` }}>
             <Link href={portal.href} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '10px 14px', border: `1px solid ${theme.purple}`, textDecoration: 'none', borderRadius: '6px' }}>
               <span style={{ fontSize: '14px' }}>{portal.icon}</span>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: portal.colorVar, flex: 1 }}>{portal.label}</span>
+              <span style={{ fontSize: '13px', fontWeight: 700, color: portal.colorVar, flex: 1 }}>{t(portal.label)}</span>
               <span style={{ color: theme.lightText }}>→</span>
             </Link>
           </div>
@@ -140,15 +139,16 @@ export default function Sidebar() {
               <div style={{ position: 'absolute', bottom: '0', right: '0', width: '10px', height: '10px', borderRadius: '50%', background: '#22C55E', border: `2px solid ${theme.bgLight}` }} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: '9px', color: theme.lightText, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '3px' }}>{t('Profil')}</div>
               <div style={{ fontWeight: 700, fontSize: '13px', color: theme.darkText, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.full_name || 'User'}</div>
-              <span style={{ fontSize: '9px', padding: '2px 6px', background: roleLabel.bg, color: roleLabel.color, fontWeight: 700, borderRadius: '4px' }}>{roleLabel.text}</span>
+              <span style={{ fontSize: '9px', padding: '2px 6px', background: roleLabel.bg, color: roleLabel.color, fontWeight: 700, borderRadius: '4px' }}>{t(roleLabel.text)}</span>
             </div>
           </div>
         </Link>
 
         {/* 2. MENU NAVIGASI DENGAN EFEK HOVER MODERN */}
         <nav style={{ flex: 1, padding: '16px 12px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
-          <div style={{ fontSize: '11px', fontWeight: 800, color: theme.lightText, letterSpacing: '0.05em', textTransform: 'uppercase', padding: '0 8px', marginBottom: '8px' }}>Navigasi Utama</div>
+          <div style={{ fontSize: '11px', fontWeight: 800, color: theme.lightText, letterSpacing: '0.05em', textTransform: 'uppercase', padding: '0 8px', marginBottom: '8px' }}>{t('Navigasi Utama')}</div>
 
           {navItems.map((item) => {
             const active = isActive(item.href, item.exact);
@@ -176,7 +176,7 @@ export default function Sidebar() {
                   )}
 
                   <span style={{ fontSize: '18px', width: '24px', textAlign: 'center', opacity: active ? 1 : 0.6, transition: 'opacity 0.2s ease' }}>{item.icon}</span>
-                  <span style={{ flex: 1 }}>{item.label}</span>
+                  <span style={{ flex: 1 }}>{t(item.label)}</span>
 
                   {item.href === '/notifikasi' && unreadCount > 0 && (
                     <span style={{ background: '#EF4444', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '2px 6px', borderRadius: '12px' }}>
@@ -191,9 +191,9 @@ export default function Sidebar() {
 
         {/* Bagian Bawah / Footer */}
         <div style={{ padding: '16px', borderTop: `1px solid ${theme.border}`, display: 'flex', flexDirection: 'column', gap: '8px', backgroundColor: theme.bgLight }}>
-          <Link href="/profil/edit" style={{ textDecoration: 'none' }}>
+          <Link href="/pengaturan" style={{ textDecoration: 'none' }}>
             <motion.div whileHover={{ backgroundColor: theme.border }} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', color: theme.darkText, fontSize: '13px', fontWeight: 600, borderRadius: '8px', transition: 'background-color 0.2s ease' }}>
-              <span style={{ fontSize: '16px' }}>👤</span> Edit Profil
+              <span style={{ fontSize: '16px' }}>⚙️</span> {t('Pengaturan')}
             </motion.div>
           </Link>
           <motion.button
@@ -201,7 +201,7 @@ export default function Sidebar() {
             onClick={handleLogout}
             style={{ width: '100%', padding: '10px 14px', border: 'none', background: 'transparent', color: '#DC2626', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', borderRadius: '8px', transition: 'background-color 0.2s ease' }}
           >
-            <span style={{ fontSize: '16px' }}>🚪</span> Keluar
+            <span style={{ fontSize: '16px' }}>🚪</span> {t('Keluar')}
           </motion.button>
         </div>
       </aside>

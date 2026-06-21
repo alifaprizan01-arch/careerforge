@@ -23,6 +23,8 @@ export default function AdminLowonganPage() {
   const [msg, setMsg] = useState('');
   const [search, setSearch] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [counts, setCounts] = useState({});
+  const [typeFilter, setTypeFilter] = useState('all');
 
   useEffect(() => { if (loaded && (!user || user.role !== 'admin')) router.push('/'); }, [loaded, user]);
   useEffect(() => { if (user?.role === 'admin') fetchTrayek(); }, [user]);
@@ -30,7 +32,15 @@ export default function AdminLowonganPage() {
   const fetchTrayek = async () => {
     setLoading(true);
     const { data } = await supabase.from('trayek').select('*').order('id', { ascending: false });
-    setTrayek(data || []);
+    const jobs = data || [];
+    setTrayek(jobs);
+    const ids = jobs.map(j => j.id);
+    if (ids.length) {
+      const { data: apps } = await supabase.from('applications').select('trayek_id').in('trayek_id', ids);
+      const cmap = {};
+      (apps || []).forEach(a => { cmap[a.trayek_id] = (cmap[a.trayek_id] || 0) + 1; });
+      setCounts(cmap);
+    } else setCounts({});
     setLoading(false);
   };
 
@@ -72,25 +82,28 @@ export default function AdminLowonganPage() {
     bg: isDark ? '#0F172A' : '#F8FAFC', card: isDark ? '#1E293B' : '#fff',
     border: isDark ? '#334155' : '#E2E8F0', text: isDark ? '#F1F5F9' : '#0F172A',
     muted: isDark ? '#94A3B8' : '#64748B', input: isDark ? '#0F172A' : '#F8FAFC',
-    inputText: isDark ? '#F1F5F9' : '#0F172A', blue: isDark ? '#3B82F6' : '#2563EB',
-    blueLight: isDark ? '#1E3A5F' : '#EFF6FF',
+    inputText: isDark ? '#F1F5F9' : '#0F172A', blue: isDark ? '#94A3B8' : '#475569',
+    blueLight: isDark ? '#334155' : '#F1F5F9',
   };
 
   const inputStyle = { width: '100%', padding: '10px 14px', borderRadius: '8px', border: `1px solid ${c.border}`, fontSize: '14px', outline: 'none', background: c.input, color: c.inputText, fontFamily: 'Inter, sans-serif', boxSizing: 'border-box' };
-  const filtered = trayek.filter(t => !search || t.tujuan?.toLowerCase().includes(search.toLowerCase()) || t.company?.toLowerCase().includes(search.toLowerCase()));
+  const filtered = trayek.filter(t =>
+    (!search || t.tujuan?.toLowerCase().includes(search.toLowerCase()) || t.company?.toLowerCase().includes(search.toLowerCase()))
+    && (typeFilter === 'all' || (t.jenis || 'Full Time') === typeFilter)
+  );
 
   if (!loaded || !user || user.role !== 'admin') return null;
 
   return (
     <div style={{ minHeight: '100vh', background: c.bg, fontFamily: 'Inter, sans-serif' }}>
-      <div style={{ background: isDark ? '#1E293B' : '#1E3A5F', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+      <div style={{ background: 'linear-gradient(135deg,#334155 0%,#1E293B 100%)', padding: '16px 32px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', boxShadow: '0 2px 10px rgba(15,23,42,0.25)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
           <Link href="/admin" style={{ color: 'rgba(255,255,255,0.7)', textDecoration: 'none', fontSize: '13px' }}>← Dashboard</Link>
           <span style={{ color: 'rgba(255,255,255,0.3)' }}>/</span>
           <span style={{ color: '#fff', fontWeight: 600, fontSize: '14px' }}>Kelola Lowongan</span>
         </div>
         <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => { setShowForm(true); setEditItem(null); setForm(emptyForm); }}
-          style={{ padding: '9px 20px', borderRadius: '8px', border: 'none', background: '#2563EB', color: '#fff', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
+          style={{ padding: '9px 20px', borderRadius: '8px', border: 'none', background: '#475569', color: '#fff', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>
           + Tambah Lowongan
         </motion.button>
       </div>
@@ -136,7 +149,7 @@ export default function AdminLowonganPage() {
                   </div>
                   <div style={{ padding: '16px 24px', borderTop: `1px solid ${c.border}`, display: 'flex', gap: '10px', position: 'sticky', bottom: 0, background: c.card }}>
                     <button onClick={() => { setShowForm(false); setEditItem(null); }} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: `1px solid ${c.border}`, background: 'transparent', color: c.muted, fontSize: '14px', cursor: 'pointer' }}>Batal</button>
-                    <motion.button whileTap={{ scale: 0.97 }} onClick={handleSave} disabled={saving} style={{ flex: 2, padding: '10px', borderRadius: '8px', border: 'none', background: saving ? '#93C5FD' : c.blue, color: '#fff', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}>
+                    <motion.button whileTap={{ scale: 0.97 }} onClick={handleSave} disabled={saving} style={{ flex: 2, padding: '10px', borderRadius: '8px', border: 'none', background: saving ? '#94A3B8' : c.blue, color: '#fff', fontWeight: 600, fontSize: '14px', cursor: 'pointer' }}>
                       {saving ? 'Menyimpan...' : editItem ? '💾 Perbarui' : '+ Tambah'}
                     </motion.button>
                   </div>
@@ -163,6 +176,17 @@ export default function AdminLowonganPage() {
             )}
           </AnimatePresence>
 
+          {(() => {
+            const types = ['all', ...Array.from(new Set(trayek.map(t => t.jenis).filter(Boolean)))];
+            return types.length > 1 ? (
+              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
+                {types.map(tp => (
+                  <button key={tp} onClick={() => setTypeFilter(tp)} style={{ padding: '6px 14px', borderRadius: '20px', fontSize: '12px', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit', border: `1px solid ${typeFilter === tp ? c.blue : c.border}`, background: typeFilter === tp ? c.blueLight : 'transparent', color: typeFilter === tp ? c.blue : c.muted }}>{tp === 'all' ? 'Semua Tipe' : tp}</button>
+                ))}
+              </div>
+            ) : null;
+          })()}
+
           {/* Table */}
           <div style={{ background: c.card, borderRadius: '12px', border: `1px solid ${c.border}`, overflow: 'hidden' }}>
             <div style={{ padding: '16px 20px', borderBottom: `1px solid ${c.border}`, display: 'grid', gridTemplateColumns: '1fr 120px 100px 80px 120px', gap: '12px' }}>
@@ -174,10 +198,14 @@ export default function AdminLowonganPage() {
             filtered.length === 0 ? <div style={{ padding: '60px', textAlign: 'center', color: c.muted }}>Belum ada lowongan.</div> :
             filtered.map((item, i) => (
               <motion.div key={item.id} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: i * 0.03 }}
-                style={{ padding: '14px 20px', borderBottom: i < filtered.length - 1 ? `1px solid ${c.border}` : 'none', display: 'grid', gridTemplateColumns: '1fr 120px 100px 80px 120px', gap: '12px', alignItems: 'center' }}>
+                style={{ padding: '14px 20px', borderBottom: i < filtered.length - 1 ? `1px solid ${c.border}` : 'none', display: 'grid', gridTemplateColumns: '1fr 120px 100px 80px 120px', gap: '12px', alignItems: 'center', transition: 'background 0.15s' }}
+                onMouseEnter={e => e.currentTarget.style.background = isDark ? '#334155' : '#F8FAFC'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
                 <div>
                   <div style={{ fontWeight: 600, color: c.text, fontSize: '14px', marginBottom: '2px' }}>{item.tujuan}</div>
-                  <div style={{ fontSize: '12px', color: c.muted }}>{item.company || 'Perusahaan'}</div>
+                  <div style={{ fontSize: '12px', color: c.muted, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span>{item.company || 'Perusahaan'}</span>
+                    <span onClick={() => router.push('/admin/lamaran')} title="Lihat pelamar" style={{ fontSize: '11px', padding: '1px 8px', borderRadius: '20px', background: c.blueLight, color: c.blue, fontWeight: 600, cursor: 'pointer' }}>👥 {counts[item.id] || 0}</span>
+                  </div>
                 </div>
                 <div style={{ fontSize: '13px', color: c.muted }}>{item.asal || '-'}</div>
                 <div>

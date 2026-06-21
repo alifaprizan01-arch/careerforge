@@ -8,6 +8,7 @@ import { useUser } from '../../lib/userContext';
 import { useTheme } from '../../lib/themeContext';
 import Sidebar from '../components/Sidebar';
 import { useSidebar } from '../../lib/sidebarContext';
+import { useLang } from '../../lib/langContext';
 
 export default function LowonganPage() {
   const router = useRouter();
@@ -22,6 +23,7 @@ export default function LowonganPage() {
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('Semua');
   const { isOpen: sidebarOpen, toggle: toggleSidebar } = useSidebar();
+  const { t } = useLang();
   const [activeTab, setActiveTab] = useState('deskripsi'); // deskripsi | kualifikasi | perusahaan
 
   // Tema Dinamis Premium
@@ -124,14 +126,14 @@ export default function LowonganPage() {
         <header style={{ padding: '24px', borderBottom: `1px solid ${theme.border}`, display: 'flex', flexDirection: 'column', gap: '16px', position: 'sticky', top: 0, backgroundColor: theme.white, zIndex: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
             <button onClick={toggleSidebar} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: theme.darkText }}>☰</button>
-            <h1 style={{ fontSize: '24px', fontWeight: 800, letterSpacing: '-0.02em' }}>Lowongan Karier</h1>
+            <h1 style={{ fontSize: '24px', fontWeight: 800, letterSpacing: '-0.02em' }}>{t('Lowongan Karier')}</h1>
           </div>
 
           <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
             <div style={{ flex: 1, position: 'relative', minWidth: '280px' }}>
               <input 
                 type="text" 
-                placeholder="Cari posisi, perusahaan, atau lokasi..." 
+                placeholder={t('Cari posisi, perusahaan, atau lokasi...')} 
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 style={{ width: '100%', padding: '12px 14px 12px 40px', borderRadius: '8px', border: `1px solid ${theme.border}`, backgroundColor: theme.bgLight, color: theme.darkText, outline: 'none' }}
@@ -154,7 +156,7 @@ export default function LowonganPage() {
                   transition: 'all 0.2s ease'
                 }}
               >
-                {type}
+                {t(type)}
               </button>
             ))}
           </div>
@@ -170,7 +172,7 @@ export default function LowonganPage() {
                 <div key={i} style={{ height: '115px', backgroundColor: theme.bgLight, borderRadius: '8px' }} />
               ))
             ) : filteredJobs.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '40px 20px', color: theme.lightText, fontSize: '14px' }}>Tidak ada lowongan kerja yang tersedia.</div>
+              <div style={{ textAlign: 'center', padding: '40px 20px', color: theme.lightText, fontSize: '14px' }}>{t('Tidak ada lowongan kerja yang tersedia.')}</div>
             ) : (
               filteredJobs.map((job) => {
                 const isSelected = selectedJob?.id === job.id;
@@ -199,14 +201,14 @@ export default function LowonganPage() {
                       </div>
                     </div>
 
-                    <div style={{ fontSize: '13px', fontWeight: 600, color: theme.lightText, marginBottom: '10px' }}>{job.company || 'Perusahaan'}</div>
+                    <div style={{ fontSize: '13px', fontWeight: 600, color: theme.lightText, marginBottom: '10px' }}>{job.company || t('Perusahaan')}</div>
                     
                     <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', alignItems: 'center' }}>
                       <span style={{ fontSize: '11px', padding: '4px 8px', backgroundColor: theme.bgLight, borderRadius: '4px', color: theme.darkText, fontWeight: 600 }}>📍 {job.asal || 'Indonesia'}</span>
                       <span style={{ fontSize: '11px', padding: '4px 8px', backgroundColor: 'rgba(86, 36, 208, 0.08)', borderRadius: '4px', color: theme.purple, fontWeight: 700 }}>{job.jenis || 'Full Time'}</span>
                       
                       {hasApplied && (
-                        <span style={{ fontSize: '11px', padding: '4px 8px', backgroundColor: theme.greenBg, borderRadius: '4px', color: theme.green, fontWeight: 700 }}>✓ Dilamar</span>
+                        <span style={{ fontSize: '11px', padding: '4px 8px', backgroundColor: theme.greenBg, borderRadius: '4px', color: theme.green, fontWeight: 700 }}>✓ {t('Dilamar')}</span>
                       )}
                     </div>
                   </motion.div>
@@ -231,7 +233,7 @@ export default function LowonganPage() {
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: `1px solid ${theme.border}`, paddingBottom: '24px', marginBottom: '24px', gap: '20px' }}>
                     <div>
                       <h2 style={{ fontSize: '24px', fontWeight: 800, color: theme.darkText, margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>{selectedJob.tujuan}</h2>
-                      <p style={{ fontSize: '16px', fontWeight: 700, color: theme.purple, margin: '0 0 16px 0' }}>{selectedJob.company || 'Perusahaan'}</p>
+                      <p style={{ fontSize: '16px', fontWeight: 700, color: theme.purple, margin: '0 0 16px 0' }}>{selectedJob.company || t('Perusahaan')}</p>
                       
                       <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', color: theme.lightText, fontSize: '13px', fontWeight: 500 }}>
                         <span>📍 {selectedJob.asal || 'Indonesia'}</span>
@@ -260,7 +262,7 @@ export default function LowonganPage() {
                         transition: 'background-color 0.2s ease'
                       }}
                     >
-                      {appliedJobIds.has(selectedJob.id) ? 'Lihat Status Berkas 📋' : 'Lamar / Lengkapi Berkas 🚀'}
+                      {appliedJobIds.has(selectedJob.id) ? `${t('Lihat Status Berkas')} 📋` : `${t('Lamar / Lengkapi Berkas')} 🚀`}
                     </motion.button>
                   </div>
 
@@ -286,7 +288,7 @@ export default function LowonganPage() {
                           transition: 'all 0.15s ease'
                         }}
                       >
-                        {tab.label}
+                        {t(tab.label)}
                       </button>
                     ))}
                   </div>
@@ -295,7 +297,7 @@ export default function LowonganPage() {
                   <div style={{ lineHeight: '1.7', fontSize: '14px', color: theme.darkText, whiteSpace: 'pre-line' }}>
                     {activeTab === 'deskripsi' && (
                       <div>
-                        {selectedJob.deskripsi || 'Tidak ada deskripsi pekerjaan tambahan.'}
+                        {selectedJob.deskripsi || t('Tidak ada deskripsi pekerjaan tambahan.')}
                       </div>
                     )}
                     {activeTab === 'kualifikasi' && (
@@ -308,13 +310,13 @@ export default function LowonganPage() {
                             </div>
                           ))
                         ) : (
-                          'Tidak ada persyaratan khusus yang dicantumkan.'
+                          t('Tidak ada persyaratan khusus yang dicantumkan.')
                         )}
                       </div>
                     )}
                     {activeTab === 'dokumen' && (
                       <div>
-                        <p style={{ margin: '0 0 12px 0', fontWeight: 600 }}>Dokumen yang wajib dilampirkan pada sistem:</p>
+                        <p style={{ margin: '0 0 12px 0', fontWeight: 600 }}>{t('Dokumen yang wajib dilampirkan pada sistem:')}</p>
                         {selectedJob.required_documents && selectedJob.required_documents.length > 0 ? (
                           selectedJob.required_documents.map((doc, i) => (
                             <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '6px', color: theme.purple, fontWeight: 600 }}>
@@ -322,7 +324,7 @@ export default function LowonganPage() {
                             </div>
                           ))
                         ) : (
-                          <div style={{ color: theme.lightText }}>Hanya membutuhkan kelengkapan CV utama standar.</div>
+                          <div style={{ color: theme.lightText }}>{t('Hanya membutuhkan kelengkapan CV utama standar.')}</div>
                         )}
                       </div>
                     )}
@@ -332,7 +334,7 @@ export default function LowonganPage() {
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '80%', color: theme.lightText, gap: '12px' }}>
                   <span style={{ fontSize: '40px' }}>💼</span>
-                  <div style={{ fontSize: '14px', fontWeight: 500 }}>Silakan klik salah satu lowongan di kolom kiri untuk meninjau kualifikasi lengkap.</div>
+                  <div style={{ fontSize: '14px', fontWeight: 500 }}>{t('Silakan klik salah satu lowongan di kolom kiri untuk meninjau kualifikasi lengkap.')}</div>
                 </div>
               )}
             </AnimatePresence>
