@@ -86,7 +86,7 @@ export default function AuthPage() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '56px' }}>
             <div style={{ width: '42px', height: '42px', background: 'linear-gradient(135deg, #3B82F6, #1D4ED8)', borderRadius: '12px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '16px', letterSpacing: '-0.5px', boxShadow: '0 4px 14px rgba(37,99,235,0.4)' }}>CF</div>
             <div>
-              <div style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '-0.03em' }}>CareerForge</div>
+              <div style={{ fontSize: '20px', fontWeight: 800, letterSpacing: '-0.03em' }}>SiapKerja.id</div>
               <div style={{ fontSize: '11px', color: 'rgba(255,255,255,0.5)', letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 500 }}>Platform Karir</div>
             </div>
           </div>
@@ -236,7 +236,7 @@ export default function AuthPage() {
 
           <div style={{ marginTop: '28px', paddingTop: '20px', borderTop: '1px solid #F1F5F9', textAlign: 'center' }}>
             <p style={{ fontSize: '11px', color: '#94A3B8', lineHeight: 1.6 }}>
-              Dengan masuk, kamu menyetujui syarat & ketentuan CareerForge
+              Dengan masuk, kamu menyetujui syarat & ketentuan SiapKerja.id
             </p>
           </div>
         </div>

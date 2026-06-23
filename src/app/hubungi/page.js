@@ -6,7 +6,7 @@ import { supabase } from '../../lib/supabaseClient';
 import Sidebar from '../components/Sidebar';
 
 const CONTACTS = [
-  { icon: '✉️', label: 'Email', value: 'support@careerforge.id' },
+  { icon: '✉️', label: 'Email', value: 'support@SiapKerja.id.id' },
   { icon: '📞', label: 'Telepon', value: '+62 21 1234 5678' },
   { icon: '📍', label: 'Alamat', value: 'Jakarta, Indonesia' },
   { icon: '🕐', label: 'Jam Operasional', value: 'Senin–Jumat, 09.00–17.00 WIB' },

@@ -58,7 +58,7 @@ export default function PetaSitusPage() {
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
           <div style={{ fontSize: '36px', marginBottom: '8px' }}>🗺️</div>
           <h1 style={{ fontSize: '38px', fontWeight: 800, margin: '0 0 8px', letterSpacing: '-0.02em' }}>Peta Situs</h1>
-          <p style={{ fontSize: '16px', opacity: 0.9 }}>Semua halaman CareerForge dalam satu tempat.</p>
+          <p style={{ fontSize: '16px', opacity: 0.9 }}>Semua halaman SiapKerja.id dalam satu tempat.</p>
         </motion.div>
       </div>
 

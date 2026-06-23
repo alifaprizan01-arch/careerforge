@@ -40,7 +40,19 @@ const emojiFor = (name) => {
   return '📘';
 };
 
+// Hook deteksi layar HP
+function useIsMobile(bp = 768) {
+  const [m, setM] = useState(false);
+  useEffect(() => {
+    const c = () => setM(window.innerWidth < bp);
+    c(); window.addEventListener('resize', c);
+    return () => window.removeEventListener('resize', c);
+  }, [bp]);
+  return m;
+}
+
 export default function PelatihanPage() {
+  const isMobile = useIsMobile();
   const router = useRouter();
   const { user, loaded } = useUser();
   const { isDark } = useTheme();
@@ -66,7 +78,7 @@ export default function PelatihanPage() {
     setLoading(true);
     const [{ data: tr }, { data: ut }, { data: cat }] = await Promise.all([
       supabase.from('trainings').select('*, training_categories(name)'),
-      supabase.from('user_trainings').select('*, trainings(title,description)').eq('user_id', user.id),
+      supabase.from('user_trainings').select('*, trainings(title,description,thumbnail_url)').eq('user_id', user.id),
       supabase.from('training_categories').select('*'),
     ]);
     setTrainings(tr || []); setUserTrainings(ut || []); setCategories(cat || []);
@@ -136,11 +148,11 @@ export default function PelatihanPage() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-base)', fontFamily: 'var(--font-sans)' }}>
       <Sidebar />
-      <main style={{ marginLeft: 'var(--sidebar-width, 240px)', flex: 1, padding: '32px' }}>
+      <main style={{ marginLeft: isMobile ? 0 : 'var(--sidebar-width, 240px)', flex: 1, padding: isMobile ? '16px 14px 80px' : '32px' }}>
 
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }}
-          style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '24px' }}>
+          style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? '14px' : '0', justifyContent: 'space-between', alignItems: isMobile ? 'stretch' : 'flex-start', marginBottom: '24px' }}>
           <div>
             <h1 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>Pelatihan</h1>
             <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '4px' }}>Tingkatkan skill dengan modul interaktif, video, dan kuis</p>
@@ -162,7 +174,7 @@ export default function PelatihanPage() {
         <AnimatePresence>
           {showPromo && (
             <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0, marginBottom: 0 }}
-              style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '20px', background: 'var(--brand-600)', borderRadius: '16px', padding: '24px 28px', marginBottom: '24px', overflow: 'hidden' }}>
+              style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap', background: 'var(--brand-600)', borderRadius: '16px', padding: isMobile ? '20px' : '24px 28px', marginBottom: '24px', overflow: 'hidden' }}>
               <div style={{ flex: 1, color: '#fff', zIndex: 1 }}>
                 <h2 style={{ fontSize: '20px', fontWeight: 800, color: '#fff', marginBottom: '6px', lineHeight: 1.25 }}>Hemat 25% untuk satu tahun pembelajaran</h2>
                 <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)', lineHeight: 1.6, marginBottom: '16px', maxWidth: '440px' }}>
@@ -198,13 +210,13 @@ export default function PelatihanPage() {
           <>
             {/* Carousel kategori — "Pelajari skill penting" */}
             {categories.length > 0 && (
-              <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 0.8fr) minmax(0, 1.7fr)', gap: '24px', alignItems: 'center', marginBottom: '24px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 0.8fr) minmax(0, 1.7fr)', gap: isMobile ? '16px' : '24px', alignItems: 'center', marginBottom: '24px' }}>
                 <div>
                   <h2 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.3, marginBottom: '8px' }}>
                     Pelajari skill penting untuk karier dan kehidupan
                   </h2>
                   <p style={{ fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                    CareerForge membantu Anda membangun keahlian yang dibutuhkan untuk maju di pasar kerja yang terus berubah.
+                    SiapKerja.id membantu Anda membangun keahlian yang dibutuhkan untuk maju di pasar kerja yang terus berubah.
                   </p>
                 </div>
 
@@ -269,7 +281,7 @@ export default function PelatihanPage() {
             </div>
 
             {loading ? (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${isMobile ? '240px' : '300px'}, 1fr))`, gap: '16px' }}>
                 {[1, 2, 3].map(i => <div key={i} className="skeleton" style={{ height: '240px' }} />)}
               </div>
             ) : filtered.length === 0 ? (
@@ -279,7 +291,7 @@ export default function PelatihanPage() {
                 <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>Coba ubah kata kunci atau kategori.</p>
               </div>
             ) : (
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: `repeat(auto-fill, minmax(${isMobile ? '240px' : '300px'}, 1fr))`, gap: '16px' }}>
                 {filtered.map((t, i) => {
                   const enrolled = userTrainings.find(u => u.training_id === t.id);
                   const v = visualFor(t.training_categories?.name);
@@ -290,8 +302,11 @@ export default function PelatihanPage() {
                       onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}>
 
                       {/* Card thumbnail — header berwarna sesuai kategori */}
-                      <div style={{ position: 'relative', height: '110px', background: v.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '46px' }}>
-                        {v.emoji}
+                      <div style={{ position: 'relative', height: '110px', background: v.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '46px', overflow: 'hidden' }}>
+                        {t.thumbnail_url ? (
+                          <img src={t.thumbnail_url} alt={t.title} onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : v.emoji}
                         <div style={{ position: 'absolute', top: '10px', right: '10px', display: 'flex', gap: '5px', flexWrap: 'wrap', justifyContent: 'flex-end' }}>
                           {enrolled && <span className="badge badge-green">✓ Terdaftar</span>}
                           {t.level && <span className={`badge ${levelColor(t.level)}`}>{t.level}</span>}
@@ -355,8 +370,11 @@ export default function PelatihanPage() {
             ) : userTrainings.filter(ut => ut != null).map((ut, i) => (
               <motion.div key={ut.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
                 style={{ background: 'var(--surface-primary)', borderRadius: '12px', border: '1px solid var(--border-default)', padding: '20px', boxShadow: 'var(--shadow-xs)', display: 'flex', alignItems: 'center', gap: '16px' }}>
-                <div style={{ width: '52px', height: '52px', borderRadius: '12px', background: ut.progress >= 100 ? 'var(--success-50)' : 'var(--surface-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
-                  {ut.progress >= 100 ? '🏆' : '📚'}
+                <div style={{ position: 'relative', width: '52px', height: '52px', borderRadius: '12px', overflow: 'hidden', background: ut.progress >= 100 ? 'var(--success-50)' : 'var(--surface-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', flexShrink: 0 }}>
+                  {ut.trainings?.thumbnail_url ? (
+                    <img src={ut.trainings.thumbnail_url} alt={ut.trainings?.title || ''} onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                      style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                  ) : (ut.progress >= 100 ? '🏆' : '📚')}
                 </div>
                 <div style={{ flex: 1 }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>

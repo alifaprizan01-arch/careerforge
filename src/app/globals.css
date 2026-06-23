@@ -420,3 +420,18 @@ button {
 
 /* ===== SELECTION ===== */
 ::selection { background: var(--brand-100); color: var(--brand-800); }
+
+/* ===== PENGAMAN MOBILE: cegah scroll horizontal ===== */
+@media (max-width: 768px) {
+  html, body { overflow-x: hidden; max-width: 100%; }
+  /* PATCH CEPAT: tumpuk SEMUA grid inline jadi 1 kolom di HP.
+     Untuk mengecualikan satu grid, tambahkan className="keep-grid" pada elemennya. */
+  [style*="grid-template-columns"]:not(.keep-grid) { grid-template-columns: 1fr !important; }
+  /* Kecilkan padding raksasa yang umum dipakai section/kartu */
+  [style*="padding: 48px"]:not(.keep-pad) { padding: 20px !important; }
+  [style*="padding: 56px"]:not(.keep-pad) { padding: 24px !important; }
+  [style*="padding: 60px"]:not(.keep-pad),
+  [style*="padding: 80px"]:not(.keep-pad) { padding: 28px !important; }
+  :root { --sidebar-width: 0px; }  /* konten penuh di HP */
+  img, video { max-width: 100%; height: auto; }
+}

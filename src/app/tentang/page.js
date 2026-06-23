@@ -45,7 +45,7 @@ export default function TentangKamiPage() {
             <span style={{ display: 'inline-block', background: 'rgba(255,255,255,0.18)', padding: '6px 14px', borderRadius: '20px', fontSize: '13px', fontWeight: 600, marginBottom: '18px' }}>Tentang Kami</span>
             <h1 style={{ fontSize: '40px', fontWeight: 800, letterSpacing: '-0.03em', lineHeight: 1.15, marginBottom: '16px' }}>Membangun Karier, Memberdayakan Masa Depan</h1>
             <p style={{ fontSize: '17px', lineHeight: 1.7, opacity: 0.92 }}>
-              CareerForge adalah platform karier yang menghubungkan pencari kerja dengan peluang, pelatihan, dan mentor terbaik —
+              SiapKerja.id adalah platform karier yang menghubungkan pencari kerja dengan peluang, pelatihan, dan mentor terbaik —
               membantu setiap orang mendapatkan pekerjaan yang layak dan terus bertumbuh.
             </p>
           </motion.div>
@@ -115,7 +115,7 @@ export default function TentangKamiPage() {
             <div style={{ flex: 1, minWidth: '260px' }}>
               <h2 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '6px' }}>Komitmen pada SDG 8</h2>
               <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.7 }}>
-                CareerForge mendukung <strong>Tujuan Pembangunan Berkelanjutan ke-8</strong>: pekerjaan layak dan pertumbuhan ekonomi.
+                SiapKerja.id mendukung <strong>Tujuan Pembangunan Berkelanjutan ke-8</strong>: pekerjaan layak dan pertumbuhan ekonomi.
                 Kami berupaya memperluas akses ke pekerjaan produktif, mendorong pengembangan keterampilan, dan menciptakan kesempatan yang adil bagi semua.
               </p>
             </div>

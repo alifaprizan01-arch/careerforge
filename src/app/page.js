@@ -14,6 +14,7 @@ import { useSidebar } from '../lib/sidebarContext';
 import { useLang } from '../lib/langContext';
 import Footer from './components/Footer';
 import PromoBanner from './components/Promobanner';
+import InterviewBanner from './components/InterviewBanner';
 
 /* ---- Visual helper: warna + emoji per kategori (aman untuk dark mode) ---- */
 const PALETTES_LIGHT = [
@@ -47,10 +48,23 @@ const emojiFor = (name) => {
   return '📘';
 };
 
+// Hook deteksi layar HP untuk tata letak responsif
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < breakpoint);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, [breakpoint]);
+  return isMobile;
+}
+
 export default function Home() {
   const router = useRouter();
   const { user, loaded } = useUser();
   const [heroSeed] = useState(() => Math.random());
+  const isMobile = useIsMobile();
   const { isDark } = useTheme();
 
   // State Utama
@@ -105,7 +119,7 @@ export default function Home() {
     try {
       const [{ data: t }, { data: tr }, { data: ut }, { count: cc }, { count: ac }] = await Promise.all([
         supabase.from('trayek').select('*').order('id', { ascending: false }),
-        supabase.from('trainings').select('*, training_categories(name)'),
+        supabase.from('trainings').select('*, training_categories(name, image_url)'),
         supabase.from('user_trainings').select('*, trainings(title)').eq('user_id', user.id),
         supabase.from('user_certifications').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
         supabase.from('applications').select('*', { count: 'exact', head: true }).eq('user_id', user.id),
@@ -129,6 +143,8 @@ export default function Home() {
   });
 
   const courseCats = [...new Set(trainings.map(t => t.training_categories?.name).filter(Boolean))];
+  const catImages = {};
+  trainings.forEach(tr => { const c = tr.training_categories; if (c?.name && c.image_url) catImages[c.name] = c.image_url; });
   const countFor = (name) => trainings.filter(t => t.training_categories?.name === name).length;
   const toggleSaved = (id) => setSaved(prev => prev.includes(id) ? prev.filter(x => x !== id) : [...prev, id]);
 
@@ -191,8 +207,8 @@ export default function Home() {
         <header style={{ display: 'flex', alignItems: 'center', padding: '12px 24px', borderBottom: '1px solid var(--border-default)', gap: '20px', background: 'var(--surface-primary)', position: 'sticky', top: 0, zIndex: 99 }}>
 
           <div onClick={() => router.push('/')} style={{ display: 'flex', alignItems: 'center', gap: '8px', cursor: 'pointer' }}>
-            <div style={{ width: '30px', height: '30px', borderRadius: '8px', background: 'var(--brand-600)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '13px' }}>CF</div>
-            <span style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>CareerForge</span>
+            <img src="/logo.jpeg" alt="SiapKerja.id" style={{ width: '30px', height: '30px', borderRadius: '8px', objectFit: 'cover' }} />
+            <span style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>SiapKerja.id</span>
           </div>
 
           <button onClick={() => router.push('/pelatihan')} style={{ background: 'none', border: 'none', fontSize: '14px', cursor: 'pointer', color: 'var(--text-secondary)', fontWeight: 500 }}>
@@ -234,14 +250,14 @@ export default function Home() {
         </header>
 
         {/* HERO SECTION */}
-        <section style={{ position: 'relative', display: 'flex', alignItems: 'center', padding: '56px 48px', margin: '20px 24px 0', borderRadius: '24px', background: hasHero ? '#E2E8F0' : 'var(--surface-secondary)', backgroundImage: hasHero ? `url(${heroImg})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center', justifyContent: 'space-between', gap: '40px', flexWrap: 'wrap', overflow: 'hidden', boxShadow: 'var(--shadow-md)' }}>
+        <section style={{ position: 'relative', display: 'flex', alignItems: 'center', padding: isMobile ? '32px 18px' : '56px 48px', margin: isMobile ? '14px 12px 0' : '20px 24px 0', borderRadius: '24px', background: hasHero ? '#E2E8F0' : 'var(--surface-secondary)', backgroundImage: hasHero ? `url(${heroImg})` : 'none', backgroundSize: 'cover', backgroundPosition: 'center', justifyContent: 'space-between', gap: '40px', flexWrap: 'wrap', overflow: 'hidden', boxShadow: 'var(--shadow-md)' }}>
           {hasHero && <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(90deg, rgba(255,255,255,0.74) 0%, rgba(255,255,255,0.42) 48%, rgba(255,255,255,0.12) 100%)' }} />}
 
           <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} style={{ position: 'relative', zIndex: 1, maxWidth: '520px', flex: '1 1 420px' }}>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: hasHero ? 'rgba(255,255,255,0.88)' : 'var(--surface-brand)', borderRadius: '6px', padding: '5px 10px', marginBottom: '14px', boxShadow: hasHero ? '0 2px 6px rgba(0,0,0,0.06)' : 'none' }}>
               <span style={{ fontSize: '12px', color: hasHero ? '#6D28D9' : 'var(--text-brand)', fontWeight: 700, letterSpacing: '0.02em' }}>{t('Selamat datang')}, {user.full_name?.split(' ')[0]} 👋</span>
             </div>
-            <h1 style={{ fontSize: '38px', fontWeight: 800, lineHeight: 1.15, marginBottom: '16px', color: hasHero ? '#1E293B' : 'var(--text-primary)', letterSpacing: '-0.02em' }}>
+            <h1 style={{ fontSize: isMobile ? '26px' : '38px', fontWeight: 800, lineHeight: 1.15, marginBottom: '16px', color: hasHero ? '#1E293B' : 'var(--text-primary)', letterSpacing: '-0.02em' }}>
               {t('Temukan ribuan kursus, mulai belajar hari ini')}
             </h1>
             <p style={{ fontSize: '16px', color: hasHero ? '#334155' : 'var(--text-secondary)', marginBottom: '24px', lineHeight: 1.6 }}>
@@ -279,14 +295,14 @@ export default function Home() {
 
         {/* ===== CAROUSEL: Pelajari skill penting ===== */}
         {courseCats.length > 0 && (
-          <div style={{ padding: '40px 24px 0', maxWidth: '1400px', width: '100%', margin: '0 auto' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 0.8fr) minmax(0, 1.8fr)', gap: '32px', alignItems: 'center' }}>
+          <div style={{ padding: isMobile ? '24px 14px 0' : '40px 24px 0', maxWidth: '1400px', width: '100%', margin: '0 auto' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'minmax(0, 0.8fr) minmax(0, 1.8fr)', gap: isMobile ? '16px' : '32px', alignItems: 'center' }}>
               <div>
                 <h2 style={{ fontSize: '26px', fontWeight: 800, color: 'var(--text-primary)', lineHeight: 1.25, marginBottom: '10px', letterSpacing: '-0.02em' }}>
                   Pelajari skill penting terkait karier dan kehidupan
                 </h2>
                 <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                  CareerForge membantu Anda membangun keahlian yang dibutuhkan dengan cepat dan memajukan karier di pasar kerja yang terus berubah.
+                  SiapKerja.id membantu Anda membangun keahlian yang dibutuhkan dengan cepat dan memajukan karier di pasar kerja yang terus berubah.
                 </p>
               </div>
 
@@ -300,7 +316,12 @@ export default function Home() {
                         style={{ position: 'relative', flex: '0 0 240px', height: '300px', scrollSnapAlign: 'start', borderRadius: '16px', overflow: 'hidden', cursor: 'pointer', background: v.bg, transition: 'transform 0.15s', display: 'flex', alignItems: 'flex-start', justifyContent: 'center', paddingTop: '50px' }}
                         onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-4px)'}
                         onMouseLeave={e => e.currentTarget.style.transform = 'none'}>
-                        <span style={{ fontSize: '80px' }}>{v.emoji}</span>
+                        {catImages[name] ? (
+                          <img src={catImages[name]} alt={name} onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <span style={{ fontSize: '80px' }}>{v.emoji}</span>
+                        )}
                         <div style={{ position: 'absolute', left: '14px', right: '14px', bottom: '14px', background: 'var(--surface-primary)', borderRadius: '12px', padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', boxShadow: 'var(--shadow-md)' }}>
                           <div>
                             <div style={{ fontSize: '15px', fontWeight: 800, color: 'var(--text-primary)' }}>{name}</div>
@@ -329,45 +350,12 @@ export default function Home() {
           </div>
         )}
 
-       {/* SECTION: Banner Interview AI dengan Gambar dari Internet */}
-        <section style={{ padding: '40px 24px', maxWidth: '1400px', width: '100%', margin: '0 auto' }}>
-          <div style={{ 
-            background: '#006aff', borderRadius: '24px', padding: '48px', display: 'flex', 
-            justifyContent: 'space-between', alignItems: 'center', gap: '40px', flexWrap: 'wrap', color: '#FFFFFF'
-          }}>
-            
-            {/* Teks Kiri */}
-            <div style={{ flex: '1 1 450px' }}>
-              <h2 style={{ fontSize: '32px', fontWeight: 800, marginBottom: '16px' }}>{t('Coba Simulasi Interview Dengan AI')}</h2>
-              <p style={{ fontSize: '16px', color: '#D1D5DB', marginBottom: '24px' }}>
-                {t('Siapkan skill Anda untuk interview yang lebih profesional. Dapatkan akses ke berbagai bidang pekerjaan yang terasa nyata.')}
-              </p>
-              
-              <button onClick={() => router.push('/interview')} 
-                style={{ padding: '12px 24px', background: '#FFF', color: '#111827', border: 'none', borderRadius: '8px', fontWeight: 700, cursor: 'pointer' }}>
-                {t('Mulai Interview AI')} →
-              </button>
-            </div>
-
-            {/* Area Gambar dari Internet */}
-            <div style={{ flex: '0 0 400px', height: '240px', display: 'flex', gap: '16px' }}>
-              <img 
-                src="https://i.pinimg.com/736x/4e/1f/49/4e1f49060ffa40da3c9b3750a2dac383.jpg" 
-                alt="Simulasi Interview 1" 
-                style={{ flex: 1, borderRadius: '16px', objectFit: 'cover', background: '#3B82F6' }} 
-              />
-              <img 
-                src="https://i.pinimg.com/webp85/1200x/10/4b/2b/104b2b613ca32b6bac89f7d2772061be.webp" 
-                alt="Simulasi Interview 2" 
-                style={{ flex: 1, borderRadius: '16px', objectFit: 'cover', background: '#6366F1' }} 
-              />
-            </div>
-          </div>
-        </section>
+        {/* SECTION: Banner Interview AI (interaktif) */}
+        <InterviewBanner />
       
 
         {/* MAIN CONTENT SPLIT GRID */}
-        <main ref={gridRef} style={{ padding: '40px 24px', display: 'grid', gridTemplateColumns: '1fr 3fr', gap: '40px', maxWidth: '1400px', width: '100%', margin: '0 auto' }}>
+        <main ref={gridRef} style={{ padding: isMobile ? '24px 14px' : '40px 24px', display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 3fr', gap: isMobile ? '20px' : '40px', maxWidth: '1400px', width: '100%', margin: '0 auto' }}>
 
           <div>
             <h2 style={{ fontSize: '18px', fontWeight: 800, marginBottom: '18px', letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>{t('Kategori Utama')}</h2>
@@ -425,8 +413,11 @@ export default function Home() {
                       onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-4px)'; e.currentTarget.style.boxShadow = 'var(--shadow-lg)'; }}
                       onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'var(--shadow-sm)'; }}>
 
-                      <div style={{ position: 'relative', height: '120px', background: v.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px' }}>
-                        {v.emoji}
+                      <div style={{ position: 'relative', height: '120px', background: v.bg, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '40px', overflow: 'hidden' }}>
+                        {course.thumbnail_url ? (
+                          <img src={course.thumbnail_url} alt={course.title} onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                            style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : v.emoji}
                         <button onClick={(e) => { e.stopPropagation(); toggleSaved(course.id); }}
                           aria-label={isSaved ? t('Hapus dari simpanan') : t('Simpan kursus')}
                           style={{ position: 'absolute', top: '10px', right: '10px', width: '30px', height: '30px', borderRadius: '50%', border: 'none', background: 'rgba(255,255,255,0.9)', color: isSaved ? '#EF4444' : 'var(--text-tertiary)', cursor: 'pointer', fontSize: '15px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: 'var(--shadow-xs)' }}>

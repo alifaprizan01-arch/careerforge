@@ -57,9 +57,9 @@ export default function Footer() {
             )}
           </div>
 
-          {/* Fitur CareerForge */}
+          {/* Fitur SiapKerja.id */}
           <div style={colStyle}>
-            <div style={headerStyle}>Fitur CareerForge</div>
+            <div style={headerStyle}>Fitur SiapKerja.id</div>
             <FooterLink href="/trayek">Lowongan Kerja</FooterLink>
             <FooterLink href="/lamaran">Lamaran Saya</FooterLink>
             <FooterLink href="/mentoring">Mentoring</FooterLink>
@@ -72,7 +72,6 @@ export default function Footer() {
           <div style={colStyle}>
             <div style={headerStyle}>Perusahaan</div>
             <FooterLink href="/tentang">Tentang Kami</FooterLink>
-            <FooterLink href="/karier">Karier</FooterLink>
             <FooterLink href="/hubungi">Hubungi Kami</FooterLink>
             <FooterLink href="/blog">Blog</FooterLink>
             <FooterLink href="/bantuan">Bantuan & Dukungan</FooterLink>
@@ -95,9 +94,9 @@ export default function Footer() {
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'var(--brand-600)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '12px' }}>CF</div>
-              <span style={{ fontSize: '15px', fontWeight: 800, color: '#F8FAFC', letterSpacing: '-0.02em' }}>CareerForge</span>
+              <span style={{ fontSize: '15px', fontWeight: 800, color: '#F8FAFC', letterSpacing: '-0.02em' }}>SiapKerja.id</span>
             </div>
-            <span style={{ fontSize: '12px', color: '#64748B' }}>© {new Date().getFullYear()} CareerForge — SDGs 8</span>
+            <span style={{ fontSize: '12px', color: '#64748B' }}>© {new Date().getFullYear()} SiapKerja.id — SDGs 8</span>
           </div>
           <span style={{ fontSize: '13px', color: '#94A3B8' }}>🌐 Bahasa Indonesia</span>
         </div>

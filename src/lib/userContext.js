@@ -10,7 +10,7 @@ export function UserProvider({ children }) {
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem('careerforge_user');
+      const stored = localStorage.getItem('SiapKerja.id_user');
       if (stored) setUser(JSON.parse(stored));
     } catch (_) {}
     setLoaded(true);
@@ -20,13 +20,13 @@ export function UserProvider({ children }) {
     // Merge data baru dengan data lama agar avatar_url tidak hilang
     setUser(prev => {
       const merged = { ...(prev || {}), ...userData };
-      localStorage.setItem('careerforge_user', JSON.stringify(merged));
+      localStorage.setItem('SiapKerja.id_user', JSON.stringify(merged));
       return merged;
     });
   };
 
   const logout = () => {
-    localStorage.removeItem('careerforge_user');
+    localStorage.removeItem('SiapKerja.id_user');
     setUser(null);
   };
 
@@ -34,7 +34,7 @@ export function UserProvider({ children }) {
     setUser(prev => {
       if (!prev) return prev;
       const updated = { ...prev, avatar_url: avatarUrl };
-      localStorage.setItem('careerforge_user', JSON.stringify(updated));
+      localStorage.setItem('SiapKerja.id_user', JSON.stringify(updated));
       return updated;
     });
   };

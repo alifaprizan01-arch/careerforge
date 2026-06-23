@@ -570,7 +570,7 @@ export default function CVBuilderPage() {
                         </div>
                         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                           {[
-                            { key: 'name', label: 'Nama Proyek *', placeholder: 'CareerForge Platform', full: true },
+                            { key: 'name', label: 'Nama Proyek *', placeholder: 'SiapKerja.id Platform', full: true },
                             { key: 'technologies', label: 'Teknologi', placeholder: 'Next.js, Supabase, Tailwind' },
                             { key: 'url', label: 'URL Proyek', placeholder: 'github.com/username/project' },
                           ].map(f => (

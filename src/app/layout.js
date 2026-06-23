@@ -5,8 +5,14 @@ import { LanguageProvider } from '../lib/langContext';
 import './globals.css';
 
 export const metadata = {
-  title: 'CareerForge',
+  title: 'SiapKerja.id',
   description: 'Platform karir berbasis AI — SDGs 8',
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
 };
 
 export default function RootLayout({ children }) {

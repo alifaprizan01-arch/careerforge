@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { supabase } from '../../lib/supabaseClient';
 import { useUser } from '../../lib/userContext';
@@ -45,6 +45,8 @@ export default function Sidebar() {
   const isOpen = sidebarCtx ? sidebarCtx.isOpen : true;
   const toggleSidebar = sidebarCtx ? sidebarCtx.toggle : () => {};
   const [unreadCount, setUnreadCount] = useState(0);
+  const [isMobile, setIsMobile] = useState(false);
+  const didAutoClose = useRef(false);
 
   const theme = {
     purple: '#5624D0',
@@ -65,6 +67,28 @@ export default function Sidebar() {
     return () => supabase.removeChannel(channel);
   }, [user]);
 
+  // Deteksi layar HP
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 768);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+
+  // Di HP: sidebar default tertutup agar konten memakai lebar penuh
+  useEffect(() => {
+    if (isMobile && isOpen && !didAutoClose.current) {
+      didAutoClose.current = true;
+      toggleSidebar();
+    }
+  }, [isMobile]);
+
+  // Di HP: tutup sidebar otomatis setiap pindah halaman
+  useEffect(() => {
+    if (isMobile && isOpen) toggleSidebar();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pathname]);
+
   const fetchUnread = async () => {
     const { count } = await supabase.from('notifications').select('*', { count: 'exact', head: true }).eq('user_id', user.id).eq('is_read', false);
     setUnreadCount(count || 0);
@@ -79,6 +103,12 @@ export default function Sidebar() {
 
   return (
     <>
+      {/* Latar gelap saat sidebar terbuka di HP (klik untuk menutup) */}
+      {isMobile && isOpen && (
+        <div onClick={toggleSidebar} aria-hidden
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 90, backdropFilter: 'none' }} />
+      )}
+
       {/* Tombol buka (handle) — tampil saat sidebar tertutup di SEMUA halaman; di tepi kiri-tengah agar tidak menutupi logo/judul */}
       {!isOpen && (
         <button onClick={toggleSidebar} aria-label="Buka menu"
@@ -107,11 +137,9 @@ export default function Sidebar() {
             style={{ width: '30px', height: '30px', border: `1px solid ${theme.border}`, background: theme.bgLight, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: theme.darkText, borderRadius: '6px', fontSize: '15px', flexShrink: 0 }}>
             ☰
           </button>
-          <div style={{ width: '32px', height: '32px', background: theme.purple, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '13px', borderRadius: '4px', flexShrink: 0 }}>
-            CF
-          </div>
+          <img src="/logo.jpeg" alt="SiapKerja.id" style={{ width: '32px', height: '32px', borderRadius: '4px', flexShrink: 0, objectFit: 'cover' }} />
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 800, fontSize: '15px', color: theme.darkText, letterSpacing: '-0.02em' }}>CareerForge</div>
+            <div style={{ fontWeight: 800, fontSize: '15px', color: theme.darkText, letterSpacing: '-0.02em' }}>SiapKerja.id</div>
             <div style={{ fontSize: '10px', color: theme.lightText, fontWeight: 700, letterSpacing: '0.04em' }}>SDGs 8</div>
           </div>
         </div>

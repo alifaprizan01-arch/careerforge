@@ -58,7 +58,7 @@ export default function KarierPage() {
       <div style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.82) 0%, rgba(109,40,217,0.72) 100%), url(/Hana_2.png)', backgroundSize: 'cover', backgroundPosition: 'center', padding: '64px 24px 72px', textAlign: 'center', color: '#fff' }}>
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
           <span style={{ fontSize: '12px', fontWeight: 700, letterSpacing: '0.08em', padding: '6px 14px', borderRadius: '20px', background: 'rgba(255,255,255,0.2)' }}>KARIER</span>
-          <h1 style={{ fontSize: '42px', fontWeight: 800, margin: '18px 0 12px', letterSpacing: '-0.02em' }}>Berkarier di CareerForge</h1>
+          <h1 style={{ fontSize: '42px', fontWeight: 800, margin: '18px 0 12px', letterSpacing: '-0.02em' }}>Berkarier di SiapKerja.id</h1>
           <p style={{ fontSize: '17px', opacity: 0.92, maxWidth: '680px', margin: '0 auto', lineHeight: 1.6 }}>Bergabunglah dengan tim yang percaya bahwa setiap orang berhak atas pekerjaan yang layak. Kami membangun produk yang membantu ribuan orang menemukan jalan kariernya.</p>
         </motion.div>
       </div>

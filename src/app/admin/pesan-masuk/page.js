@@ -171,7 +171,7 @@ export default function AdminPesanMasukPage() {
                 {selected.message || <span style={{ color: c.muted }}>(Tanpa pesan)</span>}
               </div>
               <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
-                <a href={`mailto:${selected.email}?subject=${encodeURIComponent('Balasan dari CareerForge')}`}
+                <a href={`mailto:${selected.email}?subject=${encodeURIComponent('Balasan dari SiapKerja.id')}`}
                   style={{ flex: 2, padding: '11px', borderRadius: '8px', border: 'none', background: c.slate, color: '#fff', fontWeight: 700, textAlign: 'center', textDecoration: 'none', fontSize: '14px' }}>✉️ Balas via Email</a>
                 <button onClick={() => setDeleteConfirm(selected)} style={{ flex: 1, padding: '11px', borderRadius: '8px', border: '1px solid #DC2626', background: 'transparent', color: '#DC2626', fontWeight: 600, cursor: 'pointer', fontFamily: 'inherit' }}>🗑️ Hapus</button>
                 <button onClick={() => setSelected(null)} style={{ flex: 1, padding: '11px', borderRadius: '8px', border: `1px solid ${c.border}`, background: 'transparent', color: c.muted, cursor: 'pointer', fontFamily: 'inherit' }}>Tutup</button>

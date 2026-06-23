@@ -79,7 +79,7 @@ export default function PrivasiPage() {
 
         {/* Content */}
         <div style={{ flex: 1, minWidth: '300px' }}>
-          <p style={{ fontSize: '15px', color: c.muted, lineHeight: 1.8, marginBottom: '28px' }}>Privasimu penting bagi kami. Kebijakan ini menjelaskan bagaimana CareerForge mengumpulkan, menggunakan, dan melindungi informasimu.</p>
+          <p style={{ fontSize: '15px', color: c.muted, lineHeight: 1.8, marginBottom: '28px' }}>Privasimu penting bagi kami. Kebijakan ini menjelaskan bagaimana SiapKerja.id mengumpulkan, menggunakan, dan melindungi informasimu.</p>
           {SECTIONS.map((s, i) => (
             <motion.section key={s.id} id={s.id} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-80px' }}
               style={{ scrollMarginTop: '90px', background: c.card, borderRadius: '16px', border: `1px solid ${c.border}`, padding: '24px 26px', marginBottom: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>

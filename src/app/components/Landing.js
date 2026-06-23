@@ -80,8 +80,8 @@ export default function Landing() {
           
           {/* Brand Logo */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0 }}>
-            <div style={{ width: '36px', height: '36px', borderRadius: '6px', background: 'linear-gradient(135deg,#5624D0,#7C3AED)', display: 'flex', alignItems: 'center', justifyCenter: 'center', color: '#fff', fontWeight: 800, fontSize: '15px', justifyContent: 'center' }}>CF</div>
-            <span style={{ fontWeight: 800, fontSize: '19px', letterSpacing: '-0.03em' }}>CareerForge</span>
+            <img src="/logo.jpeg" alt="SiapKerja.id" style={{ width: '36px', height: '36px', borderRadius: '6px', objectFit: 'cover' }} />
+            <span style={{ fontWeight: 800, fontSize: '19px', letterSpacing: '-0.03em' }}>SiapKerja.id</span>
           </div>
 
           {/* Search Bar Container */}
@@ -126,7 +126,7 @@ export default function Landing() {
             <div style={{ padding: '24px' }}>
               <span style={{ fontSize: '11px', fontWeight: 700, color: c.purple, textTransform: 'uppercase', letterSpacing: '0.05em' }}>Rekomendasi Utama</span>
               <h3 style={{ fontSize: '18px', fontWeight: 800, margin: '8px 0 6px', lineHeight: 1.3 }}>Manajemen Logistik & Operasional Pergudangan</h3>
-              <p style={{ fontSize: '13px', color: c.muted, margin: '0 0 12px' }}>Oleh Tim Praktisi Industri CareerForge</p>
+              <p style={{ fontSize: '13px', color: c.muted, margin: '0 0 12px' }}>Oleh Tim Praktisi Industri SiapKerja.id</p>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
                 <Stars r={4.9} />
                 <span style={{ fontSize: '12px', color: c.muted }}>(850 peserta)</span>
@@ -204,7 +204,7 @@ export default function Landing() {
                     <div>
                       <span style={{ fontSize: '11px', fontWeight: 700, color: c.muted, textTransform: 'uppercase', letterSpacing: '0.04em' }}>{course.cat}</span>
                       <h3 style={{ fontSize: '15px', fontWeight: 800, margin: '6px 0', lineHeight: 1.35, color: c.text, display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{course.title}</h3>
-                      <p style={{ fontSize: '12px', color: c.muted, marginBottom: '8px' }}>Oleh Praktisi CareerForge</p>
+                      <p style={{ fontSize: '12px', color: c.muted, marginBottom: '8px' }}>Oleh Praktisi SiapKerja.id</p>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '12px' }}>
                         <Stars r={course.rating} />
                         <span style={{ fontSize: '11px', color: c.muted }}>({course.count})</span>
@@ -274,7 +274,7 @@ export default function Landing() {
       {/* ===== 7. TESTIMONIALS SECTION ===== */}
       <section style={{ maxWidth: '1240px', margin: '0 auto', padding: '64px 24px' }}>
         <div style={{ textAlign: 'center', marginBottom: '44px' }}>
-          <h2 style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: '8px' }}>Cerita Sukses Alumni CareerForge</h2>
+          <h2 style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: '8px' }}>Cerita Sukses Alumni SiapKerja.id</h2>
           <p style={{ fontSize: '15px', color: c.muted }}>Testimoni nyata dari para peserta yang berhasil mentransformasikan masa depan karier mereka.</p>
         </div>
         
@@ -305,7 +305,7 @@ export default function Landing() {
           <div style={{ fontSize: '44px', marginBottom: '16px' }}>🏆</div>
           <h2 style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: '12px' }}>Dapatkan Sertifikasi Resmi Setiap Penyelesaian Pelatihan</h2>
           <p style={{ fontSize: '15px', color: c.muted, lineHeight: 1.7, marginBottom: '28px' }}>
-            Setiap kelulusan kursus menghasilkan sertifikat digital tervalidasi yang dapat diunduh, disematkan langsung ke CV Builder CareerForge, serta dibagikan ke profil LinkedIn profesional Anda untuk menarik perhatian HRD rekanan.
+            Setiap kelulusan kursus menghasilkan sertifikat digital tervalidasi yang dapat diunduh, disematkan langsung ke CV Builder SiapKerja.id, serta dibagikan ke profil LinkedIn profesional Anda untuk menarik perhatian HRD rekanan.
           </p>
           <Link href="/auth" style={{ display: 'inline-flex', padding: '14px 32px', borderRadius: '4px', background: c.purple, color: '#fff', fontWeight: 700, fontSize: '15px', textDecoration: 'none' }}>Mulai Belajar Sekarang</Link>
         </div>
@@ -324,10 +324,10 @@ export default function Landing() {
       <footer style={{ borderTop: `1px solid ${c.border}`, background: c.bg, padding: '32px 24px' }}>
         <div style={{ maxWidth: '1240px', margin: '0 auto', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '16px', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <div style={{ width: '30px', height: '30px', borderRadius: '4px', background: 'linear-gradient(135deg,#5624D0,#7C3AED)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '12px' }}>CF</div>
-            <span style={{ fontWeight: 700, fontSize: '15px', letterSpacing: '-0.01em' }}>CareerForge</span>
+            <img src="/logo.jpeg" alt="SiapKerja.id" style={{ width: '30px', height: '30px', borderRadius: '4px', objectFit: 'cover' }} />
+            <span style={{ fontWeight: 700, fontSize: '15px', letterSpacing: '-0.01em' }}>SiapKerja.id</span>
           </div>
-          <span style={{ fontSize: '13px', color: c.muted }}>© {new Date().getFullYear()} CareerForge · Mendukung SDGs 8 (Pertumbuhan Ekonomi & Pekerjaan Layak)</span>
+          <span style={{ fontSize: '13px', color: c.muted }}>© {new Date().getFullYear()} SiapKerja.id · Mendukung SDGs 8 (Pertumbuhan Ekonomi & Pekerjaan Layak)</span>
         </div>
       </footer>
 

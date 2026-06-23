@@ -28,6 +28,7 @@ export default function AdminPelatihanPage() {
   const [editItem, setEditItem] = useState(null);
   const [form, setForm] = useState(emptyTraining);
   const [saving, setSaving] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   // Module manager
   const [moduleFor, setModuleFor] = useState(null);
@@ -91,6 +92,23 @@ export default function AdminPelatihanPage() {
       fetchTrainings();
     } catch (e) { flash('Gagal: ' + e.message); }
     finally { setSaving(false); }
+  };
+
+  const handleImageUpload = async (file) => {
+    if (!file) return;
+    if (!file.type.startsWith('image/')) { flash('Gagal: file harus berupa gambar.'); return; }
+    if (file.size > 5 * 1024 * 1024) { flash('Gagal: ukuran gambar maksimal 5MB.'); return; }
+    setUploadingImage(true);
+    try {
+      const safe = file.name.replace(/[^a-zA-Z0-9._-]/g, '_');
+      const path = `trainings/${editItem?.id || 'new'}/${Date.now()}-${safe}`;
+      const { error: upErr } = await supabase.storage.from('training-images').upload(path, file, { upsert: true });
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from('training-images').getPublicUrl(path);
+      setForm(f => ({ ...f, thumbnail_url: urlData.publicUrl }));
+      flash('Gambar berhasil diunggah!');
+    } catch (e) { flash('Gagal mengunggah gambar: ' + e.message); }
+    finally { setUploadingImage(false); }
   };
 
   const handleDelete = async (id) => {
@@ -304,8 +322,19 @@ export default function AdminPelatihanPage() {
                   <textarea style={{ ...inp, resize: 'vertical', minHeight: '90px', lineHeight: 1.6 }} value={form.description} onChange={e => setForm({ ...form, description: e.target.value })} placeholder="Penjelasan singkat tentang pelatihan ini..." />
                 </div>
                 <div>
-                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: c.muted, marginBottom: '6px' }}>URL Thumbnail (opsional)</label>
-                  <input style={inp} value={form.thumbnail_url} onChange={e => setForm({ ...form, thumbnail_url: e.target.value })} placeholder="https://..." />
+                  <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: c.muted, marginBottom: '6px' }}>Gambar Pelatihan (opsional)</label>
+                  <div style={{ border: `1px dashed ${c.border}`, borderRadius: '8px', padding: '12px', background: c.input }}>
+                    {form.thumbnail_url ? (
+                      <div style={{ position: 'relative', marginBottom: '10px' }}>
+                        <img src={form.thumbnail_url} alt="Pratinjau gambar" style={{ width: '100%', height: '150px', objectFit: 'cover', borderRadius: '8px', display: 'block' }} />
+                        <button type="button" onClick={() => setForm({ ...form, thumbnail_url: '' })} style={{ position: 'absolute', top: '8px', right: '8px', width: '28px', height: '28px', borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,0.6)', color: '#fff', cursor: 'pointer', fontSize: '14px', lineHeight: 1 }}>✕</button>
+                      </div>
+                    ) : (
+                      <div style={{ fontSize: '12px', color: c.muted, marginBottom: '8px' }}>🖼️ Unggah gambar (JPG / PNG / WebP, maks 5MB)</div>
+                    )}
+                    <input type="file" accept="image/*" disabled={uploadingImage} onChange={e => handleImageUpload(e.target.files?.[0])} style={{ fontSize: '12px', color: c.text, maxWidth: '100%' }} />
+                    {uploadingImage && <div style={{ marginTop: '8px', fontSize: '12px', color: c.slate }}>⏳ Mengunggah gambar...</div>}
+                  </div>
                 </div>
               </div>
               <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>

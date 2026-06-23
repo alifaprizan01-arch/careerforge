@@ -84,7 +84,7 @@ export default function MentorDashboard() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginRight: 'auto' }}>
           <div style={{ width: '32px', height: '32px', background: 'linear-gradient(135deg,#16A34A,#15803D)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '13px' }}>CF</div>
           <div>
-            <div style={{ fontWeight: 800, fontSize: '14px', color: text, letterSpacing: '-0.01em' }}>CareerForge</div>
+            <div style={{ fontWeight: 800, fontSize: '14px', color: text, letterSpacing: '-0.01em' }}>SiapKerja.id</div>
             <div style={{ fontSize: '10px', color: muted, fontWeight: 500, letterSpacing: '0.04em' }}>PORTAL MENTOR</div>
           </div>
         </div>

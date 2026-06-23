@@ -5,11 +5,11 @@ import { useTheme } from '../../lib/themeContext';
 import Sidebar from '../components/Sidebar';
 
 const SECTIONS = [
-  { id: 'terima', title: 'Penerimaan Ketentuan', body: 'Dengan mengakses dan menggunakan CareerForge, kamu menyetujui untuk terikat oleh Syarat & Ketentuan ini. Jika tidak setuju, mohon untuk tidak menggunakan layanan.' },
+  { id: 'terima', title: 'Penerimaan Ketentuan', body: 'Dengan mengakses dan menggunakan SiapKerja.id, kamu menyetujui untuk terikat oleh Syarat & Ketentuan ini. Jika tidak setuju, mohon untuk tidak menggunakan layanan.' },
   { id: 'guna', title: 'Penggunaan Layanan', body: 'Kamu setuju menggunakan platform hanya untuk tujuan yang sah. Dilarang menyalahgunakan layanan, mengunggah konten yang melanggar hukum, atau mengganggu kerja sistem.' },
   { id: 'akun', title: 'Akun Pengguna', body: 'Kamu bertanggung jawab menjaga kerahasiaan akun dan seluruh aktivitas yang terjadi di dalamnya. Pastikan informasi yang kamu berikan akurat dan terkini.' },
   { id: 'konten', title: 'Konten Pengguna', body: 'Kamu mempertahankan kepemilikan atas dokumen dan konten yang kamu unggah, namun memberi kami izin untuk menampilkannya sesuai fungsi layanan (misalnya kepada perusahaan saat kamu melamar).' },
-  { id: 'batas', title: 'Batasan Tanggung Jawab', body: 'CareerForge menyediakan platform "sebagaimana adanya". Kami tidak menjamin hasil tertentu seperti diterimanya sebuah lamaran kerja.' },
+  { id: 'batas', title: 'Batasan Tanggung Jawab', body: 'SiapKerja.id menyediakan platform "sebagaimana adanya". Kami tidak menjamin hasil tertentu seperti diterimanya sebuah lamaran kerja.' },
   { id: 'ubah', title: 'Perubahan Ketentuan', body: 'Kami dapat memperbarui Syarat & Ketentuan ini sewaktu-waktu. Penggunaan berkelanjutan setelah perubahan berarti kamu menyetujui ketentuan yang baru.' },
 ];
 
@@ -74,7 +74,7 @@ export default function SyaratPage() {
         </aside>
 
         <div style={{ flex: 1, minWidth: '300px' }}>
-          <p style={{ fontSize: '15px', color: c.muted, lineHeight: 1.8, marginBottom: '28px' }}>Mohon baca Syarat &amp; Ketentuan berikut sebelum menggunakan layanan CareerForge.</p>
+          <p style={{ fontSize: '15px', color: c.muted, lineHeight: 1.8, marginBottom: '28px' }}>Mohon baca Syarat &amp; Ketentuan berikut sebelum menggunakan layanan SiapKerja.id.</p>
           {SECTIONS.map((s, i) => (
             <motion.section key={s.id} id={s.id} initial={{ opacity: 0, y: 16 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true, margin: '-80px' }}
               style={{ scrollMarginTop: '90px', background: c.card, borderRadius: '16px', border: `1px solid ${c.border}`, padding: '24px 26px', marginBottom: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>

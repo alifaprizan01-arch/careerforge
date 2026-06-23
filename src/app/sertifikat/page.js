@@ -72,9 +72,9 @@ export default function SertifikatPage() {
                   <div style={{ position: 'relative', zIndex: 1 }}>
                     <div style={{ fontSize: '32px', marginBottom: '14px' }}>🏆</div>
                     <h3 style={{ fontSize: '16px', fontWeight: 700, marginBottom: '6px', lineHeight: 1.3 }}>{cert.title || cert.certification_name || 'Sertifikat'}</h3>
-                    <p style={{ fontSize: '12px', opacity: 0.7, marginBottom: '16px' }}>{cert.issued_by || 'CareerForge'}</p>
+                    <p style={{ fontSize: '12px', opacity: 0.7, marginBottom: '16px' }}>{cert.issued_by || 'SiapKerja.id'}</p>
                     <div style={{ borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span style={{ fontSize: '11px', opacity: 0.65, fontWeight: 500 }}>{cert.issued_at ? new Date(cert.issued_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'long' }) : 'CareerForge'}</span>
+                      <span style={{ fontSize: '11px', opacity: 0.65, fontWeight: 500 }}>{cert.issued_at ? new Date(cert.issued_at).toLocaleDateString('id-ID', { year: 'numeric', month: 'long' }) : 'SiapKerja.id'}</span>
                       <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '11px', border: '1.5px solid rgba(255,255,255,0.3)' }}>
                         {initials(user.full_name)}
                       </div>

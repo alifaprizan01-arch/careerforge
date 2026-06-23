@@ -6,7 +6,7 @@ import { useTheme } from '../../lib/themeContext';
 import Sidebar from '../components/Sidebar';
 
 const SECTIONS = [
-  { id: 'komitmen', title: 'Komitmen Kami', body: 'CareerForge berkomitmen membuat platform yang dapat diakses oleh semua orang, termasuk penyandang disabilitas. Kami berupaya mengikuti praktik terbaik dan standar aksesibilitas web (WCAG) sebisa mungkin.' },
+  { id: 'komitmen', title: 'Komitmen Kami', body: 'SiapKerja.id berkomitmen membuat platform yang dapat diakses oleh semua orang, termasuk penyandang disabilitas. Kami berupaya mengikuti praktik terbaik dan standar aksesibilitas web (WCAG) sebisa mungkin.' },
   { id: 'fitur', title: 'Fitur Aksesibilitas', body: 'Kami menyediakan kontras warna yang memadai, dukungan navigasi keyboard, teks alternatif pada elemen penting, serta mode gelap untuk kenyamanan membaca.' },
   { id: 'batas', title: 'Keterbatasan yang Diketahui', body: 'Beberapa bagian mungkin masih dalam proses penyempurnaan. Kami terus memperbaiki pengalaman agar semakin inklusif.' },
   { id: 'masukan', title: 'Masukan', body: 'Jika kamu menemui hambatan aksesibilitas atau punya saran, kami sangat menghargai masukanmu agar dapat memperbaikinya.' },
@@ -54,7 +54,7 @@ export default function AksesibilitasPage() {
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
           <div style={{ fontSize: '36px', marginBottom: '8px' }}>♿</div>
           <h1 style={{ fontSize: '38px', fontWeight: 800, margin: '0 0 8px', letterSpacing: '-0.02em' }}>Pernyataan Aksesibilitas</h1>
-          <p style={{ fontSize: '15px', opacity: 0.9, maxWidth: '560px', margin: '0 auto' }}>Kami ingin setiap orang dapat menggunakan CareerForge dengan nyaman.</p>
+          <p style={{ fontSize: '15px', opacity: 0.9, maxWidth: '560px', margin: '0 auto' }}>Kami ingin setiap orang dapat menggunakan SiapKerja.id dengan nyaman.</p>
         </motion.div>
       </div>
 

@@ -92,7 +92,7 @@ export default function AdminDashboard() {
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginRight: 'auto' }}>
           <div style={{ width: '32px', height: '32px', background: 'linear-gradient(135deg,#475569,#334155)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '13px' }}>CF</div>
           <div>
-            <div style={{ fontWeight: 800, fontSize: '14px', color: text, letterSpacing: '-0.01em' }}>CareerForge</div>
+            <div style={{ fontWeight: 800, fontSize: '14px', color: text, letterSpacing: '-0.01em' }}>SiapKerja.id</div>
             <div style={{ fontSize: '10px', color: muted, fontWeight: 500, letterSpacing: '0.04em' }}>ADMIN PANEL</div>
           </div>
         </div>
@@ -111,7 +111,7 @@ export default function AdminDashboard() {
         {/* Page title */}
         <div style={{ marginBottom: '28px' }}>
           <h1 style={{ fontSize: '24px', fontWeight: 800, color: text, letterSpacing: '-0.02em', marginBottom: '4px' }}>Dashboard Admin</h1>
-          <p style={{ fontSize: '14px', color: muted }}>Kelola seluruh platform CareerForge dari sini</p>
+          <p style={{ fontSize: '14px', color: muted }}>Kelola seluruh platform SiapKerja.id dari sini</p>
         </div>
 
         {msg && <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ padding: '12px 16px', background: isDark ? 'rgba(22,163,74,0.15)' : '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '8px', color: isDark ? '#4ADE80' : '#16A34A', marginBottom: '20px', fontSize: '13px', fontWeight: 500 }}>{msg}</motion.div>}
