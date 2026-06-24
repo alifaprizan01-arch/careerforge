@@ -6,9 +6,22 @@ import { supabase } from '../../lib/supabaseClient';
 import { useUser } from '../../lib/userContext';
 import Sidebar from '../components/Sidebar';
 
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < breakpoint);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, [breakpoint]);
+  return isMobile;
+}
+
 export default function MentoringPage() {
   const router = useRouter();
   const { user, loaded } = useUser();
+  const isMobile = useIsMobile();
+  const [mobileView, setMobileView] = useState('list'); // 'list' | 'detail'
   const [mentors, setMentors] = useState([]);
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -80,60 +93,63 @@ export default function MentoringPage() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-base)', fontFamily: 'var(--font-sans)' }}>
       <Sidebar />
-      <main style={{ marginLeft: 'var(--sidebar-width, 240px)', flex: 1, padding: '32px' }}>
+      <main style={{ marginLeft: isMobile ? 0 : 'var(--sidebar-width, 240px)', flex: 1, minWidth: 0, padding: isMobile ? '70px 16px 24px' : '32px', boxSizing: 'border-box', overflowX: 'hidden' }}>
 
         {/* Header */}
         <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ marginBottom: '24px' }}>
-          <h1 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>Mentoring</h1>
-          <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '4px' }}>Temukan mentor terbaik dan booking sesi learning</p>
+          <h1 style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>Mentoring</h1>
+          <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>Temukan mentor terbaik dan booking sesi learning</p>
         </motion.div>
 
         {msg && <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ padding: '12px 16px', background: 'var(--success-50)', border: '1px solid #BBF7D0', borderRadius: '8px', color: 'var(--text-success)', marginBottom: '16px', fontSize: '13px', fontWeight: 500 }}>✓ {msg}</motion.div>}
 
         {/* Interview AI banner */}
         <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.1 }}
-          style={{ background: 'linear-gradient(135deg, var(--brand-900) 0%, var(--brand-700) 100%)', borderRadius: '14px', padding: '22px 28px', display: 'flex', alignItems: 'center', gap: '20px', marginBottom: '24px', boxShadow: 'var(--shadow-lg)', position: 'relative', overflow: 'hidden' }}>
+          style={{ background: 'linear-gradient(135deg, var(--brand-900) 0%, var(--brand-700) 100%)', borderRadius: '14px', padding: isMobile ? '18px' : '22px 28px', display: 'flex', flexDirection: isMobile ? 'column' : 'row', alignItems: isMobile ? 'stretch' : 'center', gap: isMobile ? '14px' : '20px', marginBottom: '24px', boxShadow: 'var(--shadow-lg)', position: 'relative', overflow: 'hidden' }}>
           <div style={{ position: 'absolute', top: '-30px', right: '-30px', width: '120px', height: '120px', background: 'rgba(255,255,255,0.04)', borderRadius: '50%' }} />
-          <motion.div animate={{ scale: [1, 1.08, 1] }} transition={{ duration: 2.5, repeat: Infinity }}
-            style={{ width: '52px', height: '52px', background: 'rgba(255,255,255,0.12)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '26px', flexShrink: 0, border: '1px solid rgba(255,255,255,0.2)' }}>🤖</motion.div>
-          <div style={{ flex: 1 }}>
-            <h2 style={{ color: '#fff', margin: '0 0 4px', fontSize: '16px', fontWeight: 800, letterSpacing: '-0.01em' }}>Simulasi Interview AI</h2>
-            <p style={{ color: 'rgba(255,255,255,0.65)', margin: 0, fontSize: '13px' }}>Latih wawancara & dapatkan feedback instan — gratis!</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+            <motion.div animate={{ scale: [1, 1.08, 1] }} transition={{ duration: 2.5, repeat: Infinity }}
+              style={{ width: isMobile ? '44px' : '52px', height: isMobile ? '44px' : '52px', background: 'rgba(255,255,255,0.12)', borderRadius: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: isMobile ? '22px' : '26px', flexShrink: 0, border: '1px solid rgba(255,255,255,0.2)' }}>🤖</motion.div>
+            <div style={{ flex: 1 }}>
+              <h2 style={{ color: '#fff', margin: '0 0 4px', fontSize: '16px', fontWeight: 800, letterSpacing: '-0.01em' }}>Simulasi Interview AI</h2>
+              <p style={{ color: 'rgba(255,255,255,0.65)', margin: 0, fontSize: '13px' }}>Latih wawancara & dapatkan feedback instan — gratis!</p>
+            </div>
           </div>
           <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }} onClick={() => router.push('/interview')}
-            style={{ padding: '10px 20px', borderRadius: '9px', border: 'none', background: '#fff', color: 'var(--brand-700)', fontWeight: 700, fontSize: '13px', cursor: 'pointer', flexShrink: 0, fontFamily: 'var(--font-sans)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)' }}>
+            style={{ padding: '11px 20px', borderRadius: '9px', border: 'none', background: '#fff', color: 'var(--brand-700)', fontWeight: 700, fontSize: '13px', cursor: 'pointer', flexShrink: 0, fontFamily: 'var(--font-sans)', boxShadow: '0 2px 8px rgba(0,0,0,0.15)', width: isMobile ? '100%' : 'auto' }}>
             Mulai Sekarang →
           </motion.button>
         </motion.div>
 
         {/* Search & filter */}
-        <div style={{ background: 'var(--surface-primary)', borderRadius: '12px', border: '1px solid var(--border-default)', padding: '14px 16px', marginBottom: '20px', boxShadow: 'var(--shadow-xs)' }}>
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
-            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-secondary)', border: '1.5px solid var(--border-default)', borderRadius: '9px', padding: '9px 14px' }}>
+        <div style={{ background: 'var(--surface-primary)', borderRadius: '12px', border: '1px solid var(--border-default)', padding: isMobile ? '14px' : '14px 16px', marginBottom: '20px', boxShadow: 'var(--shadow-xs)' }}>
+          <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', gap: '10px', marginBottom: '12px' }}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-secondary)', border: '1.5px solid var(--border-default)', borderRadius: '9px', padding: '9px 14px', minWidth: 0 }}>
               <span style={{ color: 'var(--text-tertiary)' }}>🔍</span>
               <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari mentor atau keahlian..."
-                style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '14px', flex: 1, color: 'var(--text-primary)', fontFamily: 'var(--font-sans)' }} />
+                style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '14px', flex: 1, minWidth: 0, color: 'var(--text-primary)', fontFamily: 'var(--font-sans)' }} />
             </div>
-            <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ padding: '9px 12px', borderRadius: '9px', border: '1.5px solid var(--border-default)', fontSize: '13px', outline: 'none', background: 'var(--surface-secondary)', color: 'var(--text-primary)', fontFamily: 'var(--font-sans)', cursor: 'pointer' }}>
+            <select value={sortBy} onChange={e => setSortBy(e.target.value)} style={{ padding: '9px 12px', borderRadius: '9px', border: '1.5px solid var(--border-default)', fontSize: '13px', outline: 'none', background: 'var(--surface-secondary)', color: 'var(--text-primary)', fontFamily: 'var(--font-sans)', cursor: 'pointer', width: isMobile ? '100%' : 'auto', boxSizing: 'border-box' }}>
               <option value="rating">Rating Tertinggi</option>
               <option value="reviews">Ulasan Terbanyak</option>
               <option value="experience">Pengalaman Terlama</option>
             </select>
           </div>
-          <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
-            <span style={{ fontSize: '12px', color: 'var(--text-tertiary)', fontWeight: 500 }}>Min Rating:</span>
+          <div className="no-scrollbar" style={{ display: 'flex', gap: '6px', alignItems: 'center', overflowX: isMobile ? 'auto' : 'visible' }}>
+            <span style={{ fontSize: '12px', color: 'var(--text-tertiary)', fontWeight: 500, flexShrink: 0 }}>Min Rating:</span>
             {[0,3,4,5].map(r => (
               <button key={r} onClick={() => setFilterRating(r)} style={{
                 padding: '4px 12px', borderRadius: '20px', border: `1px solid ${filterRating === r ? '#F59E0B' : 'var(--border-default)'}`,
                 background: filterRating === r ? '#FFFBEB' : 'transparent', color: filterRating === r ? '#D97706' : 'var(--text-secondary)',
-                fontSize: '12px', cursor: 'pointer', fontWeight: 500, fontFamily: 'var(--font-sans)',
+                fontSize: '12px', cursor: 'pointer', fontWeight: 500, fontFamily: 'var(--font-sans)', whiteSpace: 'nowrap', flexShrink: 0,
               }}>{r === 0 ? 'Semua' : `${r}★+`}</button>
             ))}
           </div>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: selectedMentor ? '1fr 380px' : '1fr', gap: '20px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : (selectedMentor ? '1fr 380px' : '1fr'), gap: '20px' }}>
           {/* Mentor grid */}
+          {(!isMobile || mobileView === 'list') && (
           <div>
             <div style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '14px' }}>
               {filteredMentors.length} mentor tersedia
@@ -143,7 +159,7 @@ export default function MentoringPage() {
                 {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: '180px' }} />)}
               </div>
             ) : filteredMentors.length === 0 ? (
-              <div style={{ background: 'var(--surface-primary)', borderRadius: '12px', border: '1px solid var(--border-default)', padding: '60px', textAlign: 'center' }}>
+              <div style={{ background: 'var(--surface-primary)', borderRadius: '12px', border: '1px solid var(--border-default)', padding: isMobile ? '32px 20px' : '60px', textAlign: 'center' }}>
                 <div style={{ fontSize: '40px', marginBottom: '12px', opacity: 0.4 }}>🎤</div>
                 <p style={{ color: 'var(--text-secondary)', fontSize: '14px' }}>Tidak ada mentor yang sesuai</p>
               </div>
@@ -153,7 +169,7 @@ export default function MentoringPage() {
                   const isSelected = selectedMentor?.id === m.id;
                   return (
                     <motion.div key={m.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.05 }}
-                      onClick={() => selectMentor(m)}
+                      onClick={() => { selectMentor(m); if (isMobile) setMobileView('detail'); }}
                       style={{ background: 'var(--surface-primary)', borderRadius: '12px', padding: '18px', cursor: 'pointer',
                         border: `${isSelected ? '2' : '1'}px solid ${isSelected ? 'var(--border-brand)' : 'var(--border-default)'}`,
                         boxShadow: isSelected ? 'var(--shadow-brand)' : 'var(--shadow-xs)', transition: 'all 0.15s' }}
@@ -193,15 +209,22 @@ export default function MentoringPage() {
               </div>
             )}
           </div>
+          )}
 
           {/* Detail panel */}
           <AnimatePresence>
-            {selectedMentor && (
+            {selectedMentor && (!isMobile || mobileView === 'detail') && (
               <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 20 }}
-                style={{ position: 'sticky', top: '32px', maxHeight: 'calc(100vh - 100px)', display: 'flex', flexDirection: 'column', gap: '14px', overflowY: 'auto' }}>
+                style={{ position: isMobile ? 'static' : 'sticky', top: '32px', maxHeight: isMobile ? 'none' : 'calc(100vh - 100px)', display: 'flex', flexDirection: 'column', gap: '14px', overflowY: isMobile ? 'visible' : 'auto' }}>
+
+                {isMobile && (
+                  <button onClick={() => setMobileView('list')} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: 'var(--text-brand)', fontWeight: 700, fontSize: '13px', cursor: 'pointer', padding: '4px 0', fontFamily: 'var(--font-sans)' }}>
+                    ← Kembali ke daftar mentor
+                  </button>
+                )}
 
                 {/* Profile card */}
-                <div style={{ background: 'var(--surface-primary)', borderRadius: '12px', border: '1px solid var(--border-default)', padding: '20px', boxShadow: 'var(--shadow-sm)' }}>
+                <div style={{ background: 'var(--surface-primary)', borderRadius: '12px', border: '1px solid var(--border-default)', padding: isMobile ? '16px' : '20px', boxShadow: 'var(--shadow-sm)' }}>
                   <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start', marginBottom: '16px' }}>
                     {selectedMentor.avatar_url ? <img src={selectedMentor.avatar_url} style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--border-brand)', flexShrink: 0 }} /> :
                       <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'linear-gradient(135deg,var(--brand-600),var(--brand-800))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '22px', flexShrink: 0 }}>

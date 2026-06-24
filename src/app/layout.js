@@ -2,6 +2,7 @@ import { UserProvider } from '../lib/userContext';
 import { ThemeProvider } from '../lib/themeContext';
 import { SidebarProvider } from '../lib/sidebarContext';
 import { LanguageProvider } from '../lib/langContext';
+import MobileWrapper from './components/MobileWrapper';
 import './globals.css';
 
 export const metadata = {
@@ -23,7 +24,9 @@ export default function RootLayout({ children }) {
           <UserProvider>
             <SidebarProvider>
               <LanguageProvider>
-                {children}
+                <MobileWrapper>
+                  {children}
+                </MobileWrapper>
               </LanguageProvider>
             </SidebarProvider>
           </UserProvider>

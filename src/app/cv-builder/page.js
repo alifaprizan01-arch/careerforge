@@ -19,7 +19,18 @@ const emptyCV = {
   experience: [], education: [], skills: [], languages: [], certifications: [], projects: [],
 };
 
+function useIsMobile(bp = 768) {
+  const [m, setM] = useState(false);
+  useEffect(() => {
+    const c = () => setM(window.innerWidth < bp);
+    c(); window.addEventListener('resize', c);
+    return () => window.removeEventListener('resize', c);
+  }, [bp]);
+  return m;
+}
+
 export default function CVBuilderPage() {
+  const isMobile = useIsMobile();
   const router = useRouter();
   const { user, loaded } = useUser();
   const [cvList, setCvList] = useState([]);
@@ -222,10 +233,10 @@ export default function CVBuilderPage() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-base)', fontFamily: 'var(--font-sans)' }}>
       <Sidebar />
-      <main style={{ marginLeft: 'var(--sidebar-width, 240px)', flex: 1, display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+      <main style={{ marginLeft: isMobile ? 0 : 'var(--sidebar-width, 240px)', flex: 1, minWidth: 0, width: isMobile ? '100%' : 'auto', display: 'flex', flexDirection: 'column', height: isMobile ? 'auto' : '100vh', minHeight: '100vh', overflowX: 'hidden', overflowY: isMobile ? 'visible' : 'hidden' }}>
 
         {/* Header */}
-        <div style={{ padding: '16px 24px', borderBottom: '1px solid var(--border-default)', background: 'var(--surface-primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, boxShadow: 'var(--shadow-xs)' }}>
+        <div style={{ padding: isMobile ? '12px 16px 12px 60px' : '16px 24px', borderBottom: '1px solid var(--border-default)', background: 'var(--surface-primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px', flexShrink: 0, boxShadow: 'var(--shadow-xs)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <h1 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>✨ CV Builder</h1>
             {form.title && <span style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500 }}>— {form.title}</span>}
@@ -250,10 +261,10 @@ export default function CVBuilderPage() {
 
         {msg && <div style={{ padding: '10px 24px', background: msg.includes('Gagal') ? 'var(--error-50)' : 'var(--success-50)', borderBottom: '1px solid var(--border-default)', color: msg.includes('Gagal') ? 'var(--error-600)' : 'var(--success-600)', fontSize: '13px', fontWeight: 500 }}>{msg}</div>}
 
-        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+        <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', flex: 1, minWidth: 0, overflowX: 'hidden', overflowY: isMobile ? 'visible' : 'hidden' }}>
 
           {/* Left: CV list + sections */}
-          <div style={{ width: '220px', borderRight: '1px solid var(--border-default)', background: 'var(--surface-primary)', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+          <div style={{ width: isMobile ? '100%' : '220px', minWidth: 0, maxWidth: '100%', boxSizing: 'border-box', borderRight: isMobile ? 'none' : '1px solid var(--border-default)', borderBottom: isMobile ? '1px solid var(--border-default)' : 'none', background: 'var(--surface-primary)', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
             {/* CV list */}
             <div style={{ padding: '12px', borderBottom: '1px solid var(--border-subtle)' }}>
               <button onClick={createNewCV}
@@ -276,7 +287,7 @@ export default function CVBuilderPage() {
             )}
 
             {/* Section nav */}
-            <nav style={{ flex: 1, padding: '8px', overflowY: 'auto' }}>
+            <nav style={{ flex: isMobile ? 'none' : 1, minWidth: 0, padding: '8px', overflowY: 'auto' }}>
               <div style={{ padding: '4px 4px 10px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
                   <span style={{ fontSize: '10px', fontWeight: 700, color: 'var(--text-tertiary)', letterSpacing: '0.08em', textTransform: 'uppercase' }}>Bagian CV</span>
@@ -286,13 +297,14 @@ export default function CVBuilderPage() {
                   <motion.div animate={{ width: `${progressPct}%` }} transition={{ duration: 0.4 }} style={{ height: '100%', background: 'var(--brand-600)', borderRadius: '3px' }} />
                 </div>
               </div>
+              <div style={{ display: isMobile ? 'flex' : 'block', minWidth: 0, maxWidth: '100%', overflowX: isMobile ? 'auto' : 'visible', gap: isMobile ? '6px' : 0, paddingBottom: isMobile ? '4px' : 0 }}>
               {sections.map(sec => {
                 const active = activeSection === sec.id;
                 const done = sectionDone(sec.id);
                 const count = listSections.includes(sec.id) ? (form[sec.id]?.length || 0) : 0;
                 return (
                   <button key={sec.id} onClick={() => setActiveSection(sec.id)}
-                    style={{ width: '100%', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', borderRadius: '8px', border: 'none', background: active ? 'var(--surface-brand)' : 'transparent', color: active ? 'var(--text-brand)' : 'var(--text-secondary)', fontSize: '13px', fontWeight: active ? 600 : 400, cursor: 'pointer', fontFamily: 'var(--font-sans)', textAlign: 'left', marginBottom: '2px', transition: 'all 0.15s', borderLeft: `2px solid ${active ? 'var(--brand-600)' : 'transparent'}` }}
+                    style={{ width: isMobile ? 'auto' : '100%', flexShrink: 0, whiteSpace: 'nowrap', display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 10px', borderRadius: '8px', border: 'none', background: active ? 'var(--surface-brand)' : 'transparent', color: active ? 'var(--text-brand)' : 'var(--text-secondary)', fontSize: '13px', fontWeight: active ? 600 : 400, cursor: 'pointer', fontFamily: 'var(--font-sans)', textAlign: 'left', marginBottom: '2px', transition: 'all 0.15s', borderLeft: `2px solid ${active ? 'var(--brand-600)' : 'transparent'}` }}
                     onMouseEnter={e => { if (!active) e.currentTarget.style.background = 'var(--surface-secondary)'; }}
                     onMouseLeave={e => { if (!active) e.currentTarget.style.background = 'transparent'; }}>
                     <span style={{ fontSize: '14px' }}>{sec.icon}</span>
@@ -302,17 +314,18 @@ export default function CVBuilderPage() {
                   </button>
                 );
               })}
+              </div>
             </nav>
           </div>
 
           {/* Center: Form or Preview */}
-          <div style={{ flex: 1, overflowY: 'auto', background: showPreview ? '#E2E8F0' : 'var(--bg-base)' }}>
+          <div style={{ flex: 1, minWidth: 0, boxSizing: 'border-box', overflowY: isMobile ? 'visible' : 'auto', background: showPreview ? '#E2E8F0' : 'var(--bg-base)' }}>
             {showPreview ? (
-              <div style={{ padding: '24px', display: 'flex', justifyContent: 'center' }}>
+              <div style={{ padding: isMobile ? '16px 8px' : '24px', display: 'flex', justifyContent: 'center', overflowX: 'auto' }}>
                 <CVPreview cv={form} template={form.template} />
               </div>
             ) : (
-              <div style={{ padding: '24px', maxWidth: '700px' }}>
+              <div style={{ padding: isMobile ? '16px' : '24px', maxWidth: '700px', width: '100%', boxSizing: 'border-box' }}>
 
                 {/* Personal Info */}
                 {activeSection === 'personal' && (
@@ -326,19 +339,19 @@ export default function CVBuilderPage() {
                       <input style={{ ...inp, marginBottom: '14px' }} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Contoh: CV Senior Developer 2025" />
 
                       <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Template</label>
-                      <div style={{ display: 'flex', gap: '8px' }}>
+                      <div style={{ display: 'flex', gap: isMobile ? '6px' : '8px' }}>
                         {TEMPLATES.map(t => (
-                          <button key={t.id} onClick={() => setForm({ ...form, template: t.id })} style={{ flex: 1, padding: '10px', borderRadius: '9px', border: `2px solid ${form.template === t.id ? t.color : 'var(--border-default)'}`, background: form.template === t.id ? `${t.color}15` : 'transparent', cursor: 'pointer', fontFamily: 'var(--font-sans)', textAlign: 'center', transition: 'all 0.15s' }}>
-                            <div style={{ width: '28px', height: '28px', borderRadius: '6px', background: t.color, margin: '0 auto 6px', opacity: form.template === t.id ? 1 : 0.5 }} />
-                            <div style={{ fontSize: '12px', fontWeight: 700, color: form.template === t.id ? t.color : 'var(--text-secondary)' }}>{t.label}</div>
-                            <div style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>{t.desc}</div>
+                          <button key={t.id} onClick={() => setForm({ ...form, template: t.id })} style={{ flex: 1, minWidth: 0, padding: isMobile ? '8px 4px' : '10px', borderRadius: '9px', border: `2px solid ${form.template === t.id ? t.color : 'var(--border-default)'}`, background: form.template === t.id ? `${t.color}15` : 'transparent', cursor: 'pointer', fontFamily: 'var(--font-sans)', textAlign: 'center', transition: 'all 0.15s' }}>
+                            <div style={{ width: '24px', height: '24px', borderRadius: '6px', background: t.color, margin: '0 auto 6px', opacity: form.template === t.id ? 1 : 0.5 }} />
+                            <div style={{ fontSize: isMobile ? '11px' : '12px', fontWeight: 700, color: form.template === t.id ? t.color : 'var(--text-secondary)' }}>{t.label}</div>
+                            {!isMobile && <div style={{ fontSize: '10px', color: 'var(--text-tertiary)' }}>{t.desc}</div>}
                           </button>
                         ))}
                       </div>
                     </div>
 
                     <div style={{ background: 'var(--surface-primary)', borderRadius: '12px', border: '1px solid var(--border-default)', padding: '18px', boxShadow: 'var(--shadow-xs)' }}>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '12px' }}>
                         {[
                           { key: 'full_name', label: 'Nama Lengkap *', placeholder: 'Alif Aprizan' },
                           { key: 'job_title', label: 'Jabatan/Posisi', placeholder: 'UI/UX Designer' },
@@ -400,7 +413,7 @@ export default function CVBuilderPage() {
                           <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>Pengalaman {i + 1}</span>
                           <button onClick={() => removeItem('experience', exp.id)} style={{ background: 'none', border: 'none', color: 'var(--error-600)', cursor: 'pointer', fontSize: '13px', fontFamily: 'var(--font-sans)', fontWeight: 500 }}>Hapus</button>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px' }}>
                           {[
                             { key: 'position', label: 'Posisi/Jabatan *', placeholder: 'UI/UX Designer', full: true },
                             { key: 'company', label: 'Perusahaan *', placeholder: 'PT. Maju Bersama' },
@@ -439,7 +452,7 @@ export default function CVBuilderPage() {
                           <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>Pendidikan {i + 1}</span>
                           <button onClick={() => removeItem('education', edu.id)} style={{ background: 'none', border: 'none', color: 'var(--error-600)', cursor: 'pointer', fontSize: '13px', fontFamily: 'var(--font-sans)', fontWeight: 500 }}>Hapus</button>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px' }}>
                           {[
                             { key: 'institution', label: 'Institusi *', placeholder: 'Universitas Indonesia', full: true },
                             { key: 'degree', label: 'Gelar', placeholder: 'S1 / D3 / SMA' },
@@ -474,7 +487,7 @@ export default function CVBuilderPage() {
                       </div>
                       <button onClick={() => addItem('skills')} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: 'var(--brand-600)', color: '#fff', fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>+ Tambah</button>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '10px' }}>
                       {(form.skills || []).map((skill, i) => (
                         <div key={skill.id} style={{ background: 'var(--surface-primary)', borderRadius: '10px', border: '1px solid var(--border-default)', padding: '14px', display: 'flex', gap: '8px', alignItems: 'center', boxShadow: 'var(--shadow-xs)' }}>
                           <input style={{ ...inp, flex: 1 }} value={skill.name || ''} onChange={e => updateItem('skills', skill.id, 'name', e.target.value)} placeholder="Contoh: Figma, React, Python" />
@@ -500,7 +513,7 @@ export default function CVBuilderPage() {
                       <h2 style={{ fontSize: '17px', fontWeight: 800, color: 'var(--text-primary)' }}>🌐 Bahasa</h2>
                       <button onClick={() => addItem('languages')} style={{ padding: '8px 16px', borderRadius: '8px', border: 'none', background: 'var(--brand-600)', color: '#fff', fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>+ Tambah</button>
                     </div>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(2, 1fr)', gap: '10px' }}>
                       {(form.languages || []).map(lang => (
                         <div key={lang.id} style={{ background: 'var(--surface-primary)', borderRadius: '10px', border: '1px solid var(--border-default)', padding: '14px', display: 'flex', gap: '8px', alignItems: 'center', boxShadow: 'var(--shadow-xs)' }}>
                           <input style={{ ...inp, flex: 1 }} value={lang.language || ''} onChange={e => updateItem('languages', lang.id, 'language', e.target.value)} placeholder="Indonesia, Inggris..." />
@@ -532,7 +545,7 @@ export default function CVBuilderPage() {
                           <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>Sertifikasi {i + 1}</span>
                           <button onClick={() => removeItem('certifications', cert.id)} style={{ background: 'none', border: 'none', color: 'var(--error-600)', cursor: 'pointer', fontSize: '13px', fontFamily: 'var(--font-sans)', fontWeight: 500 }}>Hapus</button>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px' }}>
                           {[
                             { key: 'name', label: 'Nama Sertifikasi *', placeholder: 'Google UX Design Certificate', full: true },
                             { key: 'issuer', label: 'Penerbit', placeholder: 'Google, Coursera, dll' },
@@ -568,7 +581,7 @@ export default function CVBuilderPage() {
                           <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--text-primary)' }}>Proyek {i + 1}</span>
                           <button onClick={() => removeItem('projects', proj.id)} style={{ background: 'none', border: 'none', color: 'var(--error-600)', cursor: 'pointer', fontSize: '13px', fontFamily: 'var(--font-sans)', fontWeight: 500 }}>Hapus</button>
                         </div>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: '10px' }}>
                           {[
                             { key: 'name', label: 'Nama Proyek *', placeholder: 'SiapKerja.id Platform', full: true },
                             { key: 'technologies', label: 'Teknologi', placeholder: 'Next.js, Supabase, Tailwind' },

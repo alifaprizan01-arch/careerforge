@@ -10,10 +10,23 @@ import Sidebar from '../components/Sidebar';
 import { useSidebar } from '../../lib/sidebarContext';
 import { useLang } from '../../lib/langContext';
 
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < breakpoint);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, [breakpoint]);
+  return isMobile;
+}
+
 export default function LowonganPage() {
   const router = useRouter();
   const { user, loaded } = useUser();
   const { isDark } = useTheme();
+  const isMobile = useIsMobile();
+  const [mobileView, setMobileView] = useState('list'); // 'list' | 'detail' — khusus navigasi di mobile
 
   // State Data
   const [jobs, setJobs] = useState([]);
@@ -123,50 +136,56 @@ export default function LowonganPage() {
       }}>
         
         {/* HEADER & FILTER SECTIONS */}
-        <header style={{ padding: '24px', borderBottom: `1px solid ${theme.border}`, display: 'flex', flexDirection: 'column', gap: '16px', position: 'sticky', top: 0, backgroundColor: theme.white, zIndex: 10 }}>
+        <header style={{ padding: isMobile ? '16px' : '24px', borderBottom: `1px solid ${theme.border}`, display: 'flex', flexDirection: 'column', gap: '16px', position: 'sticky', top: 0, backgroundColor: theme.white, zIndex: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <button onClick={toggleSidebar} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: theme.darkText }}>☰</button>
-            <h1 style={{ fontSize: '24px', fontWeight: 800, letterSpacing: '-0.02em' }}>{t('Lowongan Karier')}</h1>
+            <button onClick={toggleSidebar} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: theme.darkText, flexShrink: 0 }}>☰</button>
+            <h1 style={{ fontSize: isMobile ? '19px' : '24px', fontWeight: 800, letterSpacing: '-0.02em' }}>{t('Lowongan Karier')}</h1>
           </div>
 
-          <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
-            <div style={{ flex: 1, position: 'relative', minWidth: '280px' }}>
+          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+            <div style={{ flex: '1 1 100%', position: 'relative', minWidth: 0 }}>
               <input 
                 type="text" 
                 placeholder={t('Cari posisi, perusahaan, atau lokasi...')} 
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                style={{ width: '100%', padding: '12px 14px 12px 40px', borderRadius: '8px', border: `1px solid ${theme.border}`, backgroundColor: theme.bgLight, color: theme.darkText, outline: 'none' }}
+                style={{ width: '100%', boxSizing: 'border-box', padding: '12px 14px 12px 40px', borderRadius: '8px', border: `1px solid ${theme.border}`, backgroundColor: theme.bgLight, color: theme.darkText, outline: 'none' }}
               />
               <span style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: theme.lightText }}>🔍</span>
             </div>
             
-            {['Semua', 'Full Time', 'Remote', 'Setengah Hari', 'Freelance'].map((type) => (
-              <button
-                key={type}
-                onClick={() => setTypeFilter(type)}
-                style={{
-                  padding: '10px 16px',
-                  borderRadius: '8px',
-                  border: `1px solid ${typeFilter === type ? theme.purple : theme.border}`,
-                  backgroundColor: typeFilter === type ? theme.purple : theme.cardBg,
-                  color: typeFilter === type ? '#FFF' : theme.darkText,
-                  fontWeight: 600,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-              >
-                {t(type)}
-              </button>
-            ))}
+            <div className="no-scrollbar" style={{ display: 'flex', gap: '8px', flexWrap: isMobile ? 'nowrap' : 'wrap', overflowX: isMobile ? 'auto' : 'visible', width: '100%', paddingBottom: isMobile ? '2px' : 0 }}>
+              {['Semua', 'Full Time', 'Remote', 'Setengah Hari', 'Freelance'].map((type) => (
+                <button
+                  key={type}
+                  onClick={() => setTypeFilter(type)}
+                  style={{
+                    padding: isMobile ? '9px 14px' : '10px 16px',
+                    borderRadius: '8px',
+                    border: `1px solid ${typeFilter === type ? theme.purple : theme.border}`,
+                    backgroundColor: typeFilter === type ? theme.purple : theme.cardBg,
+                    color: typeFilter === type ? '#FFF' : theme.darkText,
+                    fontWeight: 600,
+                    fontSize: isMobile ? '13px' : '14px',
+                    cursor: 'pointer',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0,
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {t(type)}
+                </button>
+              ))}
+            </div>
           </div>
         </header>
 
         {/* TWO-COLUMN INTERACTIVE PANEL */}
-        <div style={{ display: 'grid', gridTemplateColumns: '420px 1fr', height: 'calc(100vh - 140px)', overflow: 'hidden' }}>
+        <div style={{ display: isMobile ? 'block' : 'grid', gridTemplateColumns: isMobile ? undefined : '420px 1fr', height: isMobile ? 'auto' : 'calc(100vh - 140px)', overflow: isMobile ? 'visible' : 'hidden' }}>
           
           {/* KOLOM KIRI: List Card Lowongan Pekerjaan */}
-          <div style={{ borderRight: `1px solid ${theme.border}`, overflowY: 'auto', padding: '20px', display: 'flex', flexDirection: 'column', gap: '14px', backgroundColor: theme.white }}>
+          {(!isMobile || mobileView === 'list') && (
+          <div style={{ borderRight: isMobile ? 'none' : `1px solid ${theme.border}`, overflowY: isMobile ? 'visible' : 'auto', padding: isMobile ? '14px' : '20px', display: 'flex', flexDirection: 'column', gap: '14px', backgroundColor: theme.white }}>
             {loading ? (
               [1, 2, 3, 4].map((i) => (
                 <div key={i} style={{ height: '115px', backgroundColor: theme.bgLight, borderRadius: '8px' }} />
@@ -182,7 +201,7 @@ export default function LowonganPage() {
                     key={job.id}
                     whileHover={{ y: -2, scale: 1.01 }}
                     whileTap={{ scale: 0.99 }}
-                    onClick={() => { setSelectedJob(job); setActiveTab('deskripsi'); }}
+                    onClick={() => { setSelectedJob(job); setActiveTab('deskripsi'); if (isMobile) setMobileView('detail'); }}
                     style={{
                       padding: '18px',
                       borderRadius: '10px',
@@ -216,9 +235,16 @@ export default function LowonganPage() {
               })
             )}
           </div>
+          )}
 
           {/* KOLOM KANAN: Detail Tempat Kerja & Deskripsi Panel */}
-          <div style={{ overflowY: 'auto', padding: '32px', backgroundColor: theme.bgLight }}>
+          {(!isMobile || mobileView === 'detail') && (
+          <div style={{ overflowY: isMobile ? 'visible' : 'auto', padding: isMobile ? '14px' : '32px', backgroundColor: theme.bgLight }}>
+            {isMobile && (
+              <button onClick={() => setMobileView('list')} style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: 'none', border: 'none', color: theme.purple, fontWeight: 700, fontSize: '13px', cursor: 'pointer', padding: '6px 0', marginBottom: '12px', fontFamily: 'inherit' }}>
+                ← {t('Kembali ke daftar')}
+              </button>
+            )}
             <AnimatePresence mode="wait">
               {selectedJob ? (
                 <motion.div
@@ -227,15 +253,15 @@ export default function LowonganPage() {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: -15 }}
                   transition={{ duration: 0.25 }}
-                  style={{ backgroundColor: theme.white, border: `1px solid ${theme.border}`, borderRadius: '12px', padding: '28px', boxShadow: '0 4px 24px rgba(0,0,0,0.015)' }}
+                  style={{ backgroundColor: theme.white, border: `1px solid ${theme.border}`, borderRadius: '12px', padding: isMobile ? '18px' : '28px', boxShadow: '0 4px 24px rgba(0,0,0,0.015)' }}
                 >
                   {/* Top Profile Card Header */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', borderBottom: `1px solid ${theme.border}`, paddingBottom: '24px', marginBottom: '24px', gap: '20px' }}>
+                  <div style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'stretch' : 'flex-start', borderBottom: `1px solid ${theme.border}`, paddingBottom: '20px', marginBottom: '20px', gap: isMobile ? '16px' : '20px' }}>
                     <div>
-                      <h2 style={{ fontSize: '24px', fontWeight: 800, color: theme.darkText, margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>{selectedJob.tujuan}</h2>
-                      <p style={{ fontSize: '16px', fontWeight: 700, color: theme.purple, margin: '0 0 16px 0' }}>{selectedJob.company || t('Perusahaan')}</p>
+                      <h2 style={{ fontSize: isMobile ? '19px' : '24px', fontWeight: 800, color: theme.darkText, margin: '0 0 6px 0', letterSpacing: '-0.02em' }}>{selectedJob.tujuan}</h2>
+                      <p style={{ fontSize: isMobile ? '14px' : '16px', fontWeight: 700, color: theme.purple, margin: '0 0 14px 0' }}>{selectedJob.company || t('Perusahaan')}</p>
                       
-                      <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap', color: theme.lightText, fontSize: '13px', fontWeight: 500 }}>
+                      <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap', color: theme.lightText, fontSize: '13px', fontWeight: 500 }}>
                         <span>📍 {selectedJob.asal || 'Indonesia'}</span>
                         <span>•</span>
                         <span>⏱️ {selectedJob.jenis || 'Full Time'}</span>
@@ -250,7 +276,8 @@ export default function LowonganPage() {
                       whileTap={{ scale: 0.98 }}
                       onClick={() => router.push(`/trayek/${selectedJob.id}`)}
                       style={{
-                        padding: '14px 24px',
+                        padding: isMobile ? '13px 20px' : '14px 24px',
+                        width: isMobile ? '100%' : 'auto',
                         backgroundColor: appliedJobIds.has(selectedJob.id) ? theme.green : theme.purple,
                         color: '#FFF',
                         border: 'none',
@@ -258,6 +285,7 @@ export default function LowonganPage() {
                         fontWeight: 700,
                         fontSize: '14px',
                         cursor: 'pointer',
+                        whiteSpace: 'nowrap',
                         boxShadow: '0 4px 14px rgba(86, 36, 208, 0.25)',
                         transition: 'background-color 0.2s ease'
                       }}
@@ -267,7 +295,7 @@ export default function LowonganPage() {
                   </div>
 
                   {/* Tab Navigation Menu */}
-                  <div style={{ display: 'flex', borderBottom: `1px solid ${theme.border}`, gap: '28px', marginBottom: '24px' }}>
+                  <div className="no-scrollbar" style={{ display: 'flex', borderBottom: `1px solid ${theme.border}`, gap: isMobile ? '18px' : '28px', marginBottom: '24px', overflowX: isMobile ? 'auto' : 'visible' }}>
                     {[
                       { id: 'deskripsi', label: 'Tentang Pekerjaan' },
                       { id: 'kualifikasi', label: 'Persyaratan Kualifikasi' },
@@ -284,7 +312,9 @@ export default function LowonganPage() {
                           color: activeTab === tab.id ? theme.purple : theme.lightText,
                           fontWeight: 700,
                           cursor: 'pointer',
-                          fontSize: '14px',
+                          fontSize: isMobile ? '13px' : '14px',
+                          whiteSpace: 'nowrap',
+                          flexShrink: 0,
                           transition: 'all 0.15s ease'
                         }}
                       >
@@ -339,6 +369,7 @@ export default function LowonganPage() {
               )}
             </AnimatePresence>
           </div>
+          )}
 
         </div>
 

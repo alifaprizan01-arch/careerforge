@@ -7,10 +7,21 @@ import { useUser } from '../../lib/userContext';
 import Sidebar from '../components/Sidebar';
 
 // ✅ Komponen ini dipisah karena menggunakan useSearchParams
+function useIsMobile(bp = 768) {
+  const [m, setM] = useState(false);
+  useEffect(() => {
+    const check = () => setM(window.innerWidth < bp);
+    check(); window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, [bp]);
+  return m;
+}
+
 function ChatPageInner() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user, loaded } = useUser();
+  const isMobile = useIsMobile();
 
   const [conversations, setConversations] = useState([]);
   const [selectedConv, setSelectedConv] = useState(null);
@@ -189,6 +200,11 @@ function ChatPageInner() {
     setTimeout(() => inputRef.current?.focus(), 200);
   };
 
+  const handleBackToList = () => {
+    setSelectedConv(null);
+    setMessages([]);
+  };
+
   const getRoleLabel = (role) => {
     const map = { admin: '🛡️ Admin', company: '🏢 Perusahaan', mentor: '🎤 Mentor', user: '👤 User' };
     return map[role] || '👤 User';
@@ -215,26 +231,28 @@ function ChatPageInner() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-base)', fontFamily: 'var(--font-sans)' }}>
       <Sidebar />
-      <main style={{ marginLeft: 'var(--sidebar-width, 240px)', flex: 1, height: '100vh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+      <main style={{ marginLeft: isMobile ? 0 : 'var(--sidebar-width, 240px)', flex: 1, height: '100dvh', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
 
-        {/* Header */}
-        <div style={{ padding: '18px 24px', borderBottom: '1px solid var(--border-default)', background: 'var(--surface-primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, boxShadow: 'var(--shadow-xs)' }}>
+        {/* Header — sembunyikan saat chat terbuka di mobile */}
+        {(!isMobile || !selectedConv) && (
+        <div style={{ padding: isMobile ? '14px 16px' : '18px 24px', borderBottom: '1px solid var(--border-default)', background: 'var(--surface-primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0, boxShadow: 'var(--shadow-xs)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <h1 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>Pesan</h1>
+            <h1 style={{ fontSize: isMobile ? '17px' : '18px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>Pesan</h1>
             {totalUnread > 0 && (
               <span style={{ background: 'var(--brand-600)', color: '#fff', borderRadius: '20px', fontSize: '11px', fontWeight: 700, padding: '2px 8px' }}>{totalUnread}</span>
             )}
           </div>
           <motion.button whileTap={{ scale: 0.97 }} onClick={() => setShowNewChat(true)}
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 16px', borderRadius: '8px', border: 'none', background: 'var(--brand-600)', color: '#fff', fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)', boxShadow: 'var(--shadow-brand)' }}>
-            ✏️ Pesan Baru
+            style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '8px 14px', borderRadius: '8px', border: 'none', background: 'var(--brand-600)', color: '#fff', fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)', boxShadow: 'var(--shadow-brand)' }}>
+            ✏️ {isMobile ? 'Baru' : 'Pesan Baru'}
           </motion.button>
         </div>
+        )}
 
         <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
 
-          {/* Conversation list */}
-          <div style={{ width: '300px', borderRight: '1px solid var(--border-default)', background: 'var(--surface-primary)', display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+          {/* Conversation list — full screen di mobile saat tidak ada conv terpilih */}
+          <div style={{ width: isMobile ? '100%' : '300px', borderRight: isMobile ? 'none' : '1px solid var(--border-default)', background: 'var(--surface-primary)', display: isMobile && selectedConv ? 'none' : 'flex', flexDirection: 'column', flexShrink: 0 }}>
             {/* Search */}
             <div style={{ padding: '12px', borderBottom: '1px solid var(--border-subtle)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-secondary)', borderRadius: '8px', padding: '8px 12px', border: '1px solid var(--border-default)' }}>
@@ -292,22 +310,28 @@ function ChatPageInner() {
             </div>
           </div>
 
-          {/* Chat area */}
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg-base)' }}>
+          {/* Chat area — hanya tampil saat conv terpilih di mobile */}
+          <div style={{ flex: 1, display: isMobile && !selectedConv ? 'none' : 'flex', flexDirection: 'column', overflow: 'hidden', background: 'var(--bg-base)' }}>
             {selectedConv ? (
               <>
                 {/* Chat header */}
-                <div style={{ padding: '14px 20px', borderBottom: '1px solid var(--border-default)', background: 'var(--surface-primary)', display: 'flex', alignItems: 'center', gap: '12px', flexShrink: 0, boxShadow: 'var(--shadow-xs)' }}>
+                <div style={{ padding: isMobile ? '10px 14px' : '14px 20px', borderBottom: '1px solid var(--border-default)', background: 'var(--surface-primary)', display: 'flex', alignItems: 'center', gap: '10px', flexShrink: 0, boxShadow: 'var(--shadow-xs)' }}>
+                  {isMobile && (
+                    <button onClick={handleBackToList}
+                      style={{ width: '34px', height: '34px', borderRadius: '50%', border: '1px solid var(--border-default)', background: 'var(--surface-secondary)', color: 'var(--text-primary)', fontSize: '16px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                      ←
+                    </button>
+                  )}
                   {selectedConv.other_user?.avatar_url ? (
-                    <img src={selectedConv.other_user.avatar_url} style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+                    <img src={selectedConv.other_user.avatar_url} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
                   ) : (
-                    <div style={{ width: '38px', height: '38px', borderRadius: '50%', background: 'linear-gradient(135deg,var(--brand-600),var(--brand-800))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '13px', flexShrink: 0 }}>
+                    <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg,var(--brand-600),var(--brand-800))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '13px', flexShrink: 0 }}>
                       {initials(selectedConv.other_user?.full_name)}
                     </div>
                   )}
-                  <div>
-                    <div style={{ fontSize: '15px', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em' }}>{selectedConv.other_user?.full_name}</div>
-                    <div style={{ fontSize: '12px', color: 'var(--text-secondary)' }}>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div style={{ fontSize: '14px', fontWeight: 700, color: 'var(--text-primary)', letterSpacing: '-0.01em', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{selectedConv.other_user?.full_name}</div>
+                    <div style={{ fontSize: '11px', color: 'var(--text-secondary)' }}>
                       {getRoleLabel(selectedConv.other_user?.role)}
                       {selectedConv.other_user?.company_name && ` • ${selectedConv.other_user.company_name}`}
                     </div>
@@ -379,21 +403,21 @@ function ChatPageInner() {
                 </div>
 
                 {/* Input */}
-                <div style={{ padding: '14px 20px', borderTop: '1px solid var(--border-default)', background: 'var(--surface-primary)', flexShrink: 0 }}>
-                  <div style={{ display: 'flex', gap: '10px', alignItems: 'flex-end' }}>
+                <div style={{ padding: isMobile ? '10px 12px 14px' : '14px 20px', borderTop: '1px solid var(--border-default)', background: 'var(--surface-primary)', flexShrink: 0 }}>
+                  <div style={{ display: 'flex', gap: '8px', alignItems: 'flex-end' }}>
                     <div style={{ flex: 1, background: 'var(--surface-secondary)', borderRadius: '12px', border: '1.5px solid var(--border-default)', padding: '10px 14px', transition: 'border-color 0.15s' }}>
                       <textarea ref={inputRef} value={input} onChange={e => setInput(e.target.value)}
-                        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); } }}
-                        placeholder="Tulis pesan... (Enter untuk kirim)"
+                        onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey && !isMobile) { e.preventDefault(); sendMessage(); } }}
+                        placeholder="Tulis pesan..."
                         rows={1} style={{ width: '100%', border: 'none', outline: 'none', background: 'transparent', fontSize: '14px', color: 'var(--text-primary)', fontFamily: 'var(--font-sans)', resize: 'none', lineHeight: 1.5, maxHeight: '100px', overflow: 'auto' }}
                         onInput={e => { e.target.style.height = 'auto'; e.target.style.height = Math.min(e.target.scrollHeight, 100) + 'px'; }} />
                     </div>
                     <motion.button whileTap={{ scale: 0.95 }} onClick={sendMessage} disabled={!input.trim() || sending}
-                      style={{ width: '42px', height: '42px', borderRadius: '12px', border: 'none', background: !input.trim() ? 'var(--surface-tertiary)' : 'var(--brand-600)', color: !input.trim() ? 'var(--text-tertiary)' : '#fff', cursor: !input.trim() ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px', flexShrink: 0, boxShadow: input.trim() ? 'var(--shadow-brand)' : 'none', transition: 'all 0.15s' }}>
+                      style={{ width: '44px', height: '44px', borderRadius: '12px', border: 'none', background: !input.trim() ? 'var(--surface-tertiary)' : 'var(--brand-600)', color: !input.trim() ? 'var(--text-tertiary)' : '#fff', cursor: !input.trim() ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0, boxShadow: input.trim() ? 'var(--shadow-brand)' : 'none', transition: 'all 0.15s' }}>
                       {sending ? '⏳' : '↑'}
                     </motion.button>
                   </div>
-                  <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '6px' }}>Shift+Enter untuk baris baru</p>
+                  {!isMobile && <p style={{ fontSize: '11px', color: 'var(--text-tertiary)', marginTop: '6px' }}>Shift+Enter untuk baris baru</p>}
                 </div>
               </>
             ) : (
@@ -476,5 +500,3 @@ export default function ChatPage() {
     </Suspense>
   );
 }
-
-

@@ -7,12 +7,24 @@ import { supabase } from '../../../lib/supabaseClient';
 import { useUser } from '../../../lib/userContext';
 import { useTheme } from '../../../lib/themeContext';
 
+function useIsMobile(bp = 768) {
+  const [m, setM] = useState(false);
+  useEffect(() => {
+    const check = () => setM(window.innerWidth < bp);
+    check(); window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, [bp]);
+  return m;
+}
+
 export default function PelatihanDetailPage({ params }) {
   const router = useRouter();
   const { user, loaded } = useUser();
   const { isDark } = useTheme();
+  const isMobile = useIsMobile();
   const { id } = use(params);
   const trainingId = parseInt(id);
+  const [showModuleList, setShowModuleList] = useState(false);
 
   const [training, setTraining] = useState(null);
   const [modules, setModules] = useState([]);
@@ -229,18 +241,26 @@ export default function PelatihanDetailPage({ params }) {
   return (
     <div style={{ minHeight: '100vh', background: c.bg, fontFamily: 'Plus Jakarta Sans, Inter, sans-serif' }}>
       {/* Top bar */}
-      <div style={{ background: c.card, borderBottom: `1px solid ${c.border}`, padding: '0 24px', height: '56px', display: 'flex', alignItems: 'center', gap: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', position: 'sticky', top: 0, zIndex: 100 }}>
-        <Link href="/pelatihan" style={{ color: c.muted, textDecoration: 'none', fontSize: '13px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px' }}>← Pelatihan</Link>
-        <span style={{ color: c.border }}>|</span>
-        <span style={{ fontSize: '14px', fontWeight: 700, color: c.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{training.title}</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: c.subtle, padding: '5px 12px', borderRadius: '20px', border: `1px solid ${c.border}` }}>
-            <div style={{ width: '80px', height: '6px', background: c.border, borderRadius: '3px', overflow: 'hidden' }}>
-              <div style={{ width: `${overallProgress}%`, height: '100%', background: overallProgress >= 100 ? c.green : c.brand, borderRadius: '3px', transition: 'width 0.5s' }} />
+      <div style={{ background: c.card, borderBottom: `1px solid ${c.border}`, padding: isMobile ? '0 12px' : '0 24px', height: '56px', display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', position: 'sticky', top: 0, zIndex: 100 }}>
+        <Link href="/pelatihan" style={{ color: c.muted, textDecoration: 'none', fontSize: '13px', fontWeight: 500, display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>←</Link>
+        <span style={{ color: c.border, flexShrink: 0 }}>|</span>
+        <span style={{ fontSize: isMobile ? '13px' : '14px', fontWeight: 700, color: c.text, flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{training.title}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          {!isMobile && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: c.subtle, padding: '5px 12px', borderRadius: '20px', border: `1px solid ${c.border}` }}>
+              <div style={{ width: '80px', height: '6px', background: c.border, borderRadius: '3px', overflow: 'hidden' }}>
+                <div style={{ width: `${overallProgress}%`, height: '100%', background: overallProgress >= 100 ? c.green : c.brand, borderRadius: '3px', transition: 'width 0.5s' }} />
+              </div>
+              <span style={{ fontSize: '12px', fontWeight: 700, color: overallProgress >= 100 ? c.green : c.brand }}>{overallProgress}%</span>
             </div>
-            <span style={{ fontSize: '12px', fontWeight: 700, color: overallProgress >= 100 ? c.green : c.brand }}>{overallProgress}%</span>
-          </div>
-          <span style={{ fontSize: '12px', color: c.muted }}>{completedModules}/{modules.length} modul</span>
+          )}
+          {!isMobile && <span style={{ fontSize: '12px', color: c.muted }}>{completedModules}/{modules.length} modul</span>}
+          {isMobile && (
+            <button onClick={() => setShowModuleList(v => !v)}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '20px', border: `1px solid ${c.border}`, background: c.subtle, color: c.text, fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}>
+              📋 {completedModules}/{modules.length}
+            </button>
+          )}
         </div>
       </div>
 
@@ -251,10 +271,63 @@ export default function PelatihanDetailPage({ params }) {
         </motion.div>
       )}
 
+      {/* Mobile: overlay daftar modul */}
+      {isMobile && showModuleList && (
+        <div onClick={() => setShowModuleList(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 150 }} />
+      )}
+      {isMobile && (
+        <div style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 200,
+          background: c.card, borderTop: `1px solid ${c.border}`,
+          borderRadius: '20px 20px 0 0',
+          transform: showModuleList ? 'translateY(0)' : 'translateY(100%)',
+          transition: 'transform 0.3s cubic-bezier(0.4,0,0.2,1)',
+          maxHeight: '70vh', display: 'flex', flexDirection: 'column',
+          boxShadow: '0 -4px 24px rgba(0,0,0,0.15)',
+        }}>
+          <div style={{ padding: '12px 16px 10px', borderBottom: `1px solid ${c.border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div>
+              <h3 style={{ fontSize: '14px', fontWeight: 700, color: c.text, margin: 0 }}>Daftar Modul</h3>
+              <p style={{ fontSize: '11px', color: c.muted, margin: 0 }}>{completedModules} dari {modules.length} selesai</p>
+            </div>
+            <button onClick={() => setShowModuleList(false)}
+              style={{ width: '32px', height: '32px', borderRadius: '50%', border: `1px solid ${c.border}`, background: c.subtle, cursor: 'pointer', color: c.muted, fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
+          </div>
+          <div style={{ overflowY: 'auto', flex: 1 }}>
+            {modules.map((mod, i) => {
+              const isActive = activeModule?.id === mod.id;
+              const isCompleted = moduleProgress[mod.id]?.is_completed;
+              return (
+                <div key={mod.id} onClick={() => { selectModule(mod); setShowModuleList(false); }}
+                  style={{ padding: '14px 16px', cursor: 'pointer', borderBottom: `1px solid ${c.border}`, background: isActive ? c.brandBg : 'transparent', borderLeft: `3px solid ${isActive ? c.brand : 'transparent'}` }}>
+                  <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+                    <div style={{ width: '32px', height: '32px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '13px', fontWeight: 700, flexShrink: 0,
+                      background: isCompleted ? c.green : isActive ? c.brand : c.subtle,
+                      color: isCompleted || isActive ? '#fff' : c.muted,
+                    }}>
+                      {isCompleted ? '✓' : i + 1}
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <p style={{ fontSize: '14px', fontWeight: isActive ? 700 : 500, color: isActive ? c.brand : c.text, margin: '0 0 3px', lineHeight: 1.3 }}>{mod.title}</p>
+                      <div style={{ display: 'flex', gap: '8px', fontSize: '11px', color: c.muted }}>
+                        {classifyUrl(mod.content_url).isVideo && <span>🎬</span>}
+                        {classifyUrl(mod.content_url).hasMaterial && <span>📄</span>}
+                        {mod.duration_mins ? <span>⏱️ {mod.duration_mins}m</span> : null}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       <div style={{ display: 'flex', height: 'calc(100vh - 56px)', overflow: 'hidden' }}>
 
-        {/* Left sidebar - module list */}
-        <div style={{ width: '280px', background: c.card, borderRight: `1px solid ${c.border}`, display: 'flex', flexDirection: 'column', flexShrink: 0 }}>
+        {/* Left sidebar - module list (desktop only) */}
+        <div style={{ width: '280px', background: c.card, borderRight: `1px solid ${c.border}`, display: isMobile ? 'none' : 'flex', flexDirection: 'column', flexShrink: 0 }}>
           <div style={{ padding: '14px 16px', borderBottom: `1px solid ${c.border}`, background: c.subtle }}>
             <h3 style={{ fontSize: '13px', fontWeight: 700, color: c.text, marginBottom: '2px' }}>Daftar Modul</h3>
             <p style={{ fontSize: '11px', color: c.muted }}>{completedModules} dari {modules.length} selesai</p>
@@ -301,39 +374,39 @@ export default function PelatihanDetailPage({ params }) {
           {activeModule ? (
             <>
               {/* Module header */}
-              <div style={{ padding: '16px 24px', borderBottom: `1px solid ${c.border}`, background: c.card, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexShrink: 0 }}>
-                <div>
-                  <h2 style={{ fontSize: '17px', fontWeight: 800, color: c.text, marginBottom: '2px', letterSpacing: '-0.01em' }}>{activeModule.title}</h2>
-                  {activeModule.description && <p style={{ fontSize: '13px', color: c.muted }}>{activeModule.description}</p>}
+              <div style={{ padding: isMobile ? '12px 14px' : '16px 24px', borderBottom: `1px solid ${c.border}`, background: c.card, display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexShrink: 0, gap: '10px' }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <h2 style={{ fontSize: isMobile ? '15px' : '17px', fontWeight: 800, color: c.text, marginBottom: '2px', letterSpacing: '-0.01em', lineHeight: 1.3 }}>{activeModule.title}</h2>
+                  {activeModule.description && <p style={{ fontSize: '12px', color: c.muted }}>{activeModule.description}</p>}
                 </div>
                 {moduleProgress[activeModule.id]?.is_completed ? (
-                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 14px', borderRadius: '20px', background: c.greenBg, color: c.green, fontSize: '13px', fontWeight: 700, border: `1px solid ${c.green}44` }}>✓ Selesai</span>
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 12px', borderRadius: '20px', background: c.greenBg, color: c.green, fontSize: '12px', fontWeight: 700, border: `1px solid ${c.green}44`, flexShrink: 0 }}>✓ Selesai</span>
                 ) : (
                   <motion.button whileTap={{ scale: 0.97 }} onClick={() => markModuleComplete(activeModule.id)}
-                    style={{ padding: '8px 18px', borderRadius: '8px', border: 'none', background: c.brand, color: '#fff', fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'inherit', boxShadow: '0 4px 14px rgba(37,99,235,0.25)' }}>
-                    ✓ Tandai Selesai
+                    style={{ padding: isMobile ? '7px 12px' : '8px 18px', borderRadius: '8px', border: 'none', background: c.brand, color: '#fff', fontWeight: 600, fontSize: '12px', cursor: 'pointer', fontFamily: 'inherit', flexShrink: 0 }}>
+                    ✓ Selesai
                   </motion.button>
                 )}
               </div>
 
               {/* Content tabs */}
-              <div style={{ borderBottom: `1px solid ${c.border}`, background: c.card, padding: '0 24px', display: 'flex', gap: '0', flexShrink: 0 }}>
+              <div style={{ borderBottom: `1px solid ${c.border}`, background: c.card, padding: isMobile ? '0 8px' : '0 24px', display: 'flex', gap: '0', flexShrink: 0 }}>
                 {[
-                  { id: 'video', label: '🎬 Video', show: classifyUrl(activeModule.content_url).isVideo },
-                  { id: 'materi', label: '📄 Materi', show: classifyUrl(activeModule.content_url).hasMaterial },
+                  { id: 'video', label: isMobile ? '🎬' : '🎬 Video', show: classifyUrl(activeModule.content_url).isVideo },
+                  { id: 'materi', label: isMobile ? '📄 Materi' : '📄 Materi', show: classifyUrl(activeModule.content_url).hasMaterial },
                   { id: 'kuis', label: `❓ Kuis (${quizzes.length})`, show: quizzes.length > 0 },
                 ].filter(t => t.show).map(tab => (
                   <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
-                    padding: '12px 18px', border: 'none', background: 'transparent', fontSize: '13px', fontWeight: activeTab === tab.id ? 700 : 400, cursor: 'pointer', fontFamily: 'inherit',
+                    padding: isMobile ? '10px 14px' : '12px 18px', border: 'none', background: 'transparent', fontSize: isMobile ? '13px' : '13px', fontWeight: activeTab === tab.id ? 700 : 400, cursor: 'pointer', fontFamily: 'inherit',
                     color: activeTab === tab.id ? c.brand : c.muted,
                     borderBottom: `2px solid ${activeTab === tab.id ? c.brand : 'transparent'}`,
-                    marginBottom: '-1px', transition: 'all 0.15s',
+                    marginBottom: '-1px', transition: 'all 0.15s', flex: isMobile ? 1 : 'initial', textAlign: 'center',
                   }}>{tab.label}</button>
                 ))}
               </div>
 
               {/* Content area */}
-              <div style={{ flex: 1, overflowY: 'auto', padding: '24px' }}>
+              <div style={{ flex: 1, overflowY: 'auto', padding: isMobile ? '14px' : '24px' }}>
                 <AnimatePresence mode="wait">
 
                   {/* Video tab */}

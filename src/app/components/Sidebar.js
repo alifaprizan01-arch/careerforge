@@ -111,21 +111,40 @@ export default function Sidebar() {
 
       {/* Tombol buka (handle) — tampil saat sidebar tertutup di SEMUA halaman; di tepi kiri-tengah agar tidak menutupi logo/judul */}
       {!isOpen && (
-        <button onClick={toggleSidebar} aria-label="Buka menu"
-          style={{ position: 'fixed', top: '50%', left: 0, transform: 'translateY(-50%)', zIndex: 200, width: '30px', height: '64px', borderRadius: '0 12px 12px 0', border: `1px solid ${theme.border}`, borderLeft: 'none', background: theme.white, color: theme.darkText, cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '2px 2px 12px rgba(0,0,0,0.12)', transition: 'width 0.15s, background-color 0.15s' }}
-          onMouseEnter={e => { e.currentTarget.style.background = theme.bgLight; e.currentTarget.style.width = '38px'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = theme.white; e.currentTarget.style.width = '30px'; }}>
-          ☰
-        </button>
+        isMobile ? (
+          /* Topbar pengganti sidebar di HP */
+          <div style={{
+            position: 'fixed', top: 0, left: 0, right: 0, zIndex: 200,
+            height: '52px', background: theme.white,
+            borderBottom: `1px solid ${theme.border}`,
+            boxShadow: '0 1px 6px rgba(0,0,0,0.07)',
+            display: 'flex', alignItems: 'center', padding: '0 16px', gap: '12px',
+          }}>
+            <button onClick={toggleSidebar} aria-label="Buka menu"
+              style={{ width: '40px', height: '40px', borderRadius: '10px', border: `1px solid ${theme.border}`, background: theme.bgLight, color: theme.darkText, cursor: 'pointer', fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              ☰
+            </button>
+            <div style={{ width: '28px', height: '28px', background: theme.purple, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '11px', borderRadius: '6px', flexShrink: 0 }}>CF</div>
+            <span style={{ fontWeight: 700, fontSize: '15px', color: theme.darkText, letterSpacing: '-0.01em', flex: 1 }}>SiapKerja.id</span>
+          </div>
+        ) : (
+          <button onClick={toggleSidebar} aria-label="Buka menu"
+            style={{ position: 'fixed', top: '50%', left: 0, transform: 'translateY(-50%)', zIndex: 200, width: '30px', height: '64px', borderRadius: '0 12px 12px 0', borderTop: `1px solid ${theme.border}`, borderRight: `1px solid ${theme.border}`, borderBottom: `1px solid ${theme.border}`, background: theme.white, color: theme.darkText, cursor: 'pointer', fontSize: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '2px 2px 12px rgba(0,0,0,0.12)', transition: 'width 0.15s, background-color 0.15s' }}
+            onMouseEnter={e => { e.currentTarget.style.background = theme.bgLight; e.currentTarget.style.width = '38px'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = theme.white; e.currentTarget.style.width = '30px'; }}>
+            ☰
+          </button>
+        )
       )}
 
       <aside
         style={{
-          width: '240px', height: '100vh', position: 'fixed', left: 0, top: 0,
+          width: isMobile ? '100%' : '240px',
+          height: '100vh', position: 'fixed', left: 0, top: 0,
           background: theme.white, borderRight: `1px solid ${theme.border}`,
           display: 'flex', flexDirection: 'column', zIndex: 100,
           fontFamily: 'var(--font-sans, Arial, sans-serif)',
-          transform: isOpen ? 'translateX(0)' : 'translateX(-240px)',
+          transform: isOpen ? 'translateX(0)' : isMobile ? 'translateX(-100%)' : 'translateX(-240px)',
           transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.2s ease, border-color 0.2s ease',
           willChange: 'transform'
         }}
@@ -137,7 +156,9 @@ export default function Sidebar() {
             style={{ width: '30px', height: '30px', border: `1px solid ${theme.border}`, background: theme.bgLight, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: theme.darkText, borderRadius: '6px', fontSize: '15px', flexShrink: 0 }}>
             ☰
           </button>
-          <img src="/logo.jpeg" alt="SiapKerja.id" style={{ width: '32px', height: '32px', borderRadius: '4px', flexShrink: 0, objectFit: 'cover' }} />
+          <div style={{ width: '32px', height: '32px', background: theme.purple, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '13px', borderRadius: '4px', flexShrink: 0 }}>
+            CF
+          </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 800, fontSize: '15px', color: theme.darkText, letterSpacing: '-0.02em' }}>SiapKerja.id</div>
             <div style={{ fontSize: '10px', color: theme.lightText, fontWeight: 700, letterSpacing: '0.04em' }}>SDGs 8</div>
@@ -156,19 +177,19 @@ export default function Sidebar() {
         )}
 
         {/* Profil Pengguna */}
-        <Link href="/profil" style={{ padding: '14px 16px', borderBottom: `1px solid ${theme.border}`, textDecoration: 'none', display: 'block', backgroundColor: theme.bgLight }}>
+        <Link href="/profil" style={{ padding: isMobile ? '16px' : '14px 16px', borderBottom: `1px solid ${theme.border}`, textDecoration: 'none', display: 'block', backgroundColor: theme.bgLight }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ position: 'relative', flexShrink: 0 }}>
               {user?.avatar_url ? (
-                <img src={user.avatar_url} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover', border: `1px solid ${theme.border}` }} alt="Avatar" />
+                <img src={user.avatar_url} style={{ width: isMobile ? '44px' : '36px', height: isMobile ? '44px' : '36px', borderRadius: '50%', objectFit: 'cover', border: `1px solid ${theme.border}` }} alt="Avatar" />
               ) : (
-                <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: theme.purple, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700 }}>{initials}</div>
+                <div style={{ width: isMobile ? '44px' : '36px', height: isMobile ? '44px' : '36px', borderRadius: '50%', background: theme.purple, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: isMobile ? '16px' : '14px' }}>{initials}</div>
               )}
               <div style={{ position: 'absolute', bottom: '0', right: '0', width: '10px', height: '10px', borderRadius: '50%', background: '#22C55E', border: `2px solid ${theme.bgLight}` }} />
             </div>
             <div style={{ flex: 1, minWidth: 0 }}>
               <div style={{ fontSize: '9px', color: theme.lightText, fontWeight: 800, letterSpacing: '0.06em', textTransform: 'uppercase', marginBottom: '3px' }}>{t('Profil')}</div>
-              <div style={{ fontWeight: 700, fontSize: '13px', color: theme.darkText, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.full_name || 'User'}</div>
+              <div style={{ fontWeight: 700, fontSize: isMobile ? '15px' : '13px', color: theme.darkText, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{user?.full_name || 'User'}</div>
               <span style={{ fontSize: '9px', padding: '2px 6px', background: roleLabel.bg, color: roleLabel.color, fontWeight: 700, borderRadius: '4px' }}>{t(roleLabel.text)}</span>
             </div>
           </div>
@@ -186,11 +207,11 @@ export default function Sidebar() {
                   whileHover={{ backgroundColor: active ? 'transparent' : theme.hoverBg, x: active ? 0 : 4 }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '14px',
-                    padding: '10px 14px',
+                    padding: isMobile ? '14px 16px' : '10px 14px',
                     background: active ? 'rgba(86, 36, 208, 0.08)' : 'transparent',
                     color: active ? theme.purple : theme.darkText,
                     fontWeight: active ? 700 : 500,
-                    fontSize: '13px',
+                    fontSize: isMobile ? '15px' : '13px',
                     borderRadius: '8px',
                     position: 'relative',
                     transition: 'color 0.2s ease, background-color 0.2s ease'
@@ -203,7 +224,7 @@ export default function Sidebar() {
                     />
                   )}
 
-                  <span style={{ fontSize: '18px', width: '24px', textAlign: 'center', opacity: active ? 1 : 0.6, transition: 'opacity 0.2s ease' }}>{item.icon}</span>
+                  <span style={{ fontSize: isMobile ? '22px' : '18px', width: '28px', textAlign: 'center', opacity: active ? 1 : 0.6, transition: 'opacity 0.2s ease' }}>{item.icon}</span>
                   <span style={{ flex: 1 }}>{t(item.label)}</span>
 
                   {item.href === '/notifikasi' && unreadCount > 0 && (
@@ -218,18 +239,18 @@ export default function Sidebar() {
         </nav>
 
         {/* Bagian Bawah / Footer */}
-        <div style={{ padding: '16px', borderTop: `1px solid ${theme.border}`, display: 'flex', flexDirection: 'column', gap: '8px', backgroundColor: theme.bgLight }}>
+        <div style={{ padding: isMobile ? '12px 16px 28px' : '16px', borderTop: `1px solid ${theme.border}`, display: 'flex', flexDirection: 'column', gap: '4px', backgroundColor: theme.bgLight }}>
           <Link href="/pengaturan" style={{ textDecoration: 'none' }}>
-            <motion.div whileHover={{ backgroundColor: theme.border }} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', color: theme.darkText, fontSize: '13px', fontWeight: 600, borderRadius: '8px', transition: 'background-color 0.2s ease' }}>
-              <span style={{ fontSize: '16px' }}>⚙️</span> {t('Pengaturan')}
+            <motion.div whileHover={{ backgroundColor: theme.border }} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: isMobile ? '14px 16px' : '10px 14px', color: theme.darkText, fontSize: isMobile ? '15px' : '13px', fontWeight: 600, borderRadius: '8px', transition: 'background-color 0.2s ease' }}>
+              <span style={{ fontSize: isMobile ? '20px' : '16px' }}>⚙️</span> Pengaturan
             </motion.div>
           </Link>
           <motion.button
             whileHover={{ backgroundColor: 'rgba(220, 38, 38, 0.1)' }}
             onClick={handleLogout}
-            style={{ width: '100%', padding: '10px 14px', border: 'none', background: 'transparent', color: '#DC2626', fontSize: '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', borderRadius: '8px', transition: 'background-color 0.2s ease' }}
+            style={{ width: '100%', padding: isMobile ? '14px 16px' : '10px 14px', border: 'none', background: 'transparent', color: '#DC2626', fontSize: isMobile ? '15px' : '13px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer', borderRadius: '8px', transition: 'background-color 0.2s ease' }}
           >
-            <span style={{ fontSize: '16px' }}>🚪</span> {t('Keluar')}
+            <span style={{ fontSize: isMobile ? '20px' : '16px' }}>🚪</span> Keluar
           </motion.button>
         </div>
       </aside>

@@ -7,10 +7,22 @@ import { supabase } from '../../../lib/supabaseClient';
 import { useUser } from '../../../lib/userContext';
 import Sidebar from '../../components/Sidebar';
 
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < breakpoint);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, [breakpoint]);
+  return isMobile;
+}
+
 export default function DetailLowonganPage() {
   const { id } = useParams();
   const router = useRouter();
   const { user, loaded } = useUser();
+  const isMobile = useIsMobile();
 
   const [job, setJob] = useState(null);
   const [application, setApplication] = useState(null);
@@ -93,7 +105,7 @@ export default function DetailLowonganPage() {
   const Wrapper = ({ children }) => (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-base)', fontFamily: 'var(--font-sans)' }}>
       <Sidebar />
-      <main style={{ marginLeft: 'var(--sidebar-width, 240px)', flex: 1, padding: '32px', transition: 'margin-left 0.3s cubic-bezier(0.4,0,0.2,1)' }}>
+      <main style={{ marginLeft: isMobile ? 0 : 'var(--sidebar-width, 240px)', flex: 1, minWidth: 0, padding: isMobile ? '70px 16px 24px' : '32px', boxSizing: 'border-box', overflowX: 'hidden', transition: 'margin-left 0.3s cubic-bezier(0.4,0,0.2,1)' }}>
         <div style={{ maxWidth: '980px', margin: '0 auto' }}>{children}</div>
       </main>
     </div>
@@ -110,7 +122,7 @@ export default function DetailLowonganPage() {
 
   if (notFound) return (
     <Wrapper>
-      <div style={{ background: 'var(--surface-primary)', border: '1px solid var(--border-default)', borderRadius: '16px', padding: '60px', textAlign: 'center' }}>
+      <div style={{ background: 'var(--surface-primary)', border: '1px solid var(--border-default)', borderRadius: '16px', padding: isMobile ? '32px 20px' : '60px', textAlign: 'center' }}>
         <div style={{ fontSize: '40px', marginBottom: '12px', opacity: 0.4 }}>💼</div>
         <h2 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)' }}>Lowongan tidak ditemukan</h2>
         <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '16px' }}>Lowongan ini mungkin sudah dihapus atau ditutup.</p>
@@ -127,13 +139,13 @@ export default function DetailLowonganPage() {
 
       {/* Header */}
       <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-        style={{ background: 'var(--surface-primary)', border: '1px solid var(--border-default)', borderRadius: '16px', padding: '24px', marginBottom: '20px', boxShadow: 'var(--shadow-sm)', display: 'flex', gap: '18px', alignItems: 'center', flexWrap: 'wrap' }}>
-        <div style={{ width: '64px', height: '64px', borderRadius: '14px', background: 'var(--surface-brand)', border: '1px solid var(--border-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '22px', color: 'var(--text-brand)', flexShrink: 0 }}>
+        style={{ background: 'var(--surface-primary)', border: '1px solid var(--border-default)', borderRadius: '16px', padding: isMobile ? '18px' : '24px', marginBottom: '20px', boxShadow: 'var(--shadow-sm)', display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
+        <div style={{ width: isMobile ? '52px' : '64px', height: isMobile ? '52px' : '64px', borderRadius: '14px', background: 'var(--surface-brand)', border: '1px solid var(--border-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: isMobile ? '18px' : '22px', color: 'var(--text-brand)', flexShrink: 0 }}>
           {(job.company || job.tujuan)?.slice(0, 2).toUpperCase() || 'CF'}
         </div>
-        <div style={{ flex: 1, minWidth: '220px' }}>
-          <h1 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', marginBottom: '4px' }}>{job.tujuan || 'Posisi'}</h1>
-          <p style={{ fontSize: '15px', color: 'var(--text-secondary)', fontWeight: 500 }}>{job.company || 'Perusahaan'}</p>
+        <div style={{ flex: 1, minWidth: isMobile ? '160px' : '220px' }}>
+          <h1 style={{ fontSize: isMobile ? '18px' : '24px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', marginBottom: '4px' }}>{job.tujuan || 'Posisi'}</h1>
+          <p style={{ fontSize: isMobile ? '13px' : '15px', color: 'var(--text-secondary)', fontWeight: 500 }}>{job.company || 'Perusahaan'}</p>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '10px' }}>
             {job.asal && <span style={{ fontSize: '12px', color: 'var(--text-secondary)', background: 'var(--surface-secondary)', padding: '4px 10px', borderRadius: '6px' }}>📍 {job.asal}</span>}
             {job.jenis && <span style={{ fontSize: '12px', color: 'var(--text-brand)', background: 'var(--surface-brand)', padding: '4px 10px', borderRadius: '6px', fontWeight: 600 }}>🗂️ {job.jenis}</span>}
@@ -144,17 +156,17 @@ export default function DetailLowonganPage() {
       {msg && <div style={{ padding: '12px 16px', borderRadius: '8px', marginBottom: '16px', fontSize: '13px', fontWeight: 600, background: msg.startsWith('✓') ? 'var(--success-50, var(--surface-secondary))' : 'var(--surface-secondary)', color: msg.startsWith('✓') ? 'var(--text-success)' : 'var(--text-error)', border: '1px solid var(--border-default)' }}>{msg}</div>}
 
       {/* Body: 2 kolom */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.7fr 1fr', gap: '20px', alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1.7fr 1fr', gap: '20px', alignItems: 'start' }}>
 
         {/* Kiri: detail */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          <Section title="Tentang Pekerjaan">
+          <Section title="Tentang Pekerjaan" isMobile={isMobile}>
             <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.8, whiteSpace: 'pre-line' }}>
               {job.deskripsi || job.description || 'Belum ada deskripsi tambahan untuk lowongan ini.'}
             </p>
           </Section>
 
-          <Section title="Kualifikasi & Persyaratan">
+          <Section title="Kualifikasi & Persyaratan" isMobile={isMobile}>
             {reqList.length === 0 ? (
               <p style={{ fontSize: '13px', color: 'var(--text-tertiary)' }}>Persyaratan belum dicantumkan.</p>
             ) : (
@@ -170,7 +182,7 @@ export default function DetailLowonganPage() {
         </div>
 
         {/* Kanan: kartu lamar (sticky) */}
-        <div style={{ position: 'sticky', top: '32px', background: 'var(--surface-primary)', border: '1px solid var(--border-default)', borderRadius: '16px', padding: '22px', boxShadow: 'var(--shadow-sm)' }}>
+        <div style={{ position: isMobile ? 'static' : 'sticky', top: '32px', background: 'var(--surface-primary)', border: '1px solid var(--border-default)', borderRadius: '16px', padding: isMobile ? '18px' : '22px', boxShadow: 'var(--shadow-sm)' }}>
           <div style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-tertiary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '6px' }}>Estimasi Gaji</div>
           <div style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '18px' }}>{formatSalary(job.salary_min, job.salary_max)}</div>
 
@@ -265,10 +277,10 @@ export default function DetailLowonganPage() {
   );
 }
 
-function Section({ title, children }) {
+function Section({ title, children, isMobile }) {
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-      style={{ background: 'var(--surface-primary)', border: '1px solid var(--border-default)', borderRadius: '16px', padding: '24px', boxShadow: 'var(--shadow-sm)' }}>
+      style={{ background: 'var(--surface-primary)', border: '1px solid var(--border-default)', borderRadius: '16px', padding: isMobile ? '18px' : '24px', boxShadow: 'var(--shadow-sm)' }}>
       <h2 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '14px' }}>{title}</h2>
       {children}
     </motion.div>

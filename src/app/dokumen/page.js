@@ -7,6 +7,17 @@ import { supabase } from '../../lib/supabaseClient';
 import { useUser } from '../../lib/userContext';
 import Sidebar from '../components/Sidebar';
 
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < breakpoint);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, [breakpoint]);
+  return isMobile;
+}
+
 const DOC_CATEGORIES = [
   { value: 'cv', label: '📄 CV/Resume', color: 'badge-blue' },
   { value: 'portfolio', label: '🗂️ Portfolio', color: 'badge-purple' },
@@ -19,6 +30,7 @@ const DOC_CATEGORIES = [
 export default function DokumenPage() {
   const router = useRouter();
   const { user, loaded } = useUser();
+  const isMobile = useIsMobile();
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
@@ -129,21 +141,21 @@ export default function DokumenPage() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-base)', fontFamily: 'var(--font-sans)' }}>
       <Sidebar />
-      <main style={{ marginLeft: 'var(--sidebar-width, 240px)', flex: 1, padding: '32px', maxWidth: 'calc(100vw - var(--sidebar-width, 240px))' }}>
+      <main style={{ marginLeft: isMobile ? 0 : 'var(--sidebar-width, 240px)', flex: 1, minWidth: 0, padding: isMobile ? '70px 16px 24px' : '32px', maxWidth: isMobile ? '100vw' : 'calc(100vw - var(--sidebar-width, 240px))', boxSizing: 'border-box', overflowX: 'hidden' }}>
 
         {/* Header */}
-        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '28px' }}>
+        <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ display: 'flex', flexDirection: isMobile ? 'column' : 'row', justifyContent: 'space-between', alignItems: isMobile ? 'stretch' : 'flex-start', gap: isMobile ? '16px' : '0', marginBottom: '28px' }}>
           <div>
-            <h1 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>Dokumen Saya</h1>
-            <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '4px' }}>Kelola CV, portfolio, dan dokumen pendukung lamaranmu</p>
+            <h1 style={{ fontSize: isMobile ? '20px' : '24px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>Dokumen Saya</h1>
+            <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '4px' }}>Kelola CV, portfolio, dan dokumen pendukung lamaranmu</p>
           </div>
-          <div style={{ display: 'flex', gap: '10px' }}>
-            <Link href="/cv-builder" style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', padding: '9px 18px', borderRadius: '8px', border: '1.5px solid var(--border-brand)', background: 'var(--surface-brand)', color: 'var(--text-brand)', fontWeight: 600, fontSize: '13px', textDecoration: 'none' }}>
+          <div style={{ display: 'flex', gap: '10px', flexDirection: isMobile ? 'row' : 'row' }}>
+            <Link href="/cv-builder" style={{ flex: isMobile ? 1 : 'none', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: isMobile ? '10px 12px' : '9px 18px', borderRadius: '8px', border: '1.5px solid var(--border-brand)', background: 'var(--surface-brand)', color: 'var(--text-brand)', fontWeight: 600, fontSize: '13px', textDecoration: 'none', whiteSpace: 'nowrap' }}>
               ✨ Buat CV
             </Link>
             <motion.button whileTap={{ scale: 0.97 }} onClick={() => setShowUpload(true)}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '9px 18px', borderRadius: '8px', border: 'none', background: 'var(--brand-600)', color: '#fff', fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)', boxShadow: 'var(--shadow-brand)' }}>
-              ↑ Upload Dokumen
+              style={{ flex: isMobile ? 1 : 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', padding: isMobile ? '10px 12px' : '9px 18px', borderRadius: '8px', border: 'none', background: 'var(--brand-600)', color: '#fff', fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)', boxShadow: 'var(--shadow-brand)', whiteSpace: 'nowrap' }}>
+              ↑ Upload
             </motion.button>
           </div>
         </motion.div>
@@ -151,7 +163,7 @@ export default function DokumenPage() {
         {msg && <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ padding: '12px 16px', background: msg.includes('Gagal') ? 'var(--error-50)' : 'var(--success-50)', border: `1px solid ${msg.includes('Gagal') ? '#FECACA' : '#BBF7D0'}`, borderRadius: '8px', color: msg.includes('Gagal') ? 'var(--error-600)' : 'var(--success-600)', marginBottom: '20px', fontSize: '13px', fontWeight: 500 }}>{msg}</motion.div>}
 
         {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px', marginBottom: '24px' }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(5, 1fr)', gap: isMobile ? '10px' : '12px', marginBottom: '24px' }}>
           {[
             { label: 'Total Dokumen', value: stats.total, icon: '📁' },
             { label: 'CV/Resume', value: stats.cv, icon: '📄' },
@@ -160,10 +172,10 @@ export default function DokumenPage() {
             { label: 'Total Ukuran', value: formatSize(stats.totalSize), icon: '💾' },
           ].map((s, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
-              style={{ background: 'var(--surface-primary)', borderRadius: '10px', border: '1px solid var(--border-default)', padding: '14px 16px', textAlign: 'center', boxShadow: 'var(--shadow-xs)' }}>
-              <div style={{ fontSize: '22px', marginBottom: '6px' }}>{s.icon}</div>
-              <div style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>{s.value}</div>
-              <div style={{ fontSize: '11px', color: 'var(--text-secondary)', marginTop: '2px', fontWeight: 500 }}>{s.label}</div>
+              style={{ background: 'var(--surface-primary)', borderRadius: '10px', border: '1px solid var(--border-default)', padding: isMobile ? '12px 10px' : '14px 16px', textAlign: 'center', boxShadow: 'var(--shadow-xs)' }}>
+              <div style={{ fontSize: isMobile ? '18px' : '22px', marginBottom: '6px' }}>{s.icon}</div>
+              <div style={{ fontSize: isMobile ? '16px' : '18px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em' }}>{s.value}</div>
+              <div style={{ fontSize: isMobile ? '10px' : '11px', color: 'var(--text-secondary)', marginTop: '2px', fontWeight: 500 }}>{s.label}</div>
             </motion.div>
           ))}
         </div>
@@ -212,7 +224,7 @@ export default function DokumenPage() {
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '6px', textTransform: 'uppercase', letterSpacing: '0.04em' }}>Kategori</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)', gap: '6px' }}>
                       {DOC_CATEGORIES.map(cat => (
                         <button key={cat.value} onClick={() => setDocCategory(cat.value)} style={{ padding: '8px', borderRadius: '8px', border: `1.5px solid ${docCategory === cat.value ? 'var(--border-brand)' : 'var(--border-default)'}`, background: docCategory === cat.value ? 'var(--surface-brand)' : 'transparent', color: docCategory === cat.value ? 'var(--text-brand)' : 'var(--text-secondary)', fontSize: '12px', cursor: 'pointer', fontWeight: docCategory === cat.value ? 600 : 400, fontFamily: 'var(--font-sans)' }}>
                           {cat.label}

@@ -427,6 +427,8 @@ button {
   /* PATCH CEPAT: tumpuk SEMUA grid inline jadi 1 kolom di HP.
      Untuk mengecualikan satu grid, tambahkan className="keep-grid" pada elemennya. */
   [style*="grid-template-columns"]:not(.keep-grid) { grid-template-columns: 1fr !important; }
+  /* PENGAMAN LEBAR: elemen berlebar-tetap tidak boleh melewati layar di HP */
+  [style*="width"]:not(.keep-w) { max-width: 100% !important; }
   /* Kecilkan padding raksasa yang umum dipakai section/kartu */
   [style*="padding: 48px"]:not(.keep-pad) { padding: 20px !important; }
   [style*="padding: 56px"]:not(.keep-pad) { padding: 24px !important; }
