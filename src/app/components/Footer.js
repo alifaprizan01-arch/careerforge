@@ -93,7 +93,7 @@ export default function Footer() {
         <div style={{ maxWidth: '1400px', margin: '0 auto', padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: 'var(--brand-600)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '12px' }}>CF</div>
+              <img src="/logo.jpeg" alt="SiapKerja.id" style={{ width: '28px', height: '28px', borderRadius: '8px', objectFit: 'cover' }} />
               <span style={{ fontSize: '15px', fontWeight: 800, color: '#F8FAFC', letterSpacing: '-0.02em' }}>SiapKerja.id</span>
             </div>
             <span style={{ fontSize: '12px', color: '#64748B' }}>© {new Date().getFullYear()} SiapKerja.id — SDGs 8</span>

@@ -67,9 +67,6 @@ export default function InterviewAIPage() {
   };
 
   const callGroq = async (conversationHistory, systemPrompt) => {
-    const apiKey = process.env.NEXT_PUBLIC_GROQ_API_KEY;
-    if (!apiKey) throw new Error('Groq API key tidak ditemukan. Tambahkan NEXT_PUBLIC_GROQ_API_KEY di .env.local');
-
     const messages = [
       { role: 'system', content: systemPrompt },
       ...(conversationHistory.length > 0
@@ -78,12 +75,9 @@ export default function InterviewAIPage() {
       ),
     ];
 
-    const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+    const response = await fetch('/api/interview', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${apiKey}`,
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         model: 'llama-3.1-8b-instant',
         messages,
@@ -93,11 +87,15 @@ export default function InterviewAIPage() {
     });
 
     if (!response.ok) {
-      const err = await response.json();
-      throw new Error(err.error?.message || 'Groq API error');
+      let errMsg = 'Server error';
+      try {
+        const err = await response.json();
+        errMsg = err?.error || errMsg;
+      } catch (_) { /* ignore */ }
+      throw new Error(errMsg);
     }
     const data = await response.json();
-    return data.choices[0].message.content;
+    return data.content;
   };
 
   const startInterview = async () => {
@@ -130,7 +128,7 @@ Mulai sekarang dengan sapaan dan pertanyaan pertama.`;
       setMessages([{ role: 'assistant', content: reply, time: new Date() }]);
       setQuestionCount(1);
     } catch (e) {
-      setMessages([{ role: 'assistant', content: `❌ Error: ${e.message}. Pastikan NEXT_PUBLIC_GROQ_API_KEY sudah benar di .env.local`, time: new Date() }]);
+      setMessages([{ role: 'assistant', content: `❌ Error: ${e.message}. Pastikan GROQ_API_KEY sudah diset di environment Vercel.`, time: new Date() }]);
     } finally {
       setLoading(false);
       setTimeout(() => inputRef.current?.focus(), 100);

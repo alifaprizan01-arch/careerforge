@@ -117,7 +117,7 @@ export default function AdminDashboard() {
       {/* Header */}
       <div style={{ background: isDark ? '#1E293B' : '#fff', borderBottom: `1px solid ${border}`, padding: isMobile ? '0 16px' : '0 32px', display: 'flex', alignItems: 'center', height: '64px', gap: isMobile ? '8px' : '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', flexWrap: 'nowrap', overflowX: 'auto' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginRight: 'auto', flexShrink: 0 }}>
-          <div style={{ width: '32px', height: '32px', background: 'linear-gradient(135deg,#475569,#334155)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '13px' }}>CF</div>
+          <img src="/logo.jpeg" alt="SiapKerja.id" style={{ width: '32px', height: '32px', borderRadius: '8px', objectFit: 'cover' }} />
           <div>
             <div style={{ fontWeight: 800, fontSize: '14px', color: text, letterSpacing: '-0.01em' }}>SiapKerja.id</div>
             <div style={{ fontSize: '10px', color: muted, fontWeight: 500, letterSpacing: '0.04em' }}>ADMIN PANEL</div>

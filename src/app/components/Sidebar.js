@@ -18,6 +18,7 @@ const navItems = [
   { href: '/lamaran', icon: '📋', label: 'Lamaran' },
   { href: '/trayek', icon: '💼', label: 'Lowongan' },
   { href: '/mentoring', icon: '🎤', label: 'Mentoring' },
+  { href: '/notifikasi', icon: '🔔', label: 'Notifikasi' },
   { href: '/pelatihan', icon: '🎓', label: 'Pelatihan' },
   { href: '/chat', icon: '💬', label: 'Pesan' },
   { href: '/sertifikat', icon: '🏆', label: 'Sertifikat' },
@@ -124,7 +125,7 @@ export default function Sidebar() {
               style={{ width: '40px', height: '40px', borderRadius: '10px', border: `1px solid ${theme.border}`, background: theme.bgLight, color: theme.darkText, cursor: 'pointer', fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               ☰
             </button>
-            <div style={{ width: '28px', height: '28px', background: theme.purple, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '11px', borderRadius: '6px', flexShrink: 0 }}>CF</div>
+            <img src="/logo.jpeg" alt="SiapKerja.id" style={{ width: '28px', height: '28px', borderRadius: '6px', objectFit: 'cover', flexShrink: 0 }} />
             <span style={{ fontWeight: 700, fontSize: '15px', color: theme.darkText, letterSpacing: '-0.01em', flex: 1 }}>SiapKerja.id</span>
           </div>
         ) : (
@@ -156,9 +157,7 @@ export default function Sidebar() {
             style={{ width: '30px', height: '30px', border: `1px solid ${theme.border}`, background: theme.bgLight, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: theme.darkText, borderRadius: '6px', fontSize: '15px', flexShrink: 0 }}>
             ☰
           </button>
-          <div style={{ width: '32px', height: '32px', background: theme.purple, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '13px', borderRadius: '4px', flexShrink: 0 }}>
-            CF
-          </div>
+          <img src="/logo.jpeg" alt="SiapKerja.id" style={{ width: '32px', height: '32px', borderRadius: '6px', objectFit: 'cover', flexShrink: 0 }} />
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 800, fontSize: '15px', color: theme.darkText, letterSpacing: '-0.02em' }}>SiapKerja.id</div>
             <div style={{ fontSize: '10px', color: theme.lightText, fontWeight: 700, letterSpacing: '0.04em' }}>SDGs 8</div>

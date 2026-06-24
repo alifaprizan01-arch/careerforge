@@ -26,7 +26,6 @@ export default function PublicProfilePage() {
 
   const fetchProfile = async () => {
     setLoading(true);
-    // Hanya ambil kolom yang layak publik — email & phone sengaja TIDAK diambil
     const [{ data: u }, { data: sk }, { data: ex }, { data: tr }] = await Promise.all([
       supabase.from('users').select('full_name, job_title, location, bio, avatar_url').eq('id', id).single(),
       supabase.from('user_skills').select('*').eq('user_id', id),
@@ -42,140 +41,346 @@ export default function PublicProfilePage() {
   };
 
   const initials = (n) => n ? n.split(' ').map(x => x[0]).join('').toUpperCase().slice(0, 2) : '?';
-  const levelBadge = (l) => l === 'Mahir' ? 'badge-green' : l === 'Menengah' ? 'badge-blue' : 'badge-gray';
+  const levelColor = (l) =>
+    l === 'Mahir' ? { bg: '#F0FDF4', color: '#16A34A', border: '#BBF7D0' } :
+    l === 'Menengah' ? { bg: '#EFF6FF', color: '#2563EB', border: '#BFDBFE' } :
+    { bg: '#F8FAFC', color: '#64748B', border: '#E2E8F0' };
 
   const handleShare = async () => {
     try {
       await navigator.clipboard.writeText(window.location.href);
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
-    } catch { /* abaikan */ }
+    } catch { }
   };
 
   const Wrapper = ({ children }) => (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-base)', fontFamily: 'var(--font-sans)' }}>
-      {showSidebar && <Sidebar />}
-      <main style={{ marginLeft: showSidebar ? '240px' : 0, flex: 1, padding: '32px' }}>
-        <div style={{ maxWidth: '860px', margin: '0 auto' }}>{children}</div>
-      </main>
-    </div>
+    <>
+      <style>{`
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        @media (max-width: 768px) {
+          .profile-main {
+            margin-left: 0 !important;
+            padding: 16px 16px 40px !important;
+            padding-top: 64px !important;
+          }
+          .profile-back-btn { display: none !important; }
+        }
+        @media (min-width: 769px) {
+          .profile-mobile-topbar { display: none !important; }
+        }
+      `}</style>
+      <div style={{
+        display: 'flex', minHeight: '100vh',
+        background: '#F1F5F9',
+        fontFamily: 'Inter, -apple-system, sans-serif',
+      }}>
+        {showSidebar && <Sidebar />}
+        <main
+          className="profile-main"
+          style={{
+            marginLeft: showSidebar ? '240px' : 0,
+            flex: 1,
+            padding: '28px 32px 40px',
+          }}
+        >
+          <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+            {children}
+          </div>
+        </main>
+      </div>
+    </>
   );
 
+  // ── Loading skeleton ──────────────────────────────────────────────────────
   if (loading) return (
     <Wrapper>
-      <div className="skeleton" style={{ height: '180px', borderRadius: '16px', marginBottom: '20px' }} />
-      <div className="skeleton" style={{ height: '300px', borderRadius: '16px' }} />
+      <style>{`.skeleton { background: linear-gradient(90deg, #E2E8F0 25%, #F1F5F9 50%, #E2E8F0 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 16px; } @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }`}</style>
+      <div className="skeleton" style={{ height: '200px', marginBottom: '16px' }} />
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px', marginBottom: '16px' }}>
+        {[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: '80px' }} />)}
+      </div>
+      <div className="skeleton" style={{ height: '160px', marginBottom: '16px' }} />
+      <div className="skeleton" style={{ height: '200px' }} />
     </Wrapper>
   );
 
+  // ── Not found ─────────────────────────────────────────────────────────────
   if (notFound) return (
     <Wrapper>
-      <div style={{ background: 'var(--surface-primary)', border: '1px solid var(--border-default)', borderRadius: '16px', padding: '60px', textAlign: 'center' }}>
-        <div style={{ fontSize: '40px', marginBottom: '12px', opacity: 0.4 }}>🔍</div>
-        <h2 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)' }}>Profil tidak ditemukan</h2>
-        <p style={{ fontSize: '14px', color: 'var(--text-secondary)', marginTop: '4px', marginBottom: '16px' }}>Pengguna ini mungkin tidak ada atau telah dihapus.</p>
-        <button onClick={() => router.push('/')} style={{ padding: '9px 20px', borderRadius: '8px', border: 'none', background: 'var(--brand-600)', color: '#fff', fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>Ke Beranda</button>
+      <div style={{
+        background: '#fff', border: '1px solid #E2E8F0',
+        borderRadius: '20px', padding: '60px 24px',
+        textAlign: 'center',
+      }}>
+        <div style={{ fontSize: '48px', marginBottom: '16px', opacity: 0.4 }}>🔍</div>
+        <h2 style={{ fontSize: '18px', fontWeight: 800, color: '#0F172A', marginBottom: '8px' }}>
+          Profil tidak ditemukan
+        </h2>
+        <p style={{ fontSize: '14px', color: '#64748B', marginBottom: '24px', lineHeight: 1.6 }}>
+          Pengguna ini mungkin tidak ada atau telah dihapus.
+        </p>
+        <button onClick={() => router.push('/')} style={{
+          padding: '12px 28px', borderRadius: '10px', border: 'none',
+          background: '#2563EB', color: '#fff', fontWeight: 700,
+          fontSize: '14px', cursor: 'pointer', fontFamily: 'inherit',
+        }}>Ke Beranda</button>
       </div>
     </Wrapper>
   );
 
+  // ── Main render ───────────────────────────────────────────────────────────
   return (
     <Wrapper>
-      <button onClick={() => router.back()} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '13px', marginBottom: '16px', fontFamily: 'var(--font-sans)' }}>← Kembali</button>
 
-      {/* Header */}
-      <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-        style={{ background: 'var(--surface-primary)', border: '1px solid var(--border-default)', borderRadius: '18px', padding: '28px', marginBottom: '20px', boxShadow: 'var(--shadow-sm)' }}>
-        <div style={{ display: 'flex', gap: '24px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ width: '96px', height: '96px', borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--brand-600)', flexShrink: 0, background: 'var(--brand-600)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '32px' }}>
-            {profile.avatar_url ? <img src={profile.avatar_url} alt={profile.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : initials(profile.full_name)}
+      {/* Tombol kembali — desktop only */}
+      <button
+        className="profile-back-btn"
+        onClick={() => router.back()}
+        style={{
+          background: 'none', border: 'none', cursor: 'pointer',
+          color: '#64748B', fontSize: '13px', fontWeight: 500,
+          marginBottom: '16px', padding: '0', fontFamily: 'inherit',
+          display: 'flex', alignItems: 'center', gap: '6px',
+        }}
+      >← Kembali</button>
+
+      {/* ── Hero Card ──────────────────────────────────────────────────────── */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+        style={{
+          background: 'linear-gradient(135deg, #EFF6FF 0%, #fff 60%)',
+          border: '1px solid #BFDBFE',
+          borderRadius: '20px',
+          padding: '28px 24px',
+          marginBottom: '16px',
+          boxShadow: '0 2px 12px rgba(37,99,235,0.07)',
+        }}
+      >
+        {/* Avatar + Info */}
+        <div style={{ display: 'flex', gap: '20px', alignItems: 'flex-start', marginBottom: '20px' }}>
+          {/* Avatar */}
+          <div style={{
+            width: '80px', height: '80px', borderRadius: '50%',
+            overflow: 'hidden', border: '3px solid #BFDBFE',
+            flexShrink: 0, background: 'linear-gradient(135deg,#2563EB,#1D4ED8)',
+            display: 'flex', alignItems: 'center', justifyContent: 'center',
+            color: '#fff', fontWeight: 800, fontSize: '26px',
+          }}>
+            {profile.avatar_url
+              ? <img src={profile.avatar_url} alt={profile.full_name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+              : initials(profile.full_name)
+            }
           </div>
-          <div style={{ flex: 1, minWidth: '220px' }}>
-            <h1 style={{ fontSize: '24px', fontWeight: 800, color: 'var(--text-primary)', letterSpacing: '-0.02em', marginBottom: '4px' }}>{profile.full_name || 'Pengguna'}</h1>
-            {profile.job_title && <p style={{ fontSize: '15px', color: 'var(--text-brand)', fontWeight: 600, marginBottom: '4px' }}>{profile.job_title}</p>}
-            {profile.location && <p style={{ fontSize: '13px', color: 'var(--text-secondary)' }}>📍 {profile.location}</p>}
-          </div>
-          <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-            {isOwner && (
-              <button onClick={() => router.push('/profil/edit')} style={{ padding: '10px 18px', borderRadius: '9px', border: '1px solid var(--border-default)', background: 'var(--surface-primary)', color: 'var(--text-primary)', fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>✎ Edit Profil</button>
+
+          {/* Teks */}
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <h1 style={{
+              fontSize: '20px', fontWeight: 800, color: '#0F172A',
+              letterSpacing: '-0.02em', margin: '0 0 4px',
+              wordBreak: 'break-word',
+            }}>
+              {profile.full_name || 'Pengguna'}
+            </h1>
+            {profile.job_title && (
+              <p style={{ fontSize: '14px', color: '#2563EB', fontWeight: 600, margin: '0 0 4px' }}>
+                {profile.job_title}
+              </p>
             )}
-            <button onClick={handleShare} style={{ padding: '10px 18px', borderRadius: '9px', border: 'none', background: 'var(--brand-600)', color: '#fff', fontWeight: 600, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)', boxShadow: 'var(--shadow-brand)' }}>
-              {copied ? '✓ Tautan disalin' : '🔗 Bagikan'}
-            </button>
+            {profile.location && (
+              <p style={{ fontSize: '13px', color: '#64748B', margin: 0 }}>
+                📍 {profile.location}
+              </p>
+            )}
           </div>
         </div>
-        {profile.bio && <p style={{ fontSize: '14px', color: 'var(--text-secondary)', lineHeight: 1.7, marginTop: '20px', paddingTop: '20px', borderTop: '1px solid var(--border-default)' }}>{profile.bio}</p>}
+
+        {/* Bio */}
+        {profile.bio && (
+          <p style={{
+            fontSize: '14px', color: '#475569', lineHeight: 1.7,
+            margin: '0 0 20px',
+            paddingTop: '16px', borderTop: '1px solid #E2E8F0',
+          }}>
+            {profile.bio}
+          </p>
+        )}
+
+        {/* Action buttons */}
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          {isOwner && (
+            <button
+              onClick={() => router.push('/profil/edit')}
+              style={{
+                flex: 1, minWidth: '120px',
+                padding: '12px 16px', borderRadius: '10px',
+                border: '1px solid #E2E8F0', background: '#fff',
+                color: '#0F172A', fontWeight: 600, fontSize: '14px',
+                cursor: 'pointer', fontFamily: 'inherit',
+                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+              }}
+            >✎ Edit Profil</button>
+          )}
+          <button
+            onClick={handleShare}
+            style={{
+              flex: 1, minWidth: '120px',
+              padding: '12px 16px', borderRadius: '10px',
+              border: 'none', background: '#2563EB',
+              color: '#fff', fontWeight: 600, fontSize: '14px',
+              cursor: 'pointer', fontFamily: 'inherit',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px',
+              boxShadow: '0 2px 8px rgba(37,99,235,0.3)',
+            }}
+          >
+            {copied ? '✓ Tautan disalin' : '🔗 Bagikan'}
+          </button>
+        </div>
       </motion.div>
 
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', marginBottom: '20px' }}>
+      {/* ── Stats ──────────────────────────────────────────────────────────── */}
+      <div style={{
+        display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: '10px', marginBottom: '16px',
+      }}>
         {[
-          { label: 'Skills', value: skills.length, color: 'var(--text-brand)' },
-          { label: 'Pengalaman', value: experiences.length, color: 'var(--text-success)' },
-          { label: 'Pelatihan selesai', value: trainings.length, color: 'var(--text-warning)' },
+          { label: 'Skills', value: skills.length, color: '#2563EB', bg: '#EFF6FF' },
+          { label: 'Pengalaman', value: experiences.length, color: '#16A34A', bg: '#F0FDF4' },
+          { label: 'Pelatihan', value: trainings.length, color: '#D97706', bg: '#FFFBEB' },
         ].map((s, i) => (
-          <div key={i} style={{ background: 'var(--surface-primary)', border: '1px solid var(--border-default)', borderRadius: '12px', padding: '16px', textAlign: 'center', boxShadow: 'var(--shadow-xs)' }}>
-            <div style={{ fontSize: '22px', fontWeight: 800, color: s.color }}>{s.value}</div>
-            <div style={{ fontSize: '12px', color: 'var(--text-secondary)', marginTop: '2px' }}>{s.label}</div>
-          </div>
-        ))}
-      </div>
-
-      {/* Skills */}
-      <Section title="Skills & Keahlian">
-        {skills.length === 0 ? <Empty text="Belum ada skill yang ditambahkan." /> : (
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
-            {skills.map(s => (
-              <span key={s.id} className={`badge ${levelBadge(s.level)}`} style={{ fontSize: '13px', padding: '6px 12px' }}>
-                {s.skill_name} · {s.level}
-              </span>
-            ))}
-          </div>
-        )}
-      </Section>
-
-      {/* Pengalaman */}
-      <Section title="Pengalaman Kerja">
-        {experiences.length === 0 ? <Empty text="Belum ada pengalaman kerja." /> : experiences.map((ex, i) => (
-          <div key={ex.id} style={{ display: 'flex', gap: '16px', paddingBottom: i < experiences.length - 1 ? '18px' : 0, marginBottom: i < experiences.length - 1 ? '18px' : 0, borderBottom: i < experiences.length - 1 ? '1px solid var(--border-default)' : 'none' }}>
-            <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: 'var(--surface-brand)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px', flexShrink: 0 }}>🏢</div>
-            <div style={{ flex: 1 }}>
-              <p style={{ margin: '0 0 2px', fontWeight: 700, color: 'var(--text-primary)', fontSize: '15px' }}>{ex.position}</p>
-              <p style={{ margin: '0 0 4px', fontWeight: 600, color: 'var(--text-brand)', fontSize: '13px' }}>{ex.company}</p>
-              <p style={{ margin: '0 0 8px', fontSize: '12px', color: 'var(--text-tertiary)' }}>{ex.start_year} – {ex.end_year || 'Sekarang'}</p>
-              {ex.description && <p style={{ margin: 0, fontSize: '13px', color: 'var(--text-secondary)', lineHeight: 1.6 }}>{ex.description}</p>}
+          <div key={i} style={{
+            background: s.bg, borderRadius: '14px',
+            padding: '14px 8px', textAlign: 'center',
+            border: `1px solid ${s.color}20`,
+          }}>
+            <div style={{ fontSize: '24px', fontWeight: 800, color: s.color, lineHeight: 1 }}>
+              {s.value}
+            </div>
+            <div style={{ fontSize: '11px', color: '#64748B', marginTop: '4px', fontWeight: 500 }}>
+              {s.label}
             </div>
           </div>
         ))}
+      </div>
+
+      {/* ── Skills ─────────────────────────────────────────────────────────── */}
+      <Section title="⚡ Skills & Keahlian">
+        {skills.length === 0
+          ? <Empty text="Belum ada skill yang ditambahkan." />
+          : (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
+              {skills.map(s => {
+                const lc = levelColor(s.level);
+                return (
+                  <span key={s.id} style={{
+                    background: lc.bg, color: lc.color,
+                    border: `1px solid ${lc.border}`,
+                    borderRadius: '8px', padding: '7px 12px',
+                    fontSize: '13px', fontWeight: 600,
+                  }}>
+                    {s.skill_name} · {s.level}
+                  </span>
+                );
+              })}
+            </div>
+          )
+        }
       </Section>
 
-      {/* Pelatihan selesai */}
+      {/* ── Pengalaman ─────────────────────────────────────────────────────── */}
+      <Section title="💼 Pengalaman Kerja">
+        {experiences.length === 0
+          ? <Empty text="Belum ada pengalaman kerja." />
+          : experiences.map((ex, i) => (
+            <div key={ex.id} style={{
+              display: 'flex', gap: '14px',
+              paddingBottom: i < experiences.length - 1 ? '18px' : 0,
+              marginBottom: i < experiences.length - 1 ? '18px' : 0,
+              borderBottom: i < experiences.length - 1 ? '1px solid #F1F5F9' : 'none',
+            }}>
+              <div style={{
+                width: '44px', height: '44px', borderRadius: '12px',
+                background: '#EFF6FF', display: 'flex',
+                alignItems: 'center', justifyContent: 'center',
+                fontSize: '20px', flexShrink: 0,
+              }}>🏢</div>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <p style={{ margin: '0 0 2px', fontWeight: 700, color: '#0F172A', fontSize: '15px' }}>
+                  {ex.position}
+                </p>
+                <p style={{ margin: '0 0 4px', fontWeight: 600, color: '#2563EB', fontSize: '13px' }}>
+                  {ex.company}
+                </p>
+                <p style={{ margin: '0 0 8px', fontSize: '12px', color: '#94A3B8' }}>
+                  {ex.start_year} – {ex.end_year || 'Sekarang'}
+                </p>
+                {ex.description && (
+                  <p style={{ margin: 0, fontSize: '13px', color: '#475569', lineHeight: 1.6 }}>
+                    {ex.description}
+                  </p>
+                )}
+              </div>
+            </div>
+          ))
+        }
+      </Section>
+
+      {/* ── Pelatihan selesai ──────────────────────────────────────────────── */}
       {trainings.length > 0 && (
-        <Section title="Pelatihan yang Diselesaikan">
+        <Section title="🏆 Pelatihan Diselesaikan">
           <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             {trainings.map((t, i) => (
-              <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', fontSize: '14px', color: 'var(--text-primary)' }}>
-                <span style={{ color: 'var(--text-success)', fontSize: '16px' }}>🏆</span>
-                {t.trainings?.title || 'Pelatihan'}
+              <div key={i} style={{
+                display: 'flex', alignItems: 'center', gap: '12px',
+                padding: '12px 14px', background: '#F8FAFC',
+                borderRadius: '10px', border: '1px solid #F1F5F9',
+              }}>
+                <span style={{ fontSize: '18px', flexShrink: 0 }}>🎓</span>
+                <span style={{ fontSize: '14px', color: '#0F172A', fontWeight: 500 }}>
+                  {t.trainings?.title || 'Pelatihan'}
+                </span>
+                <span style={{
+                  marginLeft: 'auto', fontSize: '11px', fontWeight: 700,
+                  color: '#16A34A', background: '#F0FDF4',
+                  border: '1px solid #BBF7D0',
+                  padding: '3px 8px', borderRadius: '6px', flexShrink: 0,
+                }}>Selesai</span>
               </div>
             ))}
           </div>
         </Section>
       )}
+
     </Wrapper>
   );
 }
 
+// ── Sub-components ────────────────────────────────────────────────────────────
 function Section({ title, children }) {
   return (
-    <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
-      style={{ background: 'var(--surface-primary)', border: '1px solid var(--border-default)', borderRadius: '16px', padding: '24px', marginBottom: '20px', boxShadow: 'var(--shadow-sm)' }}>
-      <h2 style={{ fontSize: '16px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '16px' }}>{title}</h2>
+    <motion.div
+      initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+      style={{
+        background: '#fff', border: '1px solid #E2E8F0',
+        borderRadius: '16px', padding: '20px',
+        marginBottom: '16px',
+        boxShadow: '0 1px 4px rgba(0,0,0,0.04)',
+      }}
+    >
+      <h2 style={{
+        fontSize: '15px', fontWeight: 800, color: '#0F172A',
+        marginBottom: '16px', margin: '0 0 16px',
+      }}>{title}</h2>
       {children}
     </motion.div>
   );
 }
 
 function Empty({ text }) {
-  return <p style={{ fontSize: '13px', color: 'var(--text-tertiary)', textAlign: 'center', padding: '12px' }}>{text}</p>;
+  return (
+    <p style={{
+      fontSize: '13px', color: '#94A3B8',
+      textAlign: 'center', padding: '16px 0', margin: 0,
+    }}>{text}</p>
+  );
 }

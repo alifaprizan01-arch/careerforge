@@ -66,9 +66,9 @@ export default function LamaranPage() {
   const [search, setSearch] = useState('');
 
   useEffect(() => { if (loaded && !user) router.push('/auth'); }, [loaded, user]);
-  useEffect(() => { if (user) fetch(); }, [user]);
+  useEffect(() => { if (user) loadApplications(); }, [user]);
 
-  const fetch = async () => {
+  const loadApplications = async () => {
     setLoading(true);
     const { data } = await supabase.from('applications')
       .select('*, trayek(tujuan, asal, jenis, company, salary_min, salary_max)')
