@@ -7,10 +7,37 @@ import { supabase } from '../../lib/supabaseClient';
 import { useUser } from '../../lib/userContext';
 import { useTheme } from '../../lib/themeContext';
 
+function useIsMobile(breakpoint = 768) {
+  const [isMobile, setIsMobile] = useState(false);
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < breakpoint);
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, [breakpoint]);
+  return isMobile;
+}
+
+function useIsTablet(min = 768, max = 1100) {
+  const [isTablet, setIsTablet] = useState(false);
+  useEffect(() => {
+    const check = () => {
+      const w = window.innerWidth;
+      setIsTablet(w >= min && w < max);
+    };
+    check();
+    window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, [min, max]);
+  return isTablet;
+}
+
 export default function AdminDashboard() {
   const router = useRouter();
   const { user, loaded } = useUser();
   const { isDark, toggleTheme } = useTheme();
+  const isMobile = useIsMobile();
+  const isTablet = useIsTablet();
   const [stats, setStats] = useState({ users: 0, trayek: 0, applications: 0, trainings: 0, mentors: 0, notifications: 0 });
   const [recentApps, setRecentApps] = useState([]);
   const [recentUsers, setRecentUsers] = useState([]);
@@ -76,37 +103,37 @@ export default function AdminDashboard() {
   if (!loaded || !user || user.role !== 'admin') return null;
 
   const menuCards = [
-    { href: '/admin/lowongan', icon: '💼', label: 'Kelola Lowongan', value: stats.trayek, unit: 'lowongan', color: '#475569', bg: isDark ? 'rgba(71,85,105,0.15)' : '#F1F5F9' },
-    { href: '/admin/users', icon: '👥', label: 'Kelola User', value: stats.users, unit: 'user', color: '#16A34A', bg: isDark ? 'rgba(22,163,74,0.15)' : '#F0FDF4' },
-    { href: '/admin/lamaran', icon: '📋', label: 'Kelola Lamaran', value: stats.applications, unit: 'lamaran', color: '#7C3AED', bg: isDark ? 'rgba(124,58,237,0.15)' : '#F5F3FF' },
-    { href: '/admin/pelatihan', icon: '🎓', label: 'Kelola Pelatihan', value: stats?.trainings || 0, unit: 'pelatihan', color: '#16A34A', bg: isDark ? 'rgba(22,163,74,0.15)' : '#F0FDF4' },
-    { href: '/admin/banner', icon: '🖼️', label: 'Kelola Banner', value: null, unit: 'banner promo', color: '#2563EB', bg: isDark ? 'rgba(37,99,235,0.15)' : '#EFF6FF' },
-    { href: '/admin/pesan-masuk', icon: '📥', label: 'Pesan Masuk', value: null, unit: 'kontak & karier', color: '#0EA5E9', bg: isDark ? 'rgba(14,165,233,0.15)' : '#F0F9FF' },
-    { icon: '📢', label: 'Broadcast Notif', value: stats.notifications, unit: 'terkirim', color: '#D97706', bg: isDark ? 'rgba(217,119,6,0.15)' : '#FFFBEB', onClick: () => setShowBroadcast(true) },
+    { href: '/admin/lowongan', icon: '💼', label: 'Kelola Lowongan', value: stats.trayek, unit: 'lowongan', color: isDark ? '#CBD5E1' : '#475569', bg: isDark ? 'rgba(71,85,105,0.15)' : '#F1F5F9' },
+    { href: '/admin/users', icon: '👥', label: 'Kelola User', value: stats.users, unit: 'user', color: isDark ? '#4ADE80' : '#16A34A', bg: isDark ? 'rgba(22,163,74,0.15)' : '#F0FDF4' },
+    { href: '/admin/lamaran', icon: '📋', label: 'Kelola Lamaran', value: stats.applications, unit: 'lamaran', color: isDark ? '#C084FC' : '#7C3AED', bg: isDark ? 'rgba(124,58,237,0.15)' : '#F5F3FF' },
+    { href: '/admin/pelatihan', icon: '🎓', label: 'Kelola Pelatihan', value: stats?.trainings || 0, unit: 'pelatihan', color: isDark ? '#4ADE80' : '#16A34A', bg: isDark ? 'rgba(22,163,74,0.15)' : '#F0FDF4' },
+    { href: '/admin/banner', icon: '🖼️', label: 'Kelola Banner', value: null, unit: 'banner promo', color: isDark ? '#60A5FA' : '#2563EB', bg: isDark ? 'rgba(37,99,235,0.15)' : '#EFF6FF' },
+    { href: '/admin/pesan-masuk', icon: '📥', label: 'Pesan Masuk', value: null, unit: 'kontak & karier', color: isDark ? '#38BDF8' : '#0EA5E9', bg: isDark ? 'rgba(14,165,233,0.15)' : '#F0F9FF' },
+    { icon: '📢', label: 'Broadcast Notif', value: stats.notifications, unit: 'terkirim', color: isDark ? '#FBBF24' : '#D97706', bg: isDark ? 'rgba(217,119,6,0.15)' : '#FFFBEB', onClick: () => setShowBroadcast(true) },
   ];
 
   return (
     <div style={{ minHeight: '100vh', background: bg, fontFamily: 'Plus Jakarta Sans, Inter, sans-serif' }}>
       {/* Header */}
-      <div style={{ background: isDark ? '#1E293B' : '#fff', borderBottom: `1px solid ${border}`, padding: '0 32px', display: 'flex', alignItems: 'center', height: '64px', gap: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginRight: 'auto' }}>
+      <div style={{ background: isDark ? '#1E293B' : '#fff', borderBottom: `1px solid ${border}`, padding: isMobile ? '0 16px' : '0 32px', display: 'flex', alignItems: 'center', height: '64px', gap: isMobile ? '8px' : '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)', flexWrap: 'nowrap', overflowX: 'auto' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginRight: 'auto', flexShrink: 0 }}>
           <div style={{ width: '32px', height: '32px', background: 'linear-gradient(135deg,#475569,#334155)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '13px' }}>CF</div>
           <div>
             <div style={{ fontWeight: 800, fontSize: '14px', color: text, letterSpacing: '-0.01em' }}>SiapKerja.id</div>
             <div style={{ fontSize: '10px', color: muted, fontWeight: 500, letterSpacing: '0.04em' }}>ADMIN PANEL</div>
           </div>
         </div>
-        <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
-          <button onClick={toggleTheme} style={{ width: '32px', height: '32px', borderRadius: '8px', border: `1px solid ${border}`, background: subtle, cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexShrink: 0 }}>
+          <button onClick={toggleTheme} style={{ width: '32px', height: '32px', borderRadius: '8px', border: `1px solid ${border}`, background: subtle, cursor: 'pointer', fontSize: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: text }}>
             {isDark ? '☀️' : '🌙'}
           </button>
-          <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '6px', background: '#475569', color: '#fff', fontWeight: 700, letterSpacing: '0.04em' }}>SUPERADMIN</span>
-          <span style={{ fontSize: '13px', color: text, fontWeight: 500 }}>{user.full_name}</span>
-          <Link href="/" style={{ padding: '7px 14px', borderRadius: '8px', border: `1px solid ${border}`, color: muted, fontSize: '12px', textDecoration: 'none', fontWeight: 500, background: subtle }}>← App Utama</Link>
+          {!isMobile && <span style={{ fontSize: '11px', padding: '4px 10px', borderRadius: '6px', background: '#475569', color: '#fff', fontWeight: 700, letterSpacing: '0.04em' }}>SUPERADMIN</span>}
+          {!isMobile && <span style={{ fontSize: '13px', color: text, fontWeight: 500 }}>{user.full_name}</span>}
+          <Link href="/" style={{ padding: '7px 14px', borderRadius: '8px', border: `1px solid ${border}`, color: muted, fontSize: '12px', textDecoration: 'none', fontWeight: 500, background: subtle, whiteSpace: 'nowrap' }}>← {isMobile ? 'App' : 'App Utama'}</Link>
         </div>
       </div>
 
-      <main style={{ padding: '32px', maxWidth: '1400px', margin: '0 auto' }}>
+      <main style={{ padding: isMobile ? '20px 14px' : '32px', maxWidth: '1400px', margin: '0 auto' }}>
 
         {/* Page title */}
         <div style={{ marginBottom: '28px' }}>
@@ -114,16 +141,16 @@ export default function AdminDashboard() {
           <p style={{ fontSize: '14px', color: muted }}>Kelola seluruh platform SiapKerja.id dari sini</p>
         </div>
 
-        {msg && <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ padding: '12px 16px', background: isDark ? 'rgba(22,163,74,0.15)' : '#F0FDF4', border: '1px solid #BBF7D0', borderRadius: '8px', color: isDark ? '#4ADE80' : '#16A34A', marginBottom: '20px', fontSize: '13px', fontWeight: 500 }}>{msg}</motion.div>}
+        {msg && <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} style={{ padding: '12px 16px', background: isDark ? 'rgba(22,163,74,0.15)' : '#F0FDF4', border: `1px solid ${isDark ? 'rgba(34,197,94,0.3)' : '#BBF7D0'}`, borderRadius: '8px', color: isDark ? '#4ADE80' : '#16A34A', marginBottom: '20px', fontSize: '13px', fontWeight: 500 }}>{msg}</motion.div>}
 
         {/* Stats */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '12px', marginBottom: '24px' }}>
+        <div className="keep-grid" style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(3, 1fr)' : 'repeat(6, 1fr)', gap: '12px', marginBottom: '24px' }}>
           {[
-            { label: 'Total User', value: stats.users, icon: '👥', color: '#475569', onClick: () => router.push('/admin/users') },
-            { label: 'Lowongan', value: stats.trayek, icon: '💼', color: '#16A34A', onClick: () => router.push('/admin/lowongan') },
-            { label: 'Lamaran', value: stats.applications, icon: '📋', color: '#7C3AED', onClick: () => router.push('/admin/lamaran') },
-            { label: 'Pelatihan', value: stats.trainings, icon: '🎓', color: '#D97706', onClick: () => router.push('/admin/pelatihan') },
-            { label: 'Mentor', value: stats.mentors, icon: '🎤', color: '#DC2626', onClick: () => router.push('/admin/users') },
+            { label: 'Total User', value: stats.users, icon: '👥', color: isDark ? '#CBD5E1' : '#475569', onClick: () => router.push('/admin/users') },
+            { label: 'Lowongan', value: stats.trayek, icon: '💼', color: isDark ? '#4ADE80' : '#16A34A', onClick: () => router.push('/admin/lowongan') },
+            { label: 'Lamaran', value: stats.applications, icon: '📋', color: isDark ? '#C084FC' : '#7C3AED', onClick: () => router.push('/admin/lamaran') },
+            { label: 'Pelatihan', value: stats.trainings, icon: '🎓', color: isDark ? '#FBBF24' : '#D97706', onClick: () => router.push('/admin/pelatihan') },
+            { label: 'Mentor', value: stats.mentors, icon: '🎤', color: isDark ? '#F87171' : '#DC2626', onClick: () => router.push('/admin/users') },
             { label: 'Notifikasi', value: stats.notifications, icon: '🔔', color: muted, onClick: () => setShowBroadcast(true) },
           ].map((s, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
@@ -138,7 +165,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Menu Cards */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '14px', marginBottom: '24px' }}>
+        <div className="keep-grid" style={{ display: 'grid', gridTemplateColumns: isMobile ? 'repeat(2, 1fr)' : isTablet ? 'repeat(3, 1fr)' : 'repeat(4, 1fr)', gap: '14px', marginBottom: '24px' }}>
           {menuCards.map((item, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.08 }}
               whileHover={{ y: -3, boxShadow: '0 8px 24px rgba(0,0,0,0.1)' }}
@@ -152,12 +179,12 @@ export default function AdminDashboard() {
         </div>
 
         {/* Recent tables */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+        <div className="keep-grid" style={{ display: 'grid', gridTemplateColumns: isMobile || isTablet ? '1fr' : '1fr 1fr', gap: '20px' }}>
           {/* Recent Applications */}
           <div style={{ background: card, borderRadius: '12px', border: `1px solid ${border}`, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
             <div style={{ padding: '16px 20px', borderBottom: `1px solid ${border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ fontSize: '14px', fontWeight: 700, color: text, letterSpacing: '-0.01em' }}>Lamaran Terbaru</h3>
-              <Link href="/admin/lamaran" style={{ fontSize: '12px', color: '#475569', fontWeight: 600, textDecoration: 'none' }}>Lihat semua →</Link>
+              <Link href="/admin/lamaran" style={{ fontSize: '12px', color: isDark ? '#94A3B8' : '#475569', fontWeight: 600, textDecoration: 'none' }}>Lihat semua →</Link>
             </div>
             {loading ? <div style={{ padding: '20px' }}>{[1,2,3].map(i => <div key={i} className="skeleton" style={{ height: '48px', marginBottom: '8px' }} />)}</div> :
             recentApps.length === 0 ? <div style={{ padding: '40px', textAlign: 'center', color: muted, fontSize: '13px' }}>Belum ada lamaran.</div> :
@@ -178,7 +205,7 @@ export default function AdminDashboard() {
           <div style={{ background: card, borderRadius: '12px', border: `1px solid ${border}`, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
             <div style={{ padding: '16px 20px', borderBottom: `1px solid ${border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ fontSize: '14px', fontWeight: 700, color: text, letterSpacing: '-0.01em' }}>User Terbaru</h3>
-              <Link href="/admin/users" style={{ fontSize: '12px', color: '#475569', fontWeight: 600, textDecoration: 'none' }}>Lihat semua →</Link>
+              <Link href="/admin/users" style={{ fontSize: '12px', color: isDark ? '#94A3B8' : '#475569', fontWeight: 600, textDecoration: 'none' }}>Lihat semua →</Link>
             </div>
             <div style={{ padding: '10px 16px', borderBottom: `1px solid ${border}`, display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span style={{ color: muted, fontSize: '13px' }}>🔍</span>
@@ -215,7 +242,7 @@ export default function AdminDashboard() {
               <div style={{ textAlign: 'center', marginBottom: '22px' }}>
                 <div style={{ fontSize: '40px', marginBottom: '10px' }}>📢</div>
                 <h3 style={{ fontSize: '18px', fontWeight: 800, color: text, marginBottom: '4px', letterSpacing: '-0.02em' }}>Broadcast Notifikasi</h3>
-                <p style={{ fontSize: '13px', color: muted }}>Kirim ke <strong style={{ color: '#475569' }}>{allUsers.length} user</strong> sekaligus</p>
+                <p style={{ fontSize: '13px', color: muted }}>Kirim ke <strong style={{ color: isDark ? '#CBD5E1' : '#475569' }}>{allUsers.length} user</strong> sekaligus</p>
               </div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
                 <div>

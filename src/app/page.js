@@ -293,8 +293,8 @@ export default function Home() {
                 <button onClick={() => router.push('/pelatihan')} style={{ padding: '14px 28px', background: 'var(--brand-600)', color: '#fff', border: 'none', borderRadius: cssVars.radiusSm, fontWeight: 700, fontSize: '15px', cursor: 'pointer', fontFamily: 'var(--font-sans)', boxShadow: 'var(--shadow-brand)' }}>
                   {t('Jelajahi Kursus')} →
                 </button>
-                <button onClick={() => router.push('/lowongan')} style={{ padding: '14px 26px', background: 'var(--surface-primary)', color: 'var(--text-primary)', border: '1px solid var(--border-default)', borderRadius: cssVars.radiusSm, fontWeight: 600, fontSize: '15px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
-                  {t('Lihat Lowongan')}
+                <button onClick={() => router.push(`/trayek/${job.id}`)} style={{ padding: '14px 26px', background: 'var(--surface-primary)', color: 'var(--text-primary)', border: '1px solid var(--border-default)', borderRadius: cssVars.radiusSm, fontWeight: 600, fontSize: '15px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+                  {t('Lihat trayek')}
                 </button>
               </div>
             </motion.div>
@@ -476,7 +476,7 @@ export default function Home() {
                 <h2 style={{ fontSize: isMobile ? '22px' : '26px', fontWeight: 800, letterSpacing: '-0.02em', color: '#FFF', marginBottom: '8px' }}>{t('Eksplorasi Peluang Kerja Terbaru')}</h2>
                 <p style={{ fontSize: '14px', color: '#94A3B8' }}>{t('Lamar lowongan kerja strategis yang terintegrasi langsung dengan keahlian pelatihan Anda.')}</p>
               </div>
-              <Link href="/lowongan" style={{ fontSize: '14px', fontWeight: 700, color: '#A78BFA', textDecoration: 'none', whiteSpace: 'nowrap' }}>{t('Lihat Semua Lowongan')} →</Link>
+              <Link href="/trayek" style={{ fontSize: '14px', fontWeight: 700, color: '#A78BFA', textDecoration: 'none', whiteSpace: 'nowrap' }}>{t('Lihat Semua Lowongan')} →</Link>
             </div>
 
             {recentJobs.length > 0 ? (
@@ -484,7 +484,8 @@ export default function Home() {
                 {recentJobs.map((job) => (
                   <div
                     key={job.id}
-                    onClick={() => router.push('/lowongan')}
+                    onClick={() => router.push('/trayek')
+}
                     style={{ cursor: 'pointer', background: isDark ? '#1E293B' : '#2D2F31', border: '1px solid rgba(255,255,255,0.1)', padding: '22px', borderRadius: cssVars.radiusMd, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
                   >
                     <div>
