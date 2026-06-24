@@ -65,7 +65,8 @@ export default function PelatihanPage() {
   const [loading, setLoading] = useState(true);
   const [enrolling, setEnrolling] = useState(null);
   const [msg, setMsg] = useState('');
-  const [showPromo, setShowPromo] = useState(true);
+  const [showPromo, setShowPromo] = useState(false);
+  const [promoDeadline, setPromoDeadline] = useState(null);
   const [carouselIdx, setCarouselIdx] = useState(0);
 
   const trackRef = useRef(null);
@@ -73,6 +74,38 @@ export default function PelatihanPage() {
 
   useEffect(() => { if (loaded && !user) router.push('/auth'); }, [loaded, user]);
   useEffect(() => { if (user) fetchAll(); }, [user]);
+
+  // Promo banner: deadline digeser otomatis 7 hari ke depan setiap kali tidak ada
+  // periode aktif tersimpan, dan status "ditutup" disimpan per-periode agar tidak
+  // muncul lagi sampai periode promo berikutnya dimulai.
+  useEffect(() => {
+    try {
+      const KEY = 'cf_promo_deadline';
+      const DISMISS_KEY = 'cf_promo_dismissed_until';
+      const now = Date.now();
+      let deadline = parseInt(localStorage.getItem(KEY) || '0', 10);
+      if (!deadline || deadline < now) {
+        deadline = now + 7 * 24 * 60 * 60 * 1000; // periode promo baru: 7 hari dari sekarang
+        localStorage.setItem(KEY, String(deadline));
+        localStorage.removeItem(DISMISS_KEY); // periode baru → tampilkan lagi walau sebelumnya pernah ditutup
+      }
+      setPromoDeadline(deadline);
+      const dismissedUntil = parseInt(localStorage.getItem(DISMISS_KEY) || '0', 10);
+      setShowPromo(!(dismissedUntil && now < dismissedUntil));
+    } catch (_) {
+      setShowPromo(true);
+      setPromoDeadline(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    }
+  }, []);
+
+  const dismissPromo = () => {
+    setShowPromo(false);
+    try { localStorage.setItem('cf_promo_dismissed_until', String(promoDeadline)); } catch (_) {}
+  };
+
+  const promoDeadlineLabel = promoDeadline
+    ? new Date(promoDeadline).toLocaleDateString('id-ID', { day: 'numeric', month: 'long' })
+    : '';
 
   const fetchAll = async () => {
     setLoading(true);
@@ -178,14 +211,15 @@ export default function PelatihanPage() {
               <div style={{ flex: 1, color: '#fff', zIndex: 1 }}>
                 <h2 style={{ fontSize: isMobile ? '16px' : '20px', fontWeight: 800, color: '#fff', marginBottom: '6px', lineHeight: 1.25 }}>Hemat 25% untuk satu tahun pembelajaran</h2>
                 <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)', lineHeight: 1.6, marginBottom: '16px', maxWidth: '440px' }}>
-                  Paket Personal jadi pendamping karier Anda untuk skill AI dan keahlian terkini. Promo berakhir 14 Juni.
+                  Paket Personal jadi pendamping karier Anda untuk skill AI dan keahlian terkini. Promo berakhir {promoDeadlineLabel}.
                 </p>
-                <button style={{ background: '#fff', color: 'var(--brand-700)', border: 'none', padding: '9px 18px', borderRadius: '9px', fontWeight: 700, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+                <button onClick={() => gridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                  style={{ background: '#fff', color: 'var(--brand-700)', border: 'none', padding: '9px 18px', borderRadius: '9px', fontWeight: 700, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
                   Hemat sekarang
                 </button>
               </div>
               {!isMobile && <div style={{ width: '120px', height: '100px', borderRadius: '14px', background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '48px', flexShrink: 0 }}>🚀</div>}
-              <button onClick={() => setShowPromo(false)} aria-label="Tutup promo"
+              <button onClick={dismissPromo} aria-label="Tutup promo"
                 style={{ position: 'absolute', top: '12px', right: '14px', background: 'rgba(255,255,255,0.18)', color: '#fff', border: 'none', width: '26px', height: '26px', borderRadius: '50%', cursor: 'pointer', fontSize: '14px', lineHeight: 1 }}>✕</button>
             </motion.div>
           )}

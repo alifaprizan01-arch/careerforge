@@ -6,6 +6,51 @@ import { supabase } from '../../../lib/supabaseClient';
 import { useUser } from '../../../lib/userContext';
 import Sidebar from '../../components/Sidebar';
 
+// Dipindah ke luar PublicProfilePage agar tidak dibuat ulang setiap render —
+// sebelumnya didefinisikan di dalam komponen dan dipakai di 3 tempat (loading,
+// not-found, konten utama), berisiko membuat Sidebar di-mount ulang dari nol
+// setiap kali state berubah. showSidebar diterima lewat prop karena nilainya
+// bergantung pada status login (closure milik PublicProfilePage).
+function Wrapper({ children, showSidebar }) {
+  return (
+    <>
+      <style>{`
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        @media (max-width: 768px) {
+          .profile-main {
+            margin-left: 0 !important;
+            padding: 16px 16px 40px !important;
+            padding-top: 64px !important;
+          }
+          .profile-back-btn { display: none !important; }
+        }
+        @media (min-width: 769px) {
+          .profile-mobile-topbar { display: none !important; }
+        }
+      `}</style>
+      <div style={{
+        display: 'flex', minHeight: '100vh',
+        background: '#F1F5F9',
+        fontFamily: 'Inter, -apple-system, sans-serif',
+      }}>
+        {showSidebar && <Sidebar />}
+        <main
+          className="profile-main"
+          style={{
+            marginLeft: showSidebar ? '240px' : 0,
+            flex: 1,
+            padding: '28px 32px 40px',
+          }}
+        >
+          <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+            {children}
+          </div>
+        </main>
+      </div>
+    </>
+  );
+}
+
 export default function PublicProfilePage() {
   const { id } = useParams();
   const router = useRouter();
@@ -54,47 +99,9 @@ export default function PublicProfilePage() {
     } catch { }
   };
 
-  const Wrapper = ({ children }) => (
-    <>
-      <style>{`
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        @media (max-width: 768px) {
-          .profile-main {
-            margin-left: 0 !important;
-            padding: 16px 16px 40px !important;
-            padding-top: 64px !important;
-          }
-          .profile-back-btn { display: none !important; }
-        }
-        @media (min-width: 769px) {
-          .profile-mobile-topbar { display: none !important; }
-        }
-      `}</style>
-      <div style={{
-        display: 'flex', minHeight: '100vh',
-        background: '#F1F5F9',
-        fontFamily: 'Inter, -apple-system, sans-serif',
-      }}>
-        {showSidebar && <Sidebar />}
-        <main
-          className="profile-main"
-          style={{
-            marginLeft: showSidebar ? '240px' : 0,
-            flex: 1,
-            padding: '28px 32px 40px',
-          }}
-        >
-          <div style={{ maxWidth: '800px', margin: '0 auto' }}>
-            {children}
-          </div>
-        </main>
-      </div>
-    </>
-  );
-
   // ── Loading skeleton ──────────────────────────────────────────────────────
   if (loading) return (
-    <Wrapper>
+    <Wrapper showSidebar={showSidebar}>
       <style>{`.skeleton { background: linear-gradient(90deg, #E2E8F0 25%, #F1F5F9 50%, #E2E8F0 75%); background-size: 200% 100%; animation: shimmer 1.4s infinite; border-radius: 16px; } @keyframes shimmer { 0%{background-position:200% 0} 100%{background-position:-200% 0} }`}</style>
       <div className="skeleton" style={{ height: '200px', marginBottom: '16px' }} />
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3,1fr)', gap: '12px', marginBottom: '16px' }}>
@@ -107,7 +114,7 @@ export default function PublicProfilePage() {
 
   // ── Not found ─────────────────────────────────────────────────────────────
   if (notFound) return (
-    <Wrapper>
+    <Wrapper showSidebar={showSidebar}>
       <div style={{
         background: '#fff', border: '1px solid #E2E8F0',
         borderRadius: '20px', padding: '60px 24px',
@@ -131,7 +138,7 @@ export default function PublicProfilePage() {
 
   // ── Main render ───────────────────────────────────────────────────────────
   return (
-    <Wrapper>
+    <Wrapper showSidebar={showSidebar}>
 
       {/* Tombol kembali — desktop only */}
       <button

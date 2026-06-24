@@ -201,7 +201,7 @@ export default function AdminPelatihanPage() {
           <span style={{ color: '#fff', fontWeight: 600, fontSize: '14px' }}>Kelola Pelatihan</span>
         </div>
         <motion.button whileTap={{ scale: 0.97 }} onClick={openAdd}
-          style={{ padding: '9px 18px', borderRadius: '8px', border: 'none', background: '#fff', color: '#1E293B', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>
+          style={{ padding: '9px 18px', borderRadius: '8px', border: 'none', background: c.card, color: c.text, fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>
           ➕ Tambah Pelatihan
         </motion.button>
       </div>
@@ -339,7 +339,7 @@ export default function AdminPelatihanPage() {
               </div>
               <div style={{ display: 'flex', gap: '10px', marginTop: '20px' }}>
                 <button onClick={() => setShowForm(false)} style={{ flex: 1, padding: '11px', borderRadius: '8px', border: `1px solid ${c.border}`, background: 'transparent', color: c.muted, cursor: 'pointer', fontWeight: 500 }}>Batal</button>
-                <motion.button whileTap={{ scale: 0.97 }} onClick={saveTraining} disabled={saving} style={{ flex: 2, padding: '11px', borderRadius: '8px', border: 'none', background: saving ? '#94A3B8' : c.slate, color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{saving ? 'Menyimpan...' : (editItem ? '💾 Simpan Perubahan' : '➕ Tambah Pelatihan')}</motion.button>
+                <motion.button whileTap={{ scale: 0.97 }} onClick={saveTraining} disabled={saving} style={{ flex: 2, padding: '11px', borderRadius: '8px', border: 'none', background: saving ? c.muted : c.slate, color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{saving ? 'Menyimpan...' : (editItem ? '💾 Simpan Perubahan' : '➕ Tambah Pelatihan')}</motion.button>
               </div>
             </motion.div>
           </motion.div>
@@ -390,7 +390,7 @@ export default function AdminPelatihanPage() {
                     {moduleFile && <div style={{ marginTop: '8px', fontSize: '12px', color: c.slate, display: 'flex', alignItems: 'center', gap: '8px' }}>📄 {moduleFile.name} <button onClick={() => setModuleFile(null)} style={{ border: 'none', background: 'transparent', color: c.muted, cursor: 'pointer' }}>✕</button></div>}
                   </div>
                   <input style={inp} type="number" value={moduleForm.duration_mins} onChange={e => setModuleForm({ ...moduleForm, duration_mins: e.target.value })} placeholder="Durasi (menit)" />
-                  <motion.button whileTap={{ scale: 0.97 }} onClick={addModule} disabled={savingModule} style={{ padding: '10px', borderRadius: '8px', border: 'none', background: savingModule ? '#94A3B8' : c.slate, color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{savingModule ? (moduleFile ? 'Mengunggah...' : 'Menambah...') : '➕ Tambah Modul'}</motion.button>
+                  <motion.button whileTap={{ scale: 0.97 }} onClick={addModule} disabled={savingModule} style={{ padding: '10px', borderRadius: '8px', border: 'none', background: savingModule ? c.muted : c.slate, color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{savingModule ? (moduleFile ? 'Mengunggah...' : 'Menambah...') : '➕ Tambah Modul'}</motion.button>
                 </div>
               </div>
             </motion.div>

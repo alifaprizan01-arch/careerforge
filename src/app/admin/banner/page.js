@@ -17,6 +17,22 @@ const PRESETS = [
 ];
 const EMPTY = { title: '', subtitle: '', button_text: '', button_link: '', image_url: '', bg_color: PRESETS[0], show_countdown: false, active: true };
 
+// Dipindah ke luar agar tidak di-mount ulang setiap render (P9 fix)
+// c.card & c.text dipass sebagai prop agar ikut dark mode (P2 fix)
+function Preview({ b, small, cardBg, cardText }) {
+  return (
+    <div style={{ position: 'relative', borderRadius: small ? '12px' : '16px', overflow: 'hidden', background: b.bg_color || PRESETS[0], padding: small ? '16px 18px' : '26px 30px', display: 'flex', alignItems: 'center', gap: '16px', minHeight: small ? '90px' : '150px' }}>
+      <div style={{ flex: 1, minWidth: 0 }}>
+        <span style={{ display: 'inline-block', background: 'rgba(255,255,255,0.22)', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '3px 10px', borderRadius: '20px', marginBottom: '8px' }}>PROMO</span>
+        <div style={{ fontSize: small ? '15px' : '20px', fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>{b.title || 'Judul banner'}</div>
+        {b.subtitle && <div style={{ fontSize: small ? '11px' : '13px', color: 'rgba(255,255,255,0.9)', marginTop: '4px' }}>{b.subtitle}</div>}
+        {b.button_text && <span style={{ display: 'inline-block', marginTop: '10px', background: cardBg, color: cardText, fontSize: '11px', fontWeight: 700, padding: '6px 14px', borderRadius: '8px' }}>{b.button_text}</span>}
+      </div>
+      {b.image_url && <img src={b.image_url} alt="Banner preview" style={{ width: small ? '70px' : '120px', height: small ? '60px' : '100px', objectFit: 'contain', background: cardBg, borderRadius: '8px', padding: '6px' }} />}
+    </div>
+  );
+}
+
 export default function AdminBannerPage() {
   const router = useRouter();
   const { user, loaded } = useUser();
@@ -106,17 +122,7 @@ export default function AdminBannerPage() {
 
   if (!loaded || !user || user.role !== 'admin') return null;
 
-  const Preview = ({ b, small }) => (
-    <div style={{ position: 'relative', borderRadius: small ? '12px' : '16px', overflow: 'hidden', background: b.bg_color || PRESETS[0], padding: small ? '16px 18px' : '26px 30px', display: 'flex', alignItems: 'center', gap: '16px', minHeight: small ? '90px' : '150px' }}>
-      <div style={{ flex: 1, minWidth: 0 }}>
-        <span style={{ display: 'inline-block', background: 'rgba(255,255,255,0.22)', color: '#fff', fontSize: '10px', fontWeight: 700, padding: '3px 10px', borderRadius: '20px', marginBottom: '8px' }}>PROMO</span>
-        <div style={{ fontSize: small ? '15px' : '20px', fontWeight: 800, color: '#fff', lineHeight: 1.2 }}>{b.title || 'Judul banner'}</div>
-        {b.subtitle && <div style={{ fontSize: small ? '11px' : '13px', color: 'rgba(255,255,255,0.9)', marginTop: '4px' }}>{b.subtitle}</div>}
-        {b.button_text && <span style={{ display: 'inline-block', marginTop: '10px', background: '#fff', color: '#1E293B', fontSize: '11px', fontWeight: 700, padding: '6px 14px', borderRadius: '8px' }}>{b.button_text}</span>}
-      </div>
-      {b.image_url && <img src={b.image_url} alt="" style={{ width: small ? '70px' : '120px', height: small ? '60px' : '100px', objectFit: 'contain', background: '#fff', borderRadius: '8px', padding: '6px' }} />}
-    </div>
-  );
+
 
   return (
     <div style={{ minHeight: '100vh', background: c.bg, fontFamily: 'Inter, sans-serif' }}>
@@ -127,7 +133,7 @@ export default function AdminBannerPage() {
           <span style={{ color: 'rgba(255,255,255,0.3)' }}>/</span>
           <span style={{ color: '#fff', fontWeight: 600, fontSize: '14px' }}>Kelola Banner</span>
         </div>
-        <motion.button whileTap={{ scale: 0.97 }} onClick={openAdd} style={{ padding: '9px 18px', borderRadius: '8px', border: 'none', background: '#fff', color: '#1E293B', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>➕ Tambah Banner</motion.button>
+        <motion.button whileTap={{ scale: 0.97 }} onClick={openAdd} style={{ padding: '9px 18px', borderRadius: '8px', border: 'none', background: c.card, color: c.text, fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>➕ Tambah Banner</motion.button>
       </div>
 
       <main style={{ maxWidth: '900px', margin: '0 auto', padding: '28px 24px 70px' }}>
@@ -145,7 +151,7 @@ export default function AdminBannerPage() {
             {banners.map(b => (
               <motion.div key={b.id} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
                 style={{ background: c.card, borderRadius: '14px', border: `1px solid ${c.border}`, padding: '16px', opacity: b.active ? 1 : 0.6 }}>
-                <Preview b={b} small />
+                <Preview b={b} small cardBg={c.card} cardText={c.text} />
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', marginTop: '14px', flexWrap: 'wrap' }}>
                   <button onClick={() => toggleActive(b)} style={{ display: 'flex', alignItems: 'center', gap: '8px', border: 'none', background: 'transparent', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px', fontWeight: 600, color: b.active ? '#16A34A' : c.muted }}>
                     <span style={{ width: '42px', height: '24px', borderRadius: '20px', background: b.active ? '#16A34A' : (isDark ? '#475569' : '#CBD5E1'), position: 'relative', transition: 'background 0.2s', display: 'inline-block' }}>
@@ -171,7 +177,7 @@ export default function AdminBannerPage() {
             <motion.div initial={{ scale: 0.93, y: 14 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.93, y: 14 }} onClick={e => e.stopPropagation()}
               style={{ background: c.card, borderRadius: '16px', padding: '26px', maxWidth: '560px', width: '100%', maxHeight: '92vh', overflowY: 'auto' }}>
               <h3 style={{ fontSize: '17px', fontWeight: 800, color: c.text, marginBottom: '16px' }}>{editItem ? '✏️ Edit Banner' : '➕ Tambah Banner'}</h3>
-              <div style={{ marginBottom: '18px' }}><Preview b={form} /></div>
+              <div style={{ marginBottom: '18px' }}><Preview b={form} cardBg={c.card} cardText={c.text} /></div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 <div><label style={lbl}>Judul *</label><input style={inp} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Hemat 25% untuk satu tahun pembelajaran" /></div>
                 <div><label style={lbl}>Subjudul</label><input style={inp} value={form.subtitle} onChange={e => setForm({ ...form, subtitle: e.target.value })} placeholder="Deskripsi singkat promo..." /></div>
@@ -205,7 +211,7 @@ export default function AdminBannerPage() {
               </div>
               <div style={{ display: 'flex', gap: '10px', marginTop: '22px' }}>
                 <button onClick={() => setShowForm(false)} style={{ flex: 1, padding: '11px', borderRadius: '8px', border: `1px solid ${c.border}`, background: 'transparent', color: c.muted, cursor: 'pointer', fontWeight: 500 }}>Batal</button>
-                <motion.button whileTap={{ scale: 0.97 }} onClick={save} disabled={saving} style={{ flex: 2, padding: '11px', borderRadius: '8px', border: 'none', background: saving ? '#94A3B8' : c.slate, color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{saving ? 'Menyimpan...' : (editItem ? '💾 Simpan' : '➕ Tambah')}</motion.button>
+                <motion.button whileTap={{ scale: 0.97 }} onClick={save} disabled={saving} style={{ flex: 2, padding: '11px', borderRadius: '8px', border: 'none', background: saving ? c.muted : c.slate, color: '#fff', fontWeight: 700, cursor: 'pointer' }}>{saving ? 'Menyimpan...' : (editItem ? '💾 Simpan' : '➕ Tambah')}</motion.button>
               </div>
             </motion.div>
           </motion.div>

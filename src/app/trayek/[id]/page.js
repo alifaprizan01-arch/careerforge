@@ -18,6 +18,21 @@ function useIsMobile(breakpoint = 768) {
   return isMobile;
 }
 
+// Dipindah ke luar DetailLowonganPage agar tidak dibuat ulang setiap render —
+// sebelumnya Wrapper didefinisikan ulang di setiap render dan dipakai di 3 tempat
+// (loading, not-found, konten utama), sehingga Sidebar & main berisiko di-mount
+// ulang dari nol setiap kali state berubah. isMobile diterima lewat prop.
+function Wrapper({ children, isMobile }) {
+  return (
+    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-base)', fontFamily: 'var(--font-sans)' }}>
+      <Sidebar />
+      <main style={{ marginLeft: isMobile ? 0 : 'var(--sidebar-width, 240px)', flex: 1, minWidth: 0, padding: isMobile ? '70px 16px 24px' : '32px', boxSizing: 'border-box', overflowX: 'hidden', transition: 'margin-left 0.3s cubic-bezier(0.4,0,0.2,1)' }}>
+        <div style={{ maxWidth: '980px', margin: '0 auto' }}>{children}</div>
+      </main>
+    </div>
+  );
+}
+
 export default function DetailLowonganPage() {
   const { id } = useParams();
   const router = useRouter();
@@ -102,26 +117,17 @@ export default function DetailLowonganPage() {
     setMsg('✓ Lamaran berhasil dikirim!');
   };
 
-  const Wrapper = ({ children }) => (
-    <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-base)', fontFamily: 'var(--font-sans)' }}>
-      <Sidebar />
-      <main style={{ marginLeft: isMobile ? 0 : 'var(--sidebar-width, 240px)', flex: 1, minWidth: 0, padding: isMobile ? '70px 16px 24px' : '32px', boxSizing: 'border-box', overflowX: 'hidden', transition: 'margin-left 0.3s cubic-bezier(0.4,0,0.2,1)' }}>
-        <div style={{ maxWidth: '980px', margin: '0 auto' }}>{children}</div>
-      </main>
-    </div>
-  );
-
   if (!loaded || !user) return null;
 
   if (loading) return (
-    <Wrapper>
+    <Wrapper isMobile={isMobile}>
       <div className="skeleton" style={{ height: '120px', borderRadius: '16px', marginBottom: '20px' }} />
       <div className="skeleton" style={{ height: '360px', borderRadius: '16px' }} />
     </Wrapper>
   );
 
   if (notFound) return (
-    <Wrapper>
+    <Wrapper isMobile={isMobile}>
       <div style={{ background: 'var(--surface-primary)', border: '1px solid var(--border-default)', borderRadius: '16px', padding: isMobile ? '32px 20px' : '60px', textAlign: 'center' }}>
         <div style={{ fontSize: '40px', marginBottom: '12px', opacity: 0.4 }}>💼</div>
         <h2 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)' }}>Lowongan tidak ditemukan</h2>
@@ -134,7 +140,7 @@ export default function DetailLowonganPage() {
   const reqList = (job.requirements || '').split('\n').map(r => r.trim()).filter(Boolean);
 
   return (
-    <Wrapper>
+    <Wrapper isMobile={isMobile}>
       <button onClick={() => router.push('/trayek')} style={{ background: 'none', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', fontSize: '13px', marginBottom: '16px', fontFamily: 'var(--font-sans)' }}>← Kembali ke daftar lowongan</button>
 
       {/* Header */}

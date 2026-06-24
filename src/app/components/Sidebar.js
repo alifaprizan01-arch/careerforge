@@ -18,7 +18,6 @@ const navItems = [
   { href: '/lamaran', icon: '📋', label: 'Lamaran' },
   { href: '/trayek', icon: '💼', label: 'Lowongan' },
   { href: '/mentoring', icon: '🎤', label: 'Mentoring' },
-  { href: '/notifikasi', icon: '🔔', label: 'Notifikasi' },
   { href: '/pelatihan', icon: '🎓', label: 'Pelatihan' },
   { href: '/chat', icon: '💬', label: 'Pesan' },
   { href: '/sertifikat', icon: '🏆', label: 'Sertifikat' },
@@ -76,18 +75,25 @@ export default function Sidebar() {
     return () => window.removeEventListener('resize', check);
   }, []);
 
-  // Di HP: sidebar default tertutup agar konten memakai lebar penuh
+  // Di HP: sidebar default tertutup — jalankan sekali saat isMobile pertama true
   useEffect(() => {
     if (isMobile && isOpen && !didAutoClose.current) {
       didAutoClose.current = true;
-      toggleSidebar();
+      // Gunakan setTimeout agar tidak trigger dalam siklus render yang sama
+      setTimeout(() => toggleSidebar(), 0);
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isMobile]);
 
-  // Di HP: tutup sidebar otomatis setiap pindah halaman
+  // Di HP: tutup sidebar saat pindah halaman — hanya kalau memang sedang terbuka
+  const prevPathRef = useRef(pathname);
   useEffect(() => {
-    if (isMobile && isOpen) toggleSidebar();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    if (prevPathRef.current === pathname) return;
+    prevPathRef.current = pathname;
+    if (isMobile && isOpen) {
+      setTimeout(() => toggleSidebar(), 0);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pathname]);
 
   const fetchUnread = async () => {
@@ -125,7 +131,7 @@ export default function Sidebar() {
               style={{ width: '40px', height: '40px', borderRadius: '10px', border: `1px solid ${theme.border}`, background: theme.bgLight, color: theme.darkText, cursor: 'pointer', fontSize: '20px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
               ☰
             </button>
-            <img src="/logo.jpeg" alt="SiapKerja.id" style={{ width: '28px', height: '28px', borderRadius: '6px', objectFit: 'cover', flexShrink: 0 }} />
+            <div style={{ width: '28px', height: '28px', background: theme.purple, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '11px', borderRadius: '6px', flexShrink: 0 }}>CF</div>
             <span style={{ fontWeight: 700, fontSize: '15px', color: theme.darkText, letterSpacing: '-0.01em', flex: 1 }}>SiapKerja.id</span>
           </div>
         ) : (
@@ -157,7 +163,9 @@ export default function Sidebar() {
             style={{ width: '30px', height: '30px', border: `1px solid ${theme.border}`, background: theme.bgLight, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: theme.darkText, borderRadius: '6px', fontSize: '15px', flexShrink: 0 }}>
             ☰
           </button>
-          <img src="/logo.jpeg" alt="SiapKerja.id" style={{ width: '32px', height: '32px', borderRadius: '6px', objectFit: 'cover', flexShrink: 0 }} />
+          <div style={{ width: '32px', height: '32px', background: theme.purple, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '13px', borderRadius: '4px', flexShrink: 0 }}>
+            CF
+          </div>
           <div style={{ flex: 1, minWidth: 0 }}>
             <div style={{ fontWeight: 800, fontSize: '15px', color: theme.darkText, letterSpacing: '-0.02em' }}>SiapKerja.id</div>
             <div style={{ fontSize: '10px', color: theme.lightText, fontWeight: 700, letterSpacing: '0.04em' }}>SDGs 8</div>
@@ -203,11 +211,11 @@ export default function Sidebar() {
             return (
               <Link key={item.href} href={item.href} style={{ textDecoration: 'none' }}>
                 <motion.div
-                  whileHover={{ backgroundColor: active ? 'transparent' : theme.hoverBg, x: active ? 0 : 4 }}
+                  whileHover={{ backgroundColor: active ? 'rgba(0,0,0,0)' : theme.hoverBg, x: active ? 0 : 4 }}
                   style={{
                     display: 'flex', alignItems: 'center', gap: '14px',
                     padding: isMobile ? '14px 16px' : '10px 14px',
-                    background: active ? 'rgba(86, 36, 208, 0.08)' : 'transparent',
+                    background: active ? 'rgba(86, 36, 208, 0.08)' : 'rgba(0,0,0,0)',
                     color: active ? theme.purple : theme.darkText,
                     fontWeight: active ? 700 : 500,
                     fontSize: isMobile ? '15px' : '13px',

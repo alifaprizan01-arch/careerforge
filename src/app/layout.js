@@ -6,8 +6,8 @@ import MobileWrapper from './components/MobileWrapper';
 import './globals.css';
 
 export const metadata = {
-  title: 'SiapKerja.id',
-  description: 'Platform karir berbasis AI — SDGs 8',
+  title: 'SiapKerja.id — Platform Kesiapan Kerja Berbasis AI',
+  description: 'Temukan pelatihan, mentor, dan lowongan kerja dalam satu platform. SiapKerja.id membantu Anda membangun karier profesional, mendukung SDGs 8.',
 };
 
 export const viewport = {

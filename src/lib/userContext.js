@@ -12,7 +12,7 @@ export function UserProvider({ children }) {
     try {
       const stored = localStorage.getItem('SiapKerja.id_user');
       if (stored) setUser(JSON.parse(stored));
-    } catch (_) {}
+    } catch (err) { console.warn('Gagal memuat user dari localStorage:', err); }
     setLoaded(true);
   }, []);
 

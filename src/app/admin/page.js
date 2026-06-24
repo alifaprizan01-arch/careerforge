@@ -217,7 +217,7 @@ export default function AdminDashboard() {
               <div key={u.id} onClick={() => router.push('/admin/users')} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '11px 20px', borderBottom: i < arr.length - 1 ? `1px solid ${border}` : 'none', transition: 'background 0.15s', cursor: 'pointer' }}
                 onMouseEnter={e => e.currentTarget.style.background = subtle}
                 onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                {u.avatar_url ? <img src={u.avatar_url} style={{ width: '30px', height: '30px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} /> :
+                {u.avatar_url ? <img src={u.avatar_url} alt={u.full_name || 'Foto pengguna'} style={{ width: '30px', height: '30px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} /> :
                   <div style={{ width: '30px', height: '30px', borderRadius: '50%', background: 'linear-gradient(135deg,#475569,#334155)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '10px', flexShrink: 0 }}>
                     {u.full_name?.split(' ').map(n => n[0]).join('').toUpperCase().slice(0,2)}
                   </div>}

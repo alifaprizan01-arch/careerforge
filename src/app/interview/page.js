@@ -384,7 +384,7 @@ Format JSON yang harus dikembalikan:
                         {/* Avatar */}
                         <div style={{ width: '36px', height: '36px', borderRadius: '50%', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '18px',
                           background: msg.role === 'user' ? 'linear-gradient(135deg,#2563EB,#1D4ED8)' : isDark ? '#334155' : '#F1F5F9' }}>
-                          {msg.role === 'user' ? (user.avatar_url ? <img src={user.avatar_url} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover' }} /> : '👤') : '🤖'}
+                          {msg.role === 'user' ? (user.avatar_url ? <img src={user.avatar_url} alt={user.full_name || 'Foto pengguna'} style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover' }} /> : '👤') : '🤖'}
                         </div>
                         {/* Bubble */}
                         <div style={{ maxWidth: '72%' }}>

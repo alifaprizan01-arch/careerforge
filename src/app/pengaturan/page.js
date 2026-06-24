@@ -16,6 +16,26 @@ const TABS = [
 
 const DEFAULT_PREFS = { emailNotif: true, notifLamaran: true, notifPelatihan: true, profilPublik: true, tampilkanEmail: false };
 
+// Dipindah ke luar komponen agar tidak dibuat ulang (dan ikut di-unmount/mount ulang)
+// setiap kali PengaturanPage re-render. Warna diterima lewat prop `c` karena
+// komponen ini sekarang di luar closure state milik PengaturanPage.
+function Toggle({ on, onClick, c, isDark }) {
+  return (
+    <button onClick={onClick} style={{ width: '46px', height: '26px', borderRadius: '20px', border: 'none', cursor: 'pointer', background: on ? c.brand : (isDark ? '#3A3350' : '#D8D2E8'), position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
+      <motion.span animate={{ left: on ? '23px' : '3px' }} style={{ position: 'absolute', top: '3px', width: '20px', height: '20px', borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
+    </button>
+  );
+}
+
+function Row({ title, desc, children, c }) {
+  return (
+    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', padding: '16px 0', borderBottom: `1px solid ${c.border}` }}>
+      <div><div style={{ fontSize: '14px', fontWeight: 600, color: c.text }}>{title}</div>{desc && <div style={{ fontSize: '12px', color: c.muted, marginTop: '3px' }}>{desc}</div>}</div>
+      {children}
+    </div>
+  );
+}
+
 export default function PengaturanPage() {
   const router = useRouter();
   const { user, loaded } = useUser();
@@ -42,7 +62,11 @@ export default function PengaturanPage() {
       try {
         const l = localStorage.getItem('cf_lang'); if (l) setLang(l);
         const p = localStorage.getItem('cf_prefs'); if (p) setPrefs({ ...DEFAULT_PREFS, ...JSON.parse(p) });
-      } catch (_) {}
+      } catch (err) {
+        // localStorage bisa berisi data rusak (mis. JSON tidak valid setelah update versi lama);
+        // log agar kelihatan di console saat debugging, tapi jangan hentikan render halaman.
+        console.warn('Gagal memuat preferensi tersimpan dari localStorage:', err);
+      }
       // sumber utama: database
       const { data } = await supabase.from('users')
         .select('email_notif, notif_lamaran, notif_pelatihan, profil_publik, tampilkan_email, bahasa')
@@ -89,12 +113,12 @@ export default function PengaturanPage() {
 
   const changeLang = async (l) => {
     setLang(l);
-    try { localStorage.setItem('cf_lang', l); } catch (_) {}
+    try { localStorage.setItem('cf_lang', l); } catch (err) { console.warn('localStorage tidak tersedia:', err); }
     if (user) await supabase.from('users').update({ bahasa: l }).eq('id', user.id);
   };
   const savePrefs = async (next) => {
     setPrefs(next);
-    try { localStorage.setItem('cf_prefs', JSON.stringify(next)); } catch (_) {}
+    try { localStorage.setItem('cf_prefs', JSON.stringify(next)); } catch (err) { console.warn('localStorage tidak tersedia:', err); }
     setPrefsSaved(true); setTimeout(() => setPrefsSaved(false), 1500);
     if (user) await supabase.from('users').update({
       email_notif: next.emailNotif,
@@ -108,20 +132,8 @@ export default function PengaturanPage() {
 
   if (!loaded || !user) return null;
 
-  const Toggle = ({ on, onClick }) => (
-    <button onClick={onClick} style={{ width: '46px', height: '26px', borderRadius: '20px', border: 'none', cursor: 'pointer', background: on ? c.brand : (isDark ? '#3A3350' : '#D8D2E8'), position: 'relative', transition: 'background 0.2s', flexShrink: 0 }}>
-      <motion.span animate={{ left: on ? '23px' : '3px' }} style={{ position: 'absolute', top: '3px', width: '20px', height: '20px', borderRadius: '50%', background: '#fff', boxShadow: '0 1px 3px rgba(0,0,0,0.2)' }} />
-    </button>
-  );
-  const Row = ({ title, desc, children }) => (
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '16px', padding: '16px 0', borderBottom: `1px solid ${c.border}` }}>
-      <div><div style={{ fontSize: '14px', fontWeight: 600, color: c.text }}>{title}</div>{desc && <div style={{ fontSize: '12px', color: c.muted, marginTop: '3px' }}>{desc}</div>}</div>
-      {children}
-    </div>
-  );
-
   return (
-    <div style={{ minHeight: '100vh', background: c.bg, fontFamily: 'Inter, sans-serif', marginLeft: 'var(--sidebar-width, 0px)', transition: 'margin-left 0.3s ease' }}>
+    <div style={{ minHeight: '100vh', background: c.bg, fontFamily: 'Inter, sans-serif', marginLeft: 'var(--sidebar-width, 240px)', transition: 'margin-left 0.3s ease' }}>
       <Sidebar />
       {/* Header */}
       <div style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.82) 0%, rgba(109,40,217,0.72) 100%), url(/Hana_2.png)', backgroundSize: 'cover', backgroundPosition: 'center', padding: '44px 32px', color: '#fff' }}>
@@ -164,8 +176,8 @@ export default function PengaturanPage() {
               <motion.div key="tampilan" initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
                 style={{ background: c.card, borderRadius: '16px', border: `1px solid ${c.border}`, padding: '28px' }}>
                 <h2 style={{ fontSize: '18px', fontWeight: 800, color: c.text, marginBottom: '20px' }}>Tampilan</h2>
-                <Row title="Mode Gelap" desc="Tampilan lebih nyaman di kondisi minim cahaya.">
-                  <Toggle on={isDark} onClick={toggleTheme} />
+                <Row title="Mode Gelap" desc="Tampilan lebih nyaman di kondisi minim cahaya." c={c}>
+                  <Toggle on={isDark} onClick={toggleTheme} c={c} isDark={isDark} />
                 </Row>
               </motion.div>
             )}
@@ -178,12 +190,12 @@ export default function PengaturanPage() {
                   <AnimatePresence>{prefsSaved && <motion.span initial={{ opacity: 0, scale: 0.8 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0 }} style={{ fontSize: '12px', color: '#16A34A', fontWeight: 600 }}>✓ Tersimpan</motion.span>}</AnimatePresence>
                 </div>
                 <p style={{ fontSize: '13px', color: c.muted, marginBottom: '8px' }}>Notifikasi</p>
-                <Row title="Notifikasi Email" desc="Terima pembaruan penting lewat email."><Toggle on={prefs.emailNotif} onClick={() => toggle('emailNotif')} /></Row>
-                <Row title="Update Lamaran" desc="Beri tahu saat status lamaran berubah."><Toggle on={prefs.notifLamaran} onClick={() => toggle('notifLamaran')} /></Row>
-                <Row title="Pelatihan & Mentoring" desc="Pengingat pelatihan dan jadwal mentoring."><Toggle on={prefs.notifPelatihan} onClick={() => toggle('notifPelatihan')} /></Row>
+                <Row title="Notifikasi Email" desc="Terima pembaruan penting lewat email." c={c}><Toggle on={prefs.emailNotif} onClick={() => toggle('emailNotif')} c={c} isDark={isDark} /></Row>
+                <Row title="Update Lamaran" desc="Beri tahu saat status lamaran berubah." c={c}><Toggle on={prefs.notifLamaran} onClick={() => toggle('notifLamaran')} c={c} isDark={isDark} /></Row>
+                <Row title="Pelatihan & Mentoring" desc="Pengingat pelatihan dan jadwal mentoring." c={c}><Toggle on={prefs.notifPelatihan} onClick={() => toggle('notifPelatihan')} c={c} isDark={isDark} /></Row>
                 <p style={{ fontSize: '13px', color: c.muted, margin: '20px 0 8px' }}>Privasi</p>
-                <Row title="Profil Publik" desc="Izinkan orang lain melihat profilmu."><Toggle on={prefs.profilPublik} onClick={() => toggle('profilPublik')} /></Row>
-                <Row title="Tampilkan Email di Profil" desc="Email kamu terlihat di profil publik."><Toggle on={prefs.tampilkanEmail} onClick={() => toggle('tampilkanEmail')} /></Row>
+                <Row title="Profil Publik" desc="Izinkan orang lain melihat profilmu." c={c}><Toggle on={prefs.profilPublik} onClick={() => toggle('profilPublik')} c={c} isDark={isDark} /></Row>
+                <Row title="Tampilkan Email di Profil" desc="Email kamu terlihat di profil publik." c={c}><Toggle on={prefs.tampilkanEmail} onClick={() => toggle('tampilkanEmail')} c={c} isDark={isDark} /></Row>
               </motion.div>
             )}
           </AnimatePresence>

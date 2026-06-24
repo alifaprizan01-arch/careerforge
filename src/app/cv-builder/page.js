@@ -29,6 +29,105 @@ function useIsMobile(bp = 768) {
   return m;
 }
 
+// Dipindah ke luar CVBuilderPage agar tidak didefinisikan ulang setiap render —
+// sebelumnya, fungsi ini dibuat ulang setiap kali user mengetik di form (karena
+// itu memicu re-render parent), yang membuat preview di-mount ulang dari nol.
+function CVPreview({ cv, template }) {
+  const colors = { modern: '#2563EB', minimal: '#475569', bold: '#7C3AED' };
+  const accent = colors[template] || colors.modern;
+  return (
+    <div style={{ background: '#fff', minHeight: '297mm', width: '210mm', padding: '12mm', fontFamily: 'Plus Jakarta Sans, sans-serif', color: '#0F172A', fontSize: '11px', lineHeight: 1.5, boxShadow: '0 4px 24px rgba(0,0,0,0.15)' }}>
+      {/* Header */}
+      <div style={{ borderBottom: `3px solid ${accent}`, paddingBottom: '10px', marginBottom: '14px' }}>
+        <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#0F172A', margin: '0 0 4px', letterSpacing: '-0.02em' }}>{cv.full_name || 'Nama Lengkap'}</h1>
+        {cv.job_title && <p style={{ fontSize: '13px', color: accent, fontWeight: 600, margin: '0 0 8px' }}>{cv.job_title}</p>}
+        <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', fontSize: '11px', color: '#475569' }}>
+          {cv.email && <span>✉ {cv.email}</span>}
+          {cv.phone && <span>📞 {cv.phone}</span>}
+          {cv.location && <span>📍 {cv.location}</span>}
+          {cv.website && <span>🌐 {cv.website}</span>}
+          {cv.linkedin && <span>in {cv.linkedin}</span>}
+        </div>
+      </div>
+
+      {cv.summary && (
+        <div style={{ marginBottom: '14px' }}>
+          <h2 style={{ fontSize: '12px', fontWeight: 800, color: accent, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Ringkasan Profesional</h2>
+          <p style={{ color: '#334155', lineHeight: 1.6, margin: 0 }}>{cv.summary}</p>
+        </div>
+      )}
+
+      {cv.experience?.length > 0 && (
+        <div style={{ marginBottom: '14px' }}>
+          <h2 style={{ fontSize: '12px', fontWeight: 800, color: accent, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Pengalaman Kerja</h2>
+          {cv.experience.map((exp, i) => (
+            <div key={i} style={{ marginBottom: '10px', paddingLeft: '12px', borderLeft: `2px solid ${i === 0 ? accent : '#E2E8F0'}` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
+                <strong style={{ fontSize: '12px', color: '#0F172A' }}>{exp.position}</strong>
+                <span style={{ fontSize: '10px', color: '#94A3B8' }}>{exp.start_date} — {exp.current ? 'Sekarang' : exp.end_date}</span>
+              </div>
+              <div style={{ fontSize: '11px', color: accent, fontWeight: 600, marginBottom: '3px' }}>{exp.company}</div>
+              {exp.description && <p style={{ fontSize: '10px', color: '#475569', margin: 0, lineHeight: 1.5 }}>{exp.description}</p>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {cv.education?.length > 0 && (
+        <div style={{ marginBottom: '14px' }}>
+          <h2 style={{ fontSize: '12px', fontWeight: 800, color: accent, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Pendidikan</h2>
+          {cv.education.map((edu, i) => (
+            <div key={i} style={{ marginBottom: '8px', paddingLeft: '12px', borderLeft: `2px solid ${i === 0 ? accent : '#E2E8F0'}` }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                <strong style={{ fontSize: '12px', color: '#0F172A' }}>{edu.degree} {edu.field && `— ${edu.field}`}</strong>
+                <span style={{ fontSize: '10px', color: '#94A3B8' }}>{edu.start_date} — {edu.end_date}</span>
+              </div>
+              <div style={{ fontSize: '11px', color: accent, fontWeight: 600 }}>{edu.institution}</div>
+              {edu.gpa && <span style={{ fontSize: '10px', color: '#64748B' }}>GPA: {edu.gpa}</span>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      <div style={{ display: 'grid', gridTemplateColumns: cv.languages?.length > 0 ? '1fr 1fr' : '1fr', gap: '14px' }}>
+        {cv.skills?.length > 0 && (
+          <div>
+            <h2 style={{ fontSize: '12px', fontWeight: 800, color: accent, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Keahlian</h2>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
+              {cv.skills.map((skill, i) => (
+                <span key={i} style={{ padding: '3px 8px', background: `${accent}15`, color: accent, borderRadius: '20px', fontSize: '10px', fontWeight: 600, border: `1px solid ${accent}30` }}>{skill.name}</span>
+              ))}
+            </div>
+          </div>
+        )}
+        {cv.languages?.length > 0 && (
+          <div>
+            <h2 style={{ fontSize: '12px', fontWeight: 800, color: accent, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Bahasa</h2>
+            {cv.languages.map((lang, i) => (
+              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
+                <span style={{ fontWeight: 600, color: '#0F172A' }}>{lang.language}</span>
+                <span style={{ color: '#64748B' }}>{lang.proficiency}</span>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {cv.certifications?.length > 0 && (
+        <div style={{ marginTop: '14px' }}>
+          <h2 style={{ fontSize: '12px', fontWeight: 800, color: accent, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Sertifikasi</h2>
+          {cv.certifications.map((cert, i) => (
+            <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
+              <span style={{ fontWeight: 600, color: '#0F172A' }}>{cert.name}</span>
+              <span style={{ color: '#64748B' }}>{cert.issuer} {cert.date && `• ${cert.date}`}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function CVBuilderPage() {
   const isMobile = useIsMobile();
   const router = useRouter();
@@ -131,102 +230,6 @@ export default function CVBuilderPage() {
   };
   const completedCount = sections.filter(s => sectionDone(s.id)).length;
   const progressPct = Math.round((completedCount / sections.length) * 100);
-
-  const CVPreview = ({ cv, template }) => {
-    const colors = { modern: '#2563EB', minimal: '#475569', bold: '#7C3AED' };
-    const accent = colors[template] || colors.modern;
-    return (
-      <div style={{ background: '#fff', minHeight: '297mm', width: '210mm', padding: '12mm', fontFamily: 'Plus Jakarta Sans, sans-serif', color: '#0F172A', fontSize: '11px', lineHeight: 1.5, boxShadow: '0 4px 24px rgba(0,0,0,0.15)' }}>
-        {/* Header */}
-        <div style={{ borderBottom: `3px solid ${accent}`, paddingBottom: '10px', marginBottom: '14px' }}>
-          <h1 style={{ fontSize: '22px', fontWeight: 800, color: '#0F172A', margin: '0 0 4px', letterSpacing: '-0.02em' }}>{cv.full_name || 'Nama Lengkap'}</h1>
-          {cv.job_title && <p style={{ fontSize: '13px', color: accent, fontWeight: 600, margin: '0 0 8px' }}>{cv.job_title}</p>}
-          <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap', fontSize: '11px', color: '#475569' }}>
-            {cv.email && <span>✉ {cv.email}</span>}
-            {cv.phone && <span>📞 {cv.phone}</span>}
-            {cv.location && <span>📍 {cv.location}</span>}
-            {cv.website && <span>🌐 {cv.website}</span>}
-            {cv.linkedin && <span>in {cv.linkedin}</span>}
-          </div>
-        </div>
-
-        {cv.summary && (
-          <div style={{ marginBottom: '14px' }}>
-            <h2 style={{ fontSize: '12px', fontWeight: 800, color: accent, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '6px' }}>Ringkasan Profesional</h2>
-            <p style={{ color: '#334155', lineHeight: 1.6, margin: 0 }}>{cv.summary}</p>
-          </div>
-        )}
-
-        {cv.experience?.length > 0 && (
-          <div style={{ marginBottom: '14px' }}>
-            <h2 style={{ fontSize: '12px', fontWeight: 800, color: accent, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Pengalaman Kerja</h2>
-            {cv.experience.map((exp, i) => (
-              <div key={i} style={{ marginBottom: '10px', paddingLeft: '12px', borderLeft: `2px solid ${i === 0 ? accent : '#E2E8F0'}` }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '2px' }}>
-                  <strong style={{ fontSize: '12px', color: '#0F172A' }}>{exp.position}</strong>
-                  <span style={{ fontSize: '10px', color: '#94A3B8' }}>{exp.start_date} — {exp.current ? 'Sekarang' : exp.end_date}</span>
-                </div>
-                <div style={{ fontSize: '11px', color: accent, fontWeight: 600, marginBottom: '3px' }}>{exp.company}</div>
-                {exp.description && <p style={{ fontSize: '10px', color: '#475569', margin: 0, lineHeight: 1.5 }}>{exp.description}</p>}
-              </div>
-            ))}
-          </div>
-        )}
-
-        {cv.education?.length > 0 && (
-          <div style={{ marginBottom: '14px' }}>
-            <h2 style={{ fontSize: '12px', fontWeight: 800, color: accent, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Pendidikan</h2>
-            {cv.education.map((edu, i) => (
-              <div key={i} style={{ marginBottom: '8px', paddingLeft: '12px', borderLeft: `2px solid ${i === 0 ? accent : '#E2E8F0'}` }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                  <strong style={{ fontSize: '12px', color: '#0F172A' }}>{edu.degree} {edu.field && `— ${edu.field}`}</strong>
-                  <span style={{ fontSize: '10px', color: '#94A3B8' }}>{edu.start_date} — {edu.end_date}</span>
-                </div>
-                <div style={{ fontSize: '11px', color: accent, fontWeight: 600 }}>{edu.institution}</div>
-                {edu.gpa && <span style={{ fontSize: '10px', color: '#64748B' }}>GPA: {edu.gpa}</span>}
-              </div>
-            ))}
-          </div>
-        )}
-
-        <div style={{ display: 'grid', gridTemplateColumns: cv.languages?.length > 0 ? '1fr 1fr' : '1fr', gap: '14px' }}>
-          {cv.skills?.length > 0 && (
-            <div>
-              <h2 style={{ fontSize: '12px', fontWeight: 800, color: accent, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Keahlian</h2>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: '5px' }}>
-                {cv.skills.map((skill, i) => (
-                  <span key={i} style={{ padding: '3px 8px', background: `${accent}15`, color: accent, borderRadius: '20px', fontSize: '10px', fontWeight: 600, border: `1px solid ${accent}30` }}>{skill.name}</span>
-                ))}
-              </div>
-            </div>
-          )}
-          {cv.languages?.length > 0 && (
-            <div>
-              <h2 style={{ fontSize: '12px', fontWeight: 800, color: accent, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Bahasa</h2>
-              {cv.languages.map((lang, i) => (
-                <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
-                  <span style={{ fontWeight: 600, color: '#0F172A' }}>{lang.language}</span>
-                  <span style={{ color: '#64748B' }}>{lang.proficiency}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-
-        {cv.certifications?.length > 0 && (
-          <div style={{ marginTop: '14px' }}>
-            <h2 style={{ fontSize: '12px', fontWeight: 800, color: accent, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '8px' }}>Sertifikasi</h2>
-            {cv.certifications.map((cert, i) => (
-              <div key={i} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', marginBottom: '4px' }}>
-                <span style={{ fontWeight: 600, color: '#0F172A' }}>{cert.name}</span>
-                <span style={{ color: '#64748B' }}>{cert.issuer} {cert.date && `• ${cert.date}`}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  };
 
   if (!loaded || !user) return null;
 

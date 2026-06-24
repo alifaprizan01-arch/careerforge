@@ -215,7 +215,7 @@ export default function Home() {
             )}
 
             {!isMobile && (
-              <div style={{ flex: 1, position: 'relative', maxWidth: '520px' }}>
+              <div style={{ flex: 1, position: 'relative', maxWidth: '440px' }}>
                 <input type="text" value={search} onChange={e => setSearch(e.target.value)}
                   placeholder={t('Mau tingkatkan skill atau cari kerja apa hari ini?')}
                   style={{ width: '100%', padding: '12px 16px 12px 42px', borderRadius: '999px', border: '1.5px solid var(--border-default)', fontSize: '14px', background: 'var(--surface-secondary)', color: 'var(--text-primary)', outline: 'none', fontFamily: 'var(--font-sans)' }} />
@@ -225,7 +225,7 @@ export default function Home() {
 
             {isMobile && <div style={{ flex: 1 }} />}
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '14px' : '20px', fontSize: '14px', flexShrink: 0 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: isMobile ? '14px' : '20px', fontSize: '14px', flexShrink: 0, marginLeft: isMobile ? 0 : 'auto' }}>
               <button onClick={toggleTheme} aria-label="Ganti tema" style={{ width: '36px', height: '36px', borderRadius: cssVars.radiusSm, border: '1px solid var(--border-default)', background: 'var(--surface-secondary)', cursor: 'pointer', fontSize: '15px', display: isMobile ? 'none' : 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 {isDark ? '☀️' : '🌙'}
               </button>

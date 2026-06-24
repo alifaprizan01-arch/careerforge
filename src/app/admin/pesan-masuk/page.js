@@ -85,7 +85,7 @@ export default function AdminPesanMasukPage() {
           <span style={{ color: 'rgba(255,255,255,0.3)' }}>/</span>
           <span style={{ color: '#fff', fontWeight: 600, fontSize: '14px' }}>Pesan Masuk</span>
         </div>
-        <button onClick={fetchRows} style={{ padding: '9px 16px', borderRadius: '8px', border: 'none', background: '#fff', color: '#1E293B', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>↻ Muat Ulang</button>
+        <button onClick={fetchRows} style={{ padding: '9px 16px', borderRadius: '8px', border: 'none', background: c.card, color: c.text, fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>↻ Muat Ulang</button>
       </div>
 
       <main style={{ maxWidth: '960px', margin: '0 auto', padding: '28px 24px 70px' }}>
