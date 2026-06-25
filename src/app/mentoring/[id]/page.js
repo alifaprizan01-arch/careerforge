@@ -2,9 +2,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '../../lib/supabaseClient';
-import { useUser } from '../../lib/userContext';
-import Sidebar from '../components/Sidebar';
+import { supabase } from '../../../lib/supabaseClient';
+import { useUser } from '../../../lib/userContext';
+import Sidebar from '../../components/Sidebar';
 
 function useIsMobile(breakpoint = 768) {
   const [isMobile, setIsMobile] = useState(false);
@@ -176,7 +176,7 @@ export default function MentoringPage() {
                       onMouseEnter={e => { if (!isSelected) { e.currentTarget.style.boxShadow = 'var(--shadow-md)'; e.currentTarget.style.transform = 'translateY(-2px)'; } }}
                       onMouseLeave={e => { if (!isSelected) { e.currentTarget.style.boxShadow = 'var(--shadow-xs)'; e.currentTarget.style.transform = 'none'; } }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px' }}>
-                        {m.avatar_url ? <Image src={m.avatar_url} alt={m.full_name || 'Foto mentor'} width={44} height={44} style={{ borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid var(--border-brand)' }} /> :
+                        {m.avatar_url ? <img src={m.avatar_url} alt={m.full_name || 'Foto mentor'} style={{ width: '44px', height: '44px', borderRadius: '50%', objectFit: 'cover', flexShrink: 0, border: '2px solid var(--border-brand)' }} /> :
                           <div style={{ width: '44px', height: '44px', borderRadius: '50%', background: 'linear-gradient(135deg,var(--brand-600),var(--brand-800))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '16px', flexShrink: 0 }}>
                             {m.full_name?.slice(0,1)}
                           </div>}
@@ -226,7 +226,7 @@ export default function MentoringPage() {
                 {/* Profile card */}
                 <div style={{ background: 'var(--surface-primary)', borderRadius: '12px', border: '1px solid var(--border-default)', padding: isMobile ? '16px' : '20px', boxShadow: 'var(--shadow-sm)' }}>
                   <div style={{ display: 'flex', gap: '14px', alignItems: 'flex-start', marginBottom: '16px' }}>
-                    {selectedMentor.avatar_url ? <Image src={selectedMentor.avatar_url} alt={selectedMentor.full_name || 'Foto mentor'} width={60} height={60} style={{ borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--border-brand)', flexShrink: 0 }} /> :
+                    {selectedMentor.avatar_url ? <img src={selectedMentor.avatar_url} alt={selectedMentor.full_name || 'Foto mentor'} style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover', border: '3px solid var(--border-brand)', flexShrink: 0 }} /> :
                       <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: 'linear-gradient(135deg,var(--brand-600),var(--brand-800))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '22px', flexShrink: 0 }}>
                         {selectedMentor.full_name?.slice(0,1)}
                       </div>}
@@ -314,7 +314,7 @@ export default function MentoringPage() {
                       {mentorReviews.filter(r => r != null).map((r, i) => (
                         <div key={r.id} style={{ borderBottom: i < mentorReviews.length-1 ? '1px solid var(--border-subtle)' : 'none', paddingBottom: '12px' }}>
                           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '6px' }}>
-                            {r.users?.avatar_url ? <Image src={r.users.avatar_url} alt={r.users?.full_name || 'Foto pengguna'} width={26} height={26} style={{ borderRadius: '50%', objectFit: 'cover' }} /> :
+                            {r.users?.avatar_url ? <img src={r.users.avatar_url} alt={r.users?.full_name || 'Foto pengguna'} style={{ width: '26px', height: '26px', borderRadius: '50%', objectFit: 'cover' }} /> :
                               <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: 'linear-gradient(135deg,var(--brand-600),var(--brand-800))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: '9px', flexShrink: 0 }}>
                                 {r.users?.full_name?.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2)}
                               </div>}
