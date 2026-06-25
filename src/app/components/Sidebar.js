@@ -156,21 +156,25 @@ export default function Sidebar() {
           willChange: 'transform'
         }}
       >
-        {/* Header Logo */}
-        <div style={{ padding: '16px 16px', borderBottom: `1px solid ${theme.border}`, display: 'flex', alignItems: 'center', gap: '10px' }}>
+         {/* Header Logo */}
+        <div style={{ padding: isMobile ? '12px 14px' : '16px 16px', borderBottom: `1px solid ${theme.border}`, display: 'flex', alignItems: 'center', gap: isMobile ? '8px' : '10px' }}>
           {/* Tombol tutup sidebar */}
           <button onClick={toggleSidebar} aria-label="Tutup menu"
             style={{ width: '30px', height: '30px', border: `1px solid ${theme.border}`, background: theme.bgLight, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', color: theme.darkText, borderRadius: '6px', fontSize: '15px', flexShrink: 0 }}>
             ☰
           </button>
-          <div style={{ width: '32px', height: '32px', background: theme.purple, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '13px', borderRadius: '4px', flexShrink: 0 }}>
+          <img src="/logo.jpeg" alt="SiapKerja.id"
+            onError={(e) => { e.currentTarget.style.display = 'none'; const f = e.currentTarget.nextElementSibling; if (f) f.style.display = 'flex'; }}
+            style={{ width: isMobile ? '28px' : '32px', height: isMobile ? '28px' : '32px', borderRadius: '6px', objectFit: 'contain', flexShrink: 0 }} />
+          <div style={{ display: 'none', width: isMobile ? '28px' : '32px', height: isMobile ? '28px' : '32px', background: theme.purple, alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '13px', borderRadius: '4px', flexShrink: 0 }}>
             CF
           </div>
           <div style={{ flex: 1, minWidth: 0 }}>
-            <div style={{ fontWeight: 800, fontSize: '15px', color: theme.darkText, letterSpacing: '-0.02em' }}>SiapKerja.id</div>
+            <div style={{ fontWeight: 800, fontSize: isMobile ? '14px' : '15px', color: theme.darkText, letterSpacing: '-0.02em' }}>SiapKerja.id</div>
             <div style={{ fontSize: '10px', color: theme.lightText, fontWeight: 700, letterSpacing: '0.04em' }}>SDGs 8</div>
           </div>
         </div>
+
 
         {/* Portal Akses Cepat */}
         {portal && (

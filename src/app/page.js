@@ -48,17 +48,13 @@ const emojiFor = (name) => {
 };
 
 // Testimoni statis (belum ada tabel reviews di database, jadi dipertahankan sebagai konten pendukung)
-const TESTIMONIALS = [
-  { quote: 'Lewat pelatihan intensif dan simulasi interview, saya berhasil diterima kerja di perusahaan impian saya di Bandung kurang dari satu bulan setelah lulus.', name: 'Alif A.', role: 'Alumni Logistik' },
-  { quote: 'Modul pengajarannya sangat terstruktur, namun keunggulannya adalah langsung terhubung ke bursa lowongan kerja industri lokal.', name: 'Rani K.', role: 'Career Switcher' },
-  { quote: 'CV Builder dan fitur sertifikat otomatisnya sangat membantu merapikan portofolio saya hingga dilirik oleh HRD perusahaan nasional.', name: 'Dimas P.', role: 'Fresh Graduate' },
-];
+// Testimoni diambil dari tabel 'testimonials' (dikelola sendiri lewat Supabase/admin)
 
 const STATS = [
-  { n: '15rb+', l: 'Peserta Aktif' },
-  { n: '120+', l: 'Mitra Perusahaan' },
-  { n: '50+', l: 'Mentor Praktisi Ahli' },
-  { n: '94%', l: 'Tingkat Keterserapan Kerja' },
+  { key: 'users', l: 'Peserta Aktif' },
+  { key: 'companies', l: 'Mitra Perusahaan' },
+  { key: 'mentors', l: 'Mentor Praktisi Ahli' },
+  { key: 'trainings', l: 'Pelatihan Tersedia' },
 ];
 
 // Hook deteksi layar HP untuk tata letak responsif
@@ -97,6 +93,14 @@ export default function Home() {
 
   // Notifikasi
   const [unreadCount, setUnreadCount] = useState(0);
+  const [statCounts, setStatCounts] = useState({});
+  const [testimonials, setTestimonials] = useState([]);
+  const [showTestiForm, setShowTestiForm] = useState(false);
+  const [testiName, setTestiName] = useState('');
+  const [testiRole, setTestiRole] = useState('');
+  const [testiQuote, setTestiQuote] = useState('');
+  const [testiBusy, setTestiBusy] = useState(false);
+  const [testiMsg, setTestiMsg] = useState('');
 
   useEffect(() => {
     if (loaded && !user) router.push('/auth');
@@ -126,6 +130,45 @@ export default function Home() {
 
     return () => supabase.removeChannel(channel);
   }, [user]);
+
+  useEffect(() => {
+    (async () => {
+      const tables = ['users', 'companies', 'mentors', 'trainings'];
+      const res = await Promise.all(
+        tables.map((tbl) => supabase.from(tbl).select('*', { count: 'exact', head: true }))
+      );
+      const next = {};
+      tables.forEach((tbl, i) => {
+        if (!res[i].error && typeof res[i].count === 'number') next[tbl] = res[i].count;
+      });
+      setStatCounts(next);
+
+      const { data: tms } = await supabase
+        .from('testimonials')
+        .select('*')
+        .eq('active', true)
+        .order('sort_order', { ascending: true })
+        .order('created_at', { ascending: false });
+      if (tms) setTestimonials(tms);
+    })();
+  }, []);
+
+  const submitTestimonial = async () => {
+    if (!testiQuote.trim()) { setTestiMsg('Mohon tulis cerita Anda dulu.'); return; }
+    setTestiBusy(true); setTestiMsg('');
+    const { error } = await supabase.from('testimonials').insert({
+      name: testiName.trim() || 'Anonim',
+      role: testiRole.trim() || null,
+      quote: testiQuote.trim(),
+      active: false,
+      sort_order: 0,
+    });
+    setTestiBusy(false);
+    if (error) { setTestiMsg('Gagal mengirim. Coba lagi.'); return; }
+    setTestiName(''); setTestiRole(''); setTestiQuote('');
+    setShowTestiForm(false);
+    setTestiMsg('Terima kasih! Testimoni Anda akan tampil setelah disetujui admin.');
+  };
 
   const fetchAll = async () => {
     setLoading(true);
@@ -293,7 +336,7 @@ export default function Home() {
                 <button onClick={() => router.push('/pelatihan')} style={{ padding: '14px 28px', background: 'var(--brand-600)', color: '#fff', border: 'none', borderRadius: cssVars.radiusSm, fontWeight: 700, fontSize: '15px', cursor: 'pointer', fontFamily: 'var(--font-sans)', boxShadow: 'var(--shadow-brand)' }}>
                   {t('Jelajahi Kursus')} →
                 </button>
-                <button onClick={() => router.push(`/trayek/${job.id}`)} style={{ padding: '14px 26px', background: 'var(--surface-primary)', color: 'var(--text-primary)', border: '1px solid var(--border-default)', borderRadius: cssVars.radiusSm, fontWeight: 600, fontSize: '15px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+                <button onClick={() => router.push('/trayek')} style={{ padding: '14px 26px', background: 'var(--surface-primary)', color: 'var(--text-primary)', border: '1px solid var(--border-default)', borderRadius: cssVars.radiusSm, fontWeight: 600, fontSize: '15px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
                   {t('Lihat trayek')}
                 </button>
               </div>
@@ -484,17 +527,16 @@ export default function Home() {
                 {recentJobs.map((job) => (
                   <div
                     key={job.id}
-                    onClick={() => router.push('/trayek')
-}
+                    onClick={() => router.push(`/trayek/${job.id}`)}
                     style={{ cursor: 'pointer', background: isDark ? '#1E293B' : '#2D2F31', border: '1px solid rgba(255,255,255,0.1)', padding: '22px', borderRadius: cssVars.radiusMd, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}
                   >
                     <div>
-                      {job.type && <span style={{ fontSize: '11px', fontWeight: 700, background: 'rgba(167,139,250,0.15)', color: '#C084FC', padding: '4px 10px', borderRadius: '999px', textTransform: 'uppercase' }}>{job.type}</span>}
-                      <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#FFF', marginTop: '14px', marginBottom: '4px' }}>{job.title || job.posisi || t('Lowongan Tersedia')}</h3>
+                      {job.jenis && <span style={{ fontSize: '11px', fontWeight: 700, background: 'rgba(167,139,250,0.15)', color: '#C084FC', padding: '4px 10px', borderRadius: '999px', textTransform: 'uppercase' }}>{job.jenis}</span>}
+                      <h3 style={{ fontSize: '16px', fontWeight: 700, color: '#FFF', marginTop: '14px', marginBottom: '4px' }}>{job.tujuan || job.title || t('Lowongan Tersedia')}</h3>
                       <p style={{ fontSize: '13px', color: '#CBD5E1' }}>{job.company || job.perusahaan || ''}</p>
                     </div>
                     <div style={{ marginTop: '20px', paddingTop: '14px', borderTop: '1px solid rgba(255,255,255,0.08)', display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '12px', color: '#94A3B8' }}>
-                      <span>📍 {job.location || job.lokasi || '—'}</span>
+                      <span>📍 {job.asal || job.location || '—'}</span>
                       <span style={{ color: '#FFF', fontWeight: 700 }}>{t('Lamar Cepat')}</span>
                     </div>
                   </div>
@@ -513,7 +555,7 @@ export default function Home() {
           <div style={{ maxWidth: '1000px', margin: '0 auto', padding: isMobile ? '36px 16px' : '54px 24px', display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '28px', textAlign: 'center' }}>
             {STATS.map((s) => (
               <div key={s.l}>
-                <div style={{ fontSize: isMobile ? '26px' : '32px', fontWeight: 800, color: 'var(--text-brand)', letterSpacing: '-0.02em', lineHeight: 1 }}>{s.n}</div>
+                <div style={{ fontSize: isMobile ? '26px' : '32px', fontWeight: 800, color: 'var(--text-brand)', letterSpacing: '-0.02em', lineHeight: 1 }}>{statCounts[s.key] == null ? '—' : statCounts[s.key].toLocaleString('id-ID')}</div>
                 <div style={{ fontSize: '13px', color: 'var(--text-secondary)', marginTop: '8px', fontWeight: 500 }}>{t(s.l)}</div>
               </div>
             ))}
@@ -521,6 +563,7 @@ export default function Home() {
         </section>
 
         {/* ===== TESTIMONIALS SECTION ===== */}
+        {testimonials.length > 0 && (
         <section style={{ maxWidth: '1240px', margin: '0 auto', padding: isMobile ? '40px 16px' : '64px 24px', width: '100%' }}>
           <div style={{ textAlign: 'center', marginBottom: '36px' }}>
             <h2 style={{ fontSize: isMobile ? '22px' : '26px', fontWeight: 800, letterSpacing: '-0.02em', marginBottom: '8px', color: 'var(--text-primary)' }}>{t('Cerita Sukses Alumni SiapKerja.id')}</h2>
@@ -528,8 +571,8 @@ export default function Home() {
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
-            {TESTIMONIALS.map((tm) => (
-              <div key={tm.name} style={{ background: 'var(--surface-primary)', border: '1px solid var(--border-default)', borderRadius: cssVars.radiusMd, padding: '24px', boxShadow: 'var(--shadow-xs)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
+            {testimonials.map((tm) => (
+              <div key={tm.id} style={{ background: 'var(--surface-primary)', border: '1px solid var(--border-default)', borderRadius: cssVars.radiusMd, padding: '24px', boxShadow: 'var(--shadow-xs)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
                 <div>
                   <div style={{ fontSize: '32px', color: 'var(--text-brand)', lineHeight: 1, marginBottom: '4px', fontFamily: 'serif' }}>&ldquo;</div>
                   <p style={{ fontSize: '14px', color: 'var(--text-primary)', lineHeight: 1.6, fontStyle: 'italic', marginBottom: '18px' }}>{tm.quote}</p>
@@ -547,6 +590,37 @@ export default function Home() {
             ))}
           </div>
         </section>
+        )}
+
+        {/* Ajak pengguna berbagi testimoni */}
+        <div style={{ textAlign: 'center', padding: isMobile ? '0 16px 36px' : '0 24px 44px' }}>
+          <button onClick={() => { setTestiName(user?.name || user?.full_name || ''); setTestiMsg(''); setShowTestiForm(true); }}
+            style={{ padding: '11px 22px', borderRadius: cssVars.radiusSm, border: '1px solid var(--border-default)', background: 'var(--surface-primary)', color: 'var(--text-primary)', fontWeight: 700, fontSize: '14px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
+            ✍️ Punya cerita sukses? Bagikan
+          </button>
+          {testiMsg && !showTestiForm && <p style={{ marginTop: '12px', fontSize: '13px', color: 'var(--text-secondary)' }}>{testiMsg}</p>}
+        </div>
+
+        {/* Modal form testimoni */}
+        {showTestiForm && (
+          <div onClick={() => setShowTestiForm(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 300, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
+            <div onClick={(e) => e.stopPropagation()} style={{ background: 'var(--surface-primary)', borderRadius: cssVars.radiusMd, border: '1px solid var(--border-default)', padding: '24px', width: '100%', maxWidth: '460px', boxShadow: '0 20px 50px rgba(0,0,0,0.3)' }}>
+              <h3 style={{ fontSize: '18px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '4px' }}>Bagikan Cerita Suksesmu</h3>
+              <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '16px' }}>Testimoni Anda akan ditampilkan setelah ditinjau admin.</p>
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '5px' }}>Nama</label>
+              <input value={testiName} onChange={(e) => setTestiName(e.target.value)} placeholder="Nama Anda" style={{ width: '100%', padding: '10px 12px', borderRadius: cssVars.radiusSm, border: '1px solid var(--border-default)', background: 'var(--surface-secondary)', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-sans)', marginBottom: '12px', boxSizing: 'border-box' }} />
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '5px' }}>Peran / Label</label>
+              <input value={testiRole} onChange={(e) => setTestiRole(e.target.value)} placeholder="mis. Alumni 2026" style={{ width: '100%', padding: '10px 12px', borderRadius: cssVars.radiusSm, border: '1px solid var(--border-default)', background: 'var(--surface-secondary)', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-sans)', marginBottom: '12px', boxSizing: 'border-box' }} />
+              <label style={{ display: 'block', fontSize: '12px', fontWeight: 600, color: 'var(--text-secondary)', marginBottom: '5px' }}>Cerita Anda</label>
+              <textarea value={testiQuote} onChange={(e) => setTestiQuote(e.target.value)} rows={4} placeholder="Ceritakan pengalaman Anda..." style={{ ...{ width: '100%', padding: '10px 12px', borderRadius: cssVars.radiusSm, border: '1px solid var(--border-default)', background: 'var(--surface-secondary)', color: 'var(--text-primary)', fontSize: '14px', fontFamily: 'var(--font-sans)', marginBottom: '12px', boxSizing: 'border-box' }, resize: 'vertical' }} />
+              {testiMsg && <p style={{ fontSize: '12px', color: 'var(--text-secondary)', margin: '4px 0 0' }}>{testiMsg}</p>}
+              <div style={{ display: 'flex', gap: '10px', justifyContent: 'flex-end', marginTop: '18px' }}>
+                <button onClick={() => setShowTestiForm(false)} style={{ padding: '9px 16px', borderRadius: cssVars.radiusSm, border: '1px solid var(--border-default)', background: 'transparent', color: 'var(--text-secondary)', fontWeight: 600, fontSize: '13px', cursor: 'pointer' }}>Batal</button>
+                <button onClick={submitTestimonial} disabled={testiBusy} style={{ padding: '9px 18px', borderRadius: cssVars.radiusSm, border: 'none', background: 'var(--brand-600, #7C3AED)', color: '#fff', fontWeight: 700, fontSize: '13px', cursor: testiBusy ? 'default' : 'pointer', opacity: testiBusy ? 0.6 : 1 }}>{testiBusy ? 'Mengirim…' : 'Kirim'}</button>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ===== SERTIFIKASI CTA ===== */}
         <section style={{ background: 'var(--surface-secondary)', borderTop: '1px solid var(--border-default)', borderBottom: '1px solid var(--border-default)', padding: isMobile ? '40px 16px' : '64px 24px' }}>

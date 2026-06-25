@@ -107,8 +107,10 @@ export default function AdminDashboard() {
     { href: '/admin/users', icon: '👥', label: 'Kelola User', value: stats.users, unit: 'user', color: isDark ? '#4ADE80' : '#16A34A', bg: isDark ? 'rgba(22,163,74,0.15)' : '#F0FDF4' },
     { href: '/admin/lamaran', icon: '📋', label: 'Kelola Lamaran', value: stats.applications, unit: 'lamaran', color: isDark ? '#C084FC' : '#7C3AED', bg: isDark ? 'rgba(124,58,237,0.15)' : '#F5F3FF' },
     { href: '/admin/pelatihan', icon: '🎓', label: 'Kelola Pelatihan', value: stats?.trainings || 0, unit: 'pelatihan', color: isDark ? '#4ADE80' : '#16A34A', bg: isDark ? 'rgba(22,163,74,0.15)' : '#F0FDF4' },
+    { href: '/admin/mentor', icon: '🎤', label: 'Kelola Mentor', value: stats.mentors, unit: 'mentor', color: isDark ? '#F87171' : '#DC2626', bg: isDark ? 'rgba(220,38,38,0.15)' : '#FEF2F2' },
     { href: '/admin/banner', icon: '🖼️', label: 'Kelola Banner', value: null, unit: 'banner promo', color: isDark ? '#60A5FA' : '#2563EB', bg: isDark ? 'rgba(37,99,235,0.15)' : '#EFF6FF' },
     { href: '/admin/pesan-masuk', icon: '📥', label: 'Pesan Masuk', value: null, unit: 'kontak & karier', color: isDark ? '#38BDF8' : '#0EA5E9', bg: isDark ? 'rgba(14,165,233,0.15)' : '#F0F9FF' },
+    { href: '/admin/testimoni', icon: '💬', label: 'Kelola Testimoni', value: null, unit: 'cerita alumni', color: isDark ? '#34D399' : '#059669', bg: isDark ? 'rgba(5,150,105,0.15)' : '#ECFDF5' },
     { icon: '📢', label: 'Broadcast Notif', value: stats.notifications, unit: 'terkirim', color: isDark ? '#FBBF24' : '#D97706', bg: isDark ? 'rgba(217,119,6,0.15)' : '#FFFBEB', onClick: () => setShowBroadcast(true) },
   ];
 
@@ -150,7 +152,7 @@ export default function AdminDashboard() {
             { label: 'Lowongan', value: stats.trayek, icon: '💼', color: isDark ? '#4ADE80' : '#16A34A', onClick: () => router.push('/admin/lowongan') },
             { label: 'Lamaran', value: stats.applications, icon: '📋', color: isDark ? '#C084FC' : '#7C3AED', onClick: () => router.push('/admin/lamaran') },
             { label: 'Pelatihan', value: stats.trainings, icon: '🎓', color: isDark ? '#FBBF24' : '#D97706', onClick: () => router.push('/admin/pelatihan') },
-            { label: 'Mentor', value: stats.mentors, icon: '🎤', color: isDark ? '#F87171' : '#DC2626', onClick: () => router.push('/admin/users') },
+            { label: 'Mentor', value: stats.mentors, icon: '🎤', color: isDark ? '#F87171' : '#DC2626', onClick: () => router.push('/admin/mentor') },
             { label: 'Notifikasi', value: stats.notifications, icon: '🔔', color: muted, onClick: () => setShowBroadcast(true) },
           ].map((s, i) => (
             <motion.div key={i} initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.06 }}
