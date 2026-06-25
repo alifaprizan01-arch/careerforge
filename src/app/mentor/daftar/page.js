@@ -1,11 +1,11 @@
-'use client';
+﻿'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
-import { supabase } from '../../lib/supabaseClient';
-import { useUser } from '../../lib/userContext';
-import { useTheme } from '../../lib/themeContext';
-import Sidebar from '../components/Sidebar';
+import { supabase } from '../../../lib/supabaseClient';
+import { useUser } from '../../../lib/userContext';
+import { useTheme } from '../../../lib/themeContext';
+import Sidebar from '../../components/Sidebar';
 
 function useIsMobile() {
   const [m, setM] = useState(false);
