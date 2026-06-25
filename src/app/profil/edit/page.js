@@ -425,14 +425,12 @@ export default function ProfilEditPage() {
             margin-left: 0 !important;
             padding: 0 !important;
             padding-top: 52px !important;
-            padding-bottom: 80px !important;
+            padding-bottom: 24px !important;
           }
-          .bottom-tab-bar { display: flex !important; }
           .mobile-header { display: none !important; }
           .desktop-header { display: none !important; }
         }
         @media (min-width: 769px) {
-          .bottom-tab-bar { display: none !important; }
           .mobile-header { display: none !important; }
         }
         input, textarea, select {
@@ -609,6 +607,22 @@ export default function ProfilEditPage() {
 
           {/* Tab Content */}
           <div style={{ padding: '0 16px' }}>
+            {/* Navigasi Tab (atas) */}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px' }}>
+              {tabs.map(tab => (
+                <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
+                  display: 'inline-flex', alignItems: 'center', gap: '7px',
+                  padding: '9px 16px', borderRadius: '10px', cursor: 'pointer',
+                  fontFamily: 'Inter, sans-serif', fontSize: '13px',
+                  fontWeight: activeTab === tab.id ? 700 : 500,
+                  border: `1.5px solid ${activeTab === tab.id ? '#2563EB' : '#E2E8F0'}`,
+                  background: activeTab === tab.id ? '#EFF6FF' : '#fff',
+                  color: activeTab === tab.id ? '#2563EB' : '#64748B',
+                }}>
+                  <span style={{ fontSize: '15px' }}>{tab.icon}</span>{tab.label}
+                </button>
+              ))}
+            </div>
             {loading ? (
               <div style={{ ...S.card, textAlign: 'center', padding: '40px 20px' }}>
                 <div style={{ fontSize: '32px', marginBottom: '12px' }}>⏳</div>
@@ -833,31 +847,6 @@ export default function ProfilEditPage() {
         </main>
 
         {/* ── Bottom Tab Bar (Mobile Only) ── */}
-        <nav className="bottom-tab-bar" style={{
-          position: 'fixed', bottom: 0, left: 0, right: 0,
-          background: '#fff', borderTop: '1px solid #E2E8F0',
-          display: 'flex', zIndex: 200,
-          paddingBottom: 'env(safe-area-inset-bottom)',
-          boxShadow: '0 -4px 20px rgba(0,0,0,0.08)',
-        }}>
-          {tabs.map(tab => (
-            <button key={tab.id} onClick={() => setActiveTab(tab.id)} style={{
-              flex: 1, padding: '12px 8px 10px',
-              border: 'none', background: 'none',
-              display: 'flex', flexDirection: 'column',
-              alignItems: 'center', gap: '4px',
-              cursor: 'pointer', fontFamily: 'Inter, sans-serif',
-              borderTop: `2px solid ${activeTab === tab.id ? '#2563EB' : 'transparent'}`,
-              transition: 'all 0.15s',
-            }}>
-              <span style={{ fontSize: '20px', lineHeight: 1 }}>{tab.icon}</span>
-              <span style={{
-                fontSize: '11px', fontWeight: activeTab === tab.id ? 700 : 500,
-                color: activeTab === tab.id ? '#2563EB' : '#94A3B8',
-              }}>{tab.label}</span>
-            </button>
-          ))}
-        </nav>
       </div>
     </>
   );

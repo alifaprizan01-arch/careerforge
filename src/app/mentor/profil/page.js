@@ -1,5 +1,4 @@
 'use client';
-'use client';
 import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -34,21 +33,33 @@ export default function MentorProfilPage() {
 
   const fetchMentor = async () => {
     setLoading(true);
-    const { data } = await supabase.from('mentors').select('*').eq('user_id_ref', user.id).single();
-    if (data) {
-      setMentorData(data);
-      setAvatarUrl(data.avatar_url || '');
-      setForm({
-        full_name: data.full_name || '',
-        title: data.title || '',
-        expertise: data.expertise || '',
-        bio: data.bio || '',
-        price_per_session: data.price_per_session || '',
-        years_experience: data.years_experience || '',
-        linkedin_url: data.linkedin_url || '',
-        availability: data.availability || 'Tersedia',
-        expertise_tags: Array.isArray(data.expertise_tags) ? data.expertise_tags.join(', ') : '',
-      });
+    try {
+      const { data, error } = await supabase
+        .from('mentors')
+        .select('*')
+        .eq('user_id_ref', user.id)
+        .single();
+      if (error) throw error;
+      if (data) {
+        setMentorData(data);
+        setAvatarUrl(data.avatar_url || '');
+        setForm({
+          full_name: data.full_name || '',
+          title: data.title || '',
+          expertise: data.expertise || '',
+          bio: data.bio || '',
+          price_per_session: data.price_per_session?.toString() || '',
+          years_experience: data.years_experience?.toString() || '',
+          linkedin_url: data.linkedin_url || '',
+          availability: data.availability || 'Tersedia',
+          expertise_tags: Array.isArray(data.expertise_tags) && data.expertise_tags.length > 0
+            ? data.expertise_tags.filter(Boolean).join(', ')
+            : '',
+        });
+      }
+    } catch (e) {
+      console.error('fetchMentor error:', e.message);
+      setMsg('Gagal memuat data mentor: ' + e.message);
     }
     setLoading(false);
   };
@@ -74,20 +85,34 @@ export default function MentorProfilPage() {
   };
 
   const handleSave = async () => {
+    if (!mentorData?.id) { setMsg('Data mentor tidak ditemukan. Coba refresh halaman.'); return; }
     setSaving(true);
     try {
-      const tags = form.expertise_tags ? form.expertise_tags.split(',').map(t => t.trim()).filter(Boolean) : [];
-      await supabase.from('mentors').update({
-        full_name: form.full_name,
-        title: form.title,
-        expertise: form.expertise,
-        bio: form.bio,
+      const rawTags = form.expertise_tags
+        ? form.expertise_tags.split(',').map(t => t.trim()).filter(t => t.length > 0)
+        : [];
+      // Update field non-array dulu
+      const updatePayload = {
+        full_name: form.full_name.trim(),
+        title: form.title.trim(),
+        bio: form.bio.trim(),
         price_per_session: form.price_per_session ? parseInt(form.price_per_session) : 0,
         years_experience: form.years_experience ? parseInt(form.years_experience) : 0,
-        linkedin_url: form.linkedin_url,
+        linkedin_url: form.linkedin_url.trim() || null,
         availability: form.availability,
-        expertise_tags: tags,
-      }).eq('id', mentorData.id);
+      };
+      const { error } = await supabase.from('mentors').update(updatePayload).eq('id', mentorData.id);
+      if (error) throw error;
+      // Update expertise (ARRAY) dan expertise_tags (ARRAY) via SQL function
+      const expertiseArr = form.expertise.trim() ? [form.expertise.trim()] : [];
+      const { error: tagsError } = await supabase.rpc('update_mentor_expertise', {
+        mentor_id: mentorData.id,
+        p_expertise: expertiseArr,
+        p_tags: rawTags.length > 0 ? rawTags : []
+      });
+      if (tagsError) console.warn('Expertise update warning:', tagsError.message);
+      if (error) throw error;
+      setMentorData(prev => ({ ...prev, ...form }));
       setMsg('Profil berhasil diperbarui! ✓');
       setTimeout(() => setMsg(''), 3000);
     } catch (e) { setMsg('Gagal menyimpan: ' + e.message); }

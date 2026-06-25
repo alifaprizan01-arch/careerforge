@@ -12,8 +12,20 @@ const SECTIONS = [
   { id: 'masukan', title: 'Masukan', body: 'Jika kamu menemui hambatan aksesibilitas atau punya saran, kami sangat menghargai masukanmu agar dapat memperbaikinya.' },
 ];
 
+function useIsMobile() {
+  const [m, setM] = useState(false);
+  useEffect(() => {
+    const check = () => setM(window.innerWidth < 768);
+    check(); window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, []);
+  return m;
+}
+
 export default function AksesibilitasPage() {
   const { isDark } = useTheme();
+  const isMobile = useIsMobile();
+  const [showToc, setShowToc] = useState(false);
   const [progress, setProgress] = useState(0);
   const [activeId, setActiveId] = useState(SECTIONS[0].id);
 
@@ -44,13 +56,13 @@ export default function AksesibilitasPage() {
   const goTo = (id) => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
 
   return (
-    <div style={{ minHeight: '100vh', background: c.bg, fontFamily: 'Inter, sans-serif', marginLeft: 'var(--sidebar-width, 0px)', transition: 'margin-left 0.3s ease' }}>
+    <div style={{ minHeight: '100vh', background: c.bg, fontFamily: 'Inter, sans-serif', marginLeft: isMobile ? 0 : 'var(--sidebar-width, 240px)', transition: 'margin-left 0.3s ease' }}>
       <Sidebar />
       <div style={{ position: 'fixed', top: 0, left: 0, right: 0, height: '4px', zIndex: 900 }}>
         <div style={{ height: '100%', width: `${progress}%`, background: 'linear-gradient(90deg,#7C3AED,#A78BFA)', transition: 'width 0.1s linear' }} />
       </div>
 
-      <div style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.82) 0%, rgba(109,40,217,0.72) 100%), url(/Hana_2.png)', backgroundSize: 'cover', backgroundPosition: 'center', padding: '56px 24px 64px', textAlign: 'center', color: '#fff' }}>
+      <div style={{ background: 'linear-gradient(135deg, rgba(124,58,237,0.82) 0%, rgba(109,40,217,0.72) 100%), url(/Hana_2.png)', backgroundSize: 'cover', backgroundPosition: 'center', padding: isMobile ? '72px 16px 40px' : '56px 24px 64px', textAlign: 'center', color: '#fff' }}>
         <motion.div initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }}>
           <div style={{ fontSize: '36px', marginBottom: '8px' }}>♿</div>
           <h1 style={{ fontSize: '38px', fontWeight: 800, margin: '0 0 8px', letterSpacing: '-0.02em' }}>Pernyataan Aksesibilitas</h1>
@@ -58,19 +70,41 @@ export default function AksesibilitasPage() {
         </motion.div>
       </div>
 
-      <main style={{ maxWidth: '1040px', margin: '0 auto', padding: '36px 24px 70px', display: 'flex', gap: '32px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
-        <aside style={{ flex: '0 0 240px', position: 'sticky', top: '90px', minWidth: '220px' }}>
-          <div style={{ background: c.card, borderRadius: '14px', border: `1px solid ${c.border}`, padding: '18px', boxShadow: '0 4px 20px rgba(124,58,237,0.06)' }}>
-            <div style={{ fontSize: '12px', fontWeight: 700, color: c.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px' }}>Daftar Isi</div>
-            {SECTIONS.map((s, i) => (
-              <button key={s.id} onClick={() => goTo(s.id)} style={{
-                display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', marginBottom: '4px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px',
-                background: activeId === s.id ? c.brandBg : 'transparent', color: activeId === s.id ? c.brand : c.muted,
-                fontWeight: activeId === s.id ? 700 : 500, transition: 'all 0.15s',
-              }}>{i + 1}. {s.title}</button>
-            ))}
+      <main style={{ maxWidth: '1040px', margin: '0 auto', padding: isMobile ? '20px 14px 70px' : '36px 24px 70px', display: 'flex', gap: '32px', alignItems: 'flex-start', flexWrap: 'wrap' }}>
+        {/* Daftar Isi - desktop: sticky sidebar, mobile: collapsible */}
+        {isMobile ? (
+          <div style={{ width: '100%' }}>
+            <button onClick={() => setShowToc(v => !v)}
+              style={{ width: '100%', display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 16px', background: c.card, border: `1px solid ${c.border}`, borderRadius: '12px', cursor: 'pointer', fontFamily: 'inherit', fontSize: '14px', fontWeight: 700, color: c.brand, marginBottom: '8px' }}>
+              <span>📋 Daftar Isi</span>
+              <span style={{ transition: 'transform 0.2s', transform: showToc ? 'rotate(180deg)' : 'none' }}>▼</span>
+            </button>
+            {showToc && (
+              <div style={{ background: c.card, borderRadius: '12px', border: `1px solid ${c.border}`, padding: '12px', marginBottom: '16px' }}>
+                {SECTIONS.map((s, i) => (
+                  <button key={s.id} onClick={() => { goTo(s.id); setShowToc(false); }} style={{
+                    display: 'block', width: '100%', textAlign: 'left', padding: '10px 12px', marginBottom: '4px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '14px',
+                    background: activeId === s.id ? c.brandBg : 'transparent', color: activeId === s.id ? c.brand : c.muted,
+                    fontWeight: activeId === s.id ? 700 : 500,
+                  }}>{i + 1}. {s.title}</button>
+                ))}
+              </div>
+            )}
           </div>
-        </aside>
+        ) : (
+          <aside style={{ flex: '0 0 240px', position: 'sticky', top: '90px', minWidth: '220px' }}>
+            <div style={{ background: c.card, borderRadius: '14px', border: `1px solid ${c.border}`, padding: '18px', boxShadow: '0 4px 20px rgba(124,58,237,0.06)' }}>
+              <div style={{ fontSize: '12px', fontWeight: 700, color: c.muted, textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: '12px' }}>Daftar Isi</div>
+              {SECTIONS.map((s, i) => (
+                <button key={s.id} onClick={() => goTo(s.id)} style={{
+                  display: 'block', width: '100%', textAlign: 'left', padding: '8px 10px', marginBottom: '4px', borderRadius: '8px', border: 'none', cursor: 'pointer', fontFamily: 'inherit', fontSize: '13px',
+                  background: activeId === s.id ? c.brandBg : 'transparent', color: activeId === s.id ? c.brand : c.muted,
+                  fontWeight: activeId === s.id ? 700 : 500, transition: 'all 0.15s',
+                }}>{i + 1}. {s.title}</button>
+              ))}
+            </div>
+          </aside>
+        )}
 
         <div style={{ flex: 1, minWidth: '300px' }}>
           {SECTIONS.map((s, i) => (

@@ -19,7 +19,7 @@ import { supabase } from '../../lib/supabaseClient';
 
 function BannerInner({ b, timeLeft, router }) {
   return (
-    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '28px', background: b.bg_color || 'linear-gradient(120deg,#2563EB 0%,#4F46E5 100%)', padding: '34px 40px', flexWrap: 'wrap', overflow: 'hidden', minHeight: '210px', height: '100%', borderRadius: '24px' }}>
+    <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '28px', background: b.bg_color || 'linear-gradient(120deg,#1E1B3A 0%,#2D2850 50%,#1A2540 100%)', padding: '34px 40px', flexWrap: 'wrap', overflow: 'hidden', minHeight: '210px', height: '100%', borderRadius: '24px' }}>
       <div style={{ position: 'absolute', top: '-60px', right: '-40px', width: '220px', height: '220px', borderRadius: '50%', background: 'rgba(255,255,255,0.10)' }} />
       <div style={{ position: 'absolute', bottom: '-80px', left: '28%', width: '180px', height: '180px', borderRadius: '50%', background: 'rgba(255,255,255,0.07)' }} />
 
@@ -101,7 +101,7 @@ export default function PromoBanner() {
 
   return (
     <div style={{ padding: '28px 24px 0', maxWidth: '1400px', width: '100%', margin: '0 auto' }}>
-      <div style={{ position: 'relative', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 18px 44px rgba(37,99,235,0.22)' }}>
+      <div style={{ position: 'relative', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 18px 44px rgba(10,8,30,0.28)' }}>
 
         {/* Stage crossfade: pengukur tinggi (tak terlihat) + lapisan animasi (absolute) */}
         <div style={{ position: 'relative' }}>

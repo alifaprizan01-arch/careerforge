@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { supabase } from '../../lib/supabaseClient';
+import { jsPDF } from 'jspdf';
 import { useUser } from '../../lib/userContext';
 import Sidebar from '../components/Sidebar';
 
@@ -137,6 +138,7 @@ export default function CVBuilderPage() {
   const [form, setForm] = useState(emptyCV);
   const [activeSection, setActiveSection] = useState('personal');
   const [saving, setSaving] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [loading, setLoading] = useState(true);
   const [msg, setMsg] = useState('');
   const [showPreview, setShowPreview] = useState(false);
@@ -159,19 +161,126 @@ export default function CVBuilderPage() {
     setSaving(true);
     try {
       const payload = { ...form, user_id: user.id, updated_at: new Date().toISOString() };
+      delete payload.id;          // id ditentukan via .eq (update) atau otomatis (insert)
+      delete payload.created_at;  // biarkan database yang mengatur
       if (selectedCV?.id) {
-        await supabase.from('user_cvs').update(payload).eq('id', selectedCV.id);
-        setCvList(prev => prev.map(c => c.id === selectedCV.id ? { ...c, ...payload } : c));
+        const { error } = await supabase.from('user_cvs').update(payload).eq('id', selectedCV.id);
+        if (error) throw error;
+        setCvList(prev => prev.map(c => c.id === selectedCV.id ? { ...c, ...payload, id: selectedCV.id } : c));
         setMsg('✓ CV berhasil disimpan!');
       } else {
-        const { data } = await supabase.from('user_cvs').insert([payload]).select().single();
+        const { data, error } = await supabase.from('user_cvs').insert([payload]).select().single();
+        if (error) throw error;
         setCvList(prev => [data, ...prev]);
         setSelectedCV(data);
+        setForm(data);
         setMsg('✓ CV berhasil dibuat!');
       }
       setTimeout(() => setMsg(''), 3000);
-    } catch (e) { setMsg('Gagal menyimpan: ' + e.message); }
+    } catch (e) { setMsg('Gagal menyimpan: ' + (e.message || e)); }
     finally { setSaving(false); }
+  };
+
+  const exportToDocuments = async () => {
+    setExporting(true);
+    try {
+      const docPdf = new jsPDF({ unit: 'pt', format: 'a4' });
+      const pageW = docPdf.internal.pageSize.getWidth();
+      const pageH = docPdf.internal.pageSize.getHeight();
+      const margin = 48;
+      const maxW = pageW - margin * 2;
+      let y = margin;
+      const ensure = (h) => { if (y + h > pageH - margin) { docPdf.addPage(); y = margin; } };
+      const line = (str, size, style, color, gap) => {
+        if (str === undefined || str === null || str === '') return;
+        docPdf.setFont('helvetica', style || 'normal');
+        docPdf.setFontSize(size);
+        docPdf.setTextColor(color ? color[0] : 15, color ? color[1] : 23, color ? color[2] : 42);
+        const lines = docPdf.splitTextToSize(String(str), maxW);
+        lines.forEach(ln => { ensure(size + (gap || 4)); docPdf.text(ln, margin, y); y += size + (gap || 4); });
+      };
+      const section = (title) => {
+        y += 10; ensure(24);
+        docPdf.setFont('helvetica', 'bold'); docPdf.setFontSize(12); docPdf.setTextColor(124, 58, 237);
+        docPdf.text(String(title).toUpperCase(), margin, y); y += 6;
+        docPdf.setDrawColor(124, 58, 237); docPdf.setLineWidth(1); docPdf.line(margin, y, margin + maxW, y); y += 14;
+      };
+
+      line(form.full_name || 'Nama Lengkap', 22, 'bold');
+      line(form.job_title, 13, 'normal', [100, 116, 139], 5);
+      const contact = [form.email, form.phone, form.location, form.website, form.linkedin].filter(Boolean).join('   |   ');
+      line(contact, 9, 'normal', [100, 116, 139], 4);
+
+      if (form.summary) { section('Ringkasan'); line(form.summary, 10, 'normal', [71, 85, 105], 4); }
+
+      if (form.experience?.length) {
+        section('Pengalaman');
+        form.experience.forEach(exp => {
+          line(exp.position, 11, 'bold');
+          const meta = [exp.company, [exp.start_date, exp.current ? 'Sekarang' : exp.end_date].filter(Boolean).join(' - ')].filter(Boolean).join('   |   ');
+          line(meta, 9, 'italic', [100, 116, 139], 3);
+          line(exp.description, 10, 'normal', [71, 85, 105], 3);
+          y += 6;
+        });
+      }
+
+      if (form.education?.length) {
+        section('Pendidikan');
+        form.education.forEach(edu => {
+          line([edu.degree, edu.field].filter(Boolean).join(' - '), 11, 'bold');
+          const meta = [edu.institution, [edu.start_date, edu.end_date].filter(Boolean).join(' - '), edu.gpa ? ('GPA: ' + edu.gpa) : ''].filter(Boolean).join('   |   ');
+          line(meta, 9, 'italic', [100, 116, 139], 3);
+          y += 6;
+        });
+      }
+
+      if (form.skills?.length) {
+        section('Keahlian');
+        line(form.skills.map(s => s.level ? (s.name + ' (' + s.level + ')') : s.name).filter(Boolean).join(', '), 10, 'normal', [71, 85, 105], 4);
+      }
+
+      if (form.languages?.length) {
+        section('Bahasa');
+        line(form.languages.map(l => l.proficiency ? (l.language + ' (' + l.proficiency + ')') : l.language).filter(Boolean).join(', '), 10, 'normal', [71, 85, 105], 4);
+      }
+
+      if (form.certifications?.length) {
+        section('Sertifikasi');
+        form.certifications.forEach(cert => {
+          line(cert.name, 11, 'bold');
+          line([cert.issuer, cert.date].filter(Boolean).join('   |   '), 9, 'italic', [100, 116, 139], 3);
+          y += 4;
+        });
+      }
+
+      if (form.projects?.length) {
+        section('Proyek');
+        form.projects.forEach(proj => {
+          line(proj.name || proj.title, 11, 'bold');
+          line(proj.description, 10, 'normal', [71, 85, 105], 3);
+          y += 4;
+        });
+      }
+
+      const blob = docPdf.output('blob');
+      const fileName = `cv_${user.id}_${Date.now()}.pdf`;
+      const { error: upErr } = await supabase.storage.from('documents').upload(fileName, blob, { upsert: true, contentType: 'application/pdf' });
+      if (upErr) throw upErr;
+      const { data: urlData } = supabase.storage.from('documents').getPublicUrl(fileName);
+      const { error: insErr } = await supabase.from('user_documents').insert([{
+        user_id: user.id,
+        name: (form.title || ('CV ' + (form.full_name || ''))).trim(),
+        file_url: urlData.publicUrl,
+        file_type: 'application/pdf',
+        file_size: blob.size,
+        doc_category: 'cv',
+        description: 'Diekspor dari CV Builder',
+      }]);
+      if (insErr) throw insErr;
+      setMsg('✓ CV diekspor ke Dokumen sebagai PDF!');
+      setTimeout(() => setMsg(''), 3500);
+    } catch (e) { setMsg('Gagal ekspor PDF: ' + (e.message || e)); }
+    finally { setExporting(false); }
   };
 
   const createNewCV = () => {
@@ -254,6 +363,11 @@ export default function CVBuilderPage() {
             <button onClick={() => setShowPreview(!showPreview)}
               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', height: '38px', padding: '0 16px', borderRadius: '9px', border: `1px solid ${showPreview ? 'var(--border-brand)' : 'var(--border-default)'}`, background: showPreview ? 'var(--surface-brand)' : 'var(--surface-primary)', color: showPreview ? 'var(--text-brand)' : 'var(--text-secondary)', fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontWeight: 600, transition: 'all 0.15s' }}>
               {showPreview ? '✏️ Edit' : '👁️ Preview'}
+            </button>
+            <button onClick={exportToDocuments} disabled={exporting || !selectedCV?.id}
+              title={!selectedCV?.id ? 'Simpan CV dulu sebelum ekspor' : 'Ekspor PDF ke halaman Dokumen'}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', height: '38px', padding: '0 16px', borderRadius: '9px', border: '1px solid var(--border-default)', background: 'var(--surface-primary)', color: 'var(--text-secondary)', fontSize: '13px', cursor: (exporting || !selectedCV?.id) ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-sans)', fontWeight: 600, opacity: (exporting || !selectedCV?.id) ? 0.55 : 1 }}>
+              {exporting ? '⏳ Mengekspor...' : '📄 Ekspor PDF ke Dokumen'}
             </button>
             <motion.button whileTap={{ scale: 0.97 }} whileHover={{ y: -1 }} onClick={handleSave} disabled={saving}
               style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', height: '38px', padding: '0 20px', borderRadius: '9px', border: 'none', background: saving ? '#93C5FD' : 'var(--brand-600)', color: '#fff', fontWeight: 700, fontSize: '13px', cursor: saving ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-sans)', boxShadow: 'var(--shadow-brand)' }}>

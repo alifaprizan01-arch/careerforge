@@ -33,6 +33,9 @@ function ChatPageInner() {
   const [allUsers, setAllUsers] = useState([]);
   const [searchUser, setSearchUser] = useState('');
   const [showNewChat, setShowNewChat] = useState(false);
+  const [searchConv, setSearchConv] = useState('');
+  const [deleteConvConfirm, setDeleteConvConfirm] = useState(null);
+  const [deletingConv, setDeletingConv] = useState(false);
   const [unreadCounts, setUnreadCounts] = useState({});
 
   const messagesEndRef = useRef(null);
@@ -191,6 +194,7 @@ function ChatPageInner() {
     } catch (e) {
       setMessages(prev => prev.filter(m => m.id !== tempMsg.id));
       setInput(content);
+      console.error('Gagal mengirim pesan:', e);
     } finally { setSending(false); }
   };
 
@@ -203,6 +207,18 @@ function ChatPageInner() {
   const handleBackToList = () => {
     setSelectedConv(null);
     setMessages([]);
+  };
+
+  const deleteConversation = async (conv) => {
+    setDeletingConv(true);
+    try {
+      await supabase.from('messages').delete().eq('conversation_id', conv.id);
+      await supabase.from('conversations').delete().eq('id', conv.id);
+      setConversations(prev => prev.filter(c => c.id !== conv.id));
+      if (selectedConv?.id === conv.id) { setSelectedConv(null); setMessages([]); }
+    } catch(e) { console.error(e); }
+    setDeletingConv(false);
+    setDeleteConvConfirm(null);
   };
 
   const getRoleLabel = (role) => {
@@ -257,8 +273,9 @@ function ChatPageInner() {
             <div style={{ padding: '12px', borderBottom: '1px solid var(--border-subtle)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--surface-secondary)', borderRadius: '8px', padding: '8px 12px', border: '1px solid var(--border-default)' }}>
                 <span style={{ color: 'var(--text-tertiary)', fontSize: '14px' }}>🔍</span>
-                <input placeholder="Cari percakapan..."
+                <input value={searchConv} onChange={e => setSearchConv(e.target.value)} placeholder="Cari percakapan..."
                   style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '13px', flex: 1, color: 'var(--text-primary)', fontFamily: 'var(--font-sans)' }} />
+                {searchConv && <button onClick={() => setSearchConv('')} style={{ background: 'none', border: 'none', color: 'var(--text-tertiary)', cursor: 'pointer', fontSize: '16px', padding: 0, lineHeight: 1 }}>×</button>}
               </div>
             </div>
 
@@ -274,15 +291,18 @@ function ChatPageInner() {
                   <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '12px' }}>Belum ada percakapan</p>
                   <button onClick={() => setShowNewChat(true)} style={{ padding: '7px 16px', borderRadius: '8px', border: 'none', background: 'var(--brand-600)', color: '#fff', fontWeight: 600, fontSize: '12px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>Mulai Chat</button>
                 </div>
-              ) : conversations.map((conv, i) => {
+              ) : conversations.filter(c =>
+                !searchConv || c.other_user?.full_name?.toLowerCase().includes(searchConv.toLowerCase())
+              ).map((conv, i) => {
                 const isSelected = selectedConv?.id === conv.id;
                 const unread = unreadCounts[conv.id] || 0;
                 return (
-                  <motion.div key={conv.id} onClick={() => selectConversation(conv)}
+                  <motion.div key={conv.id}
                     initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} transition={{ delay: i * 0.04 }}
-                    style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px', cursor: 'pointer', borderBottom: '1px solid var(--border-subtle)', background: isSelected ? 'var(--surface-brand)' : 'transparent', transition: 'background 0.15s', borderLeft: `3px solid ${isSelected ? 'var(--brand-600)' : 'transparent'}` }}
-                    onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'var(--surface-secondary)'; }}
-                    onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent'; }}>
+                    style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '12px 14px', borderBottom: '1px solid var(--border-subtle)', background: isSelected ? 'var(--surface-brand)' : 'transparent', transition: 'background 0.15s', borderLeft: `3px solid ${isSelected ? 'var(--brand-600)' : 'transparent'}`, position: 'relative' }}
+                    onMouseEnter={e => { if (!isSelected) e.currentTarget.style.background = 'var(--surface-secondary)'; e.currentTarget.querySelector('.del-btn')?.style && (e.currentTarget.querySelector('.del-btn').style.opacity = '1'); }}
+                    onMouseLeave={e => { if (!isSelected) e.currentTarget.style.background = 'transparent'; e.currentTarget.querySelector('.del-btn')?.style && (e.currentTarget.querySelector('.del-btn').style.opacity = '0'); }}
+                    onClick={() => selectConversation(conv)}>
                     <div style={{ position: 'relative', flexShrink: 0 }}>
                       {conv.other_user?.avatar_url ? (
                         <img src={conv.other_user.avatar_url} style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover', border: '2px solid var(--border-default)' }} />
@@ -304,6 +324,11 @@ function ChatPageInner() {
                         {conv.last_message || 'Mulai percakapan'}
                       </p>
                     </div>
+                    {/* Tombol hapus conversation */}
+                    <button className="del-btn" onClick={e => { e.stopPropagation(); setDeleteConvConfirm(conv); }}
+                      style={{ opacity: 0, position: 'absolute', right: '10px', top: '50%', transform: 'translateY(-50%)', width: '28px', height: '28px', borderRadius: '6px', border: '1px solid #FECACA', background: '#FEF2F2', color: '#DC2626', fontSize: '13px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'opacity 0.15s', flexShrink: 0 }}>
+                      🗑️
+                    </button>
                   </motion.div>
                 );
               })}
@@ -434,6 +459,36 @@ function ChatPageInner() {
             )}
           </div>
         </div>
+
+        {/* Modal Hapus Conversation */}
+        <AnimatePresence>
+          {deleteConvConfirm && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+              onClick={() => !deletingConv && setDeleteConvConfirm(null)}
+              style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.55)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+              <motion.div initial={{ scale: 0.92 }} animate={{ scale: 1 }} exit={{ scale: 0.92 }}
+                onClick={e => e.stopPropagation()}
+                style={{ background: 'var(--surface-primary)', borderRadius: '18px', padding: '28px', maxWidth: '380px', width: '100%', boxShadow: '0 20px 60px rgba(0,0,0,0.3)', fontFamily: 'var(--font-sans)' }}>
+                <div style={{ width: '52px', height: '52px', borderRadius: '50%', background: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', marginBottom: '16px' }}>🗑️</div>
+                <h3 style={{ fontSize: '17px', fontWeight: 800, color: 'var(--text-primary)', marginBottom: '8px' }}>Hapus percakapan ini?</h3>
+                <p style={{ fontSize: '13px', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+                  Percakapan dengan <strong style={{ color: 'var(--text-primary)' }}>{deleteConvConfirm.other_user?.full_name}</strong> akan dihapus.
+                </p>
+                <div style={{ padding: '10px 14px', background: '#FEF2F2', border: '1px solid #FECACA', borderRadius: '8px', marginBottom: '24px' }}>
+                  <p style={{ fontSize: '12px', color: '#DC2626', margin: 0, fontWeight: 500 }}>⚠️ Semua pesan dalam percakapan ini akan terhapus permanen.</p>
+                </div>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button onClick={() => setDeleteConvConfirm(null)} disabled={deletingConv}
+                    style={{ flex: 1, padding: '11px', borderRadius: '10px', border: '1px solid var(--border-default)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer', fontFamily: 'var(--font-sans)', fontSize: '14px', fontWeight: 600 }}>Batal</button>
+                  <motion.button whileTap={{ scale: 0.97 }} onClick={() => deleteConversation(deleteConvConfirm)} disabled={deletingConv}
+                    style={{ flex: 1, padding: '11px', borderRadius: '10px', border: 'none', background: deletingConv ? '#FCA5A5' : '#DC2626', color: '#fff', fontWeight: 700, cursor: deletingConv ? 'not-allowed' : 'pointer', fontFamily: 'var(--font-sans)', fontSize: '14px' }}>
+                    {deletingConv ? 'Menghapus...' : 'Ya, Hapus'}
+                  </motion.button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* New Chat Modal */}
         <AnimatePresence>

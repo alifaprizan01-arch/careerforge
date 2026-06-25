@@ -179,11 +179,11 @@ export default function AdminBannerPage() {
               <h3 style={{ fontSize: '17px', fontWeight: 800, color: c.text, marginBottom: '16px' }}>{editItem ? '✏️ Edit Banner' : '➕ Tambah Banner'}</h3>
               <div style={{ marginBottom: '18px' }}><Preview b={form} cardBg={c.card} cardText={c.text} /></div>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                <div><label style={lbl}>Judul *</label><input style={inp} value={form.title} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Hemat 25% untuk satu tahun pembelajaran" /></div>
-                <div><label style={lbl}>Subjudul</label><input style={inp} value={form.subtitle} onChange={e => setForm({ ...form, subtitle: e.target.value })} placeholder="Deskripsi singkat promo..." /></div>
+                <div><label style={lbl}>Judul *</label><input style={inp} value={form.title ?? ''} onChange={e => setForm({ ...form, title: e.target.value })} placeholder="Hemat 25% untuk satu tahun pembelajaran" /></div>
+                <div><label style={lbl}>Subjudul</label><input style={inp} value={form.subtitle ?? ''} onChange={e => setForm({ ...form, subtitle: e.target.value })} placeholder="Deskripsi singkat promo..." /></div>
                 <div style={{ display: 'flex', gap: '12px' }}>
-                  <div style={{ flex: 1 }}><label style={lbl}>Teks Tombol</label><input style={inp} value={form.button_text} onChange={e => setForm({ ...form, button_text: e.target.value })} placeholder="Hemat sekarang" /></div>
-                  <div style={{ flex: 1 }}><label style={lbl}>Link Tombol</label><input style={inp} value={form.button_link} onChange={e => setForm({ ...form, button_link: e.target.value })} placeholder="/pelatihan" /></div>
+                  <div style={{ flex: 1 }}><label style={lbl}>Teks Tombol</label><input style={inp} value={form.button_text ?? ''} onChange={e => setForm({ ...form, button_text: e.target.value })} placeholder="Hemat sekarang" /></div>
+                  <div style={{ flex: 1 }}><label style={lbl}>Link Tombol</label><input style={inp} value={form.button_link ?? ''} onChange={e => setForm({ ...form, button_link: e.target.value })} placeholder="/pelatihan" /></div>
                 </div>
                 <div>
                   <label style={lbl}>Warna / Gradien Latar</label>
@@ -192,7 +192,7 @@ export default function AdminBannerPage() {
                       <button key={p} onClick={() => setForm({ ...form, bg_color: p })} style={{ width: '40px', height: '28px', borderRadius: '8px', cursor: 'pointer', background: p, border: form.bg_color === p ? `2px solid ${c.text}` : `1px solid ${c.border}` }} />
                     ))}
                   </div>
-                  <input style={inp} value={form.bg_color} onChange={e => setForm({ ...form, bg_color: e.target.value })} placeholder="warna CSS atau linear-gradient(...)" />
+                  <input style={inp} value={form.bg_color ?? ''} onChange={e => setForm({ ...form, bg_color: e.target.value })} placeholder="warna CSS atau linear-gradient(...)" />
                 </div>
                 <div>
                   <label style={lbl}>Gambar Banner</label>

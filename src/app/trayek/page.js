@@ -7,8 +7,8 @@ import { supabase } from '../../lib/supabaseClient';
 import { useUser } from '../../lib/userContext';
 import { useTheme } from '../../lib/themeContext';
 import Sidebar from '../components/Sidebar';
-import { useSidebar } from '../../lib/sidebarContext';
 import { useLang } from '../../lib/langContext';
+import { useSidebar } from '../../lib/sidebarContext';
 
 function useIsMobile(breakpoint = 768) {
   const [isMobile, setIsMobile] = useState(false);
@@ -35,8 +35,8 @@ export default function LowonganPage() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [typeFilter, setTypeFilter] = useState('Semua');
-  const { isOpen: sidebarOpen, toggle: toggleSidebar } = useSidebar();
   const { t } = useLang();
+  const { isOpen: sidebarOpen } = useSidebar();
   const [activeTab, setActiveTab] = useState('deskripsi'); // deskripsi | kualifikasi | perusahaan
 
   // Tema Dinamis Premium
@@ -138,7 +138,6 @@ export default function LowonganPage() {
         {/* HEADER & FILTER SECTIONS */}
         <header style={{ padding: isMobile ? '16px' : '24px', borderBottom: `1px solid ${theme.border}`, display: 'flex', flexDirection: 'column', gap: '16px', position: 'sticky', top: 0, backgroundColor: theme.white, zIndex: 10 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-            <button onClick={toggleSidebar} style={{ background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: theme.darkText, flexShrink: 0 }}>☰</button>
             <h1 style={{ fontSize: isMobile ? '19px' : '24px', fontWeight: 800, letterSpacing: '-0.02em' }}>{t('Lowongan Karier')}</h1>
           </div>
 

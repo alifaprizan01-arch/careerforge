@@ -46,11 +46,7 @@ export default function CompanyDashboard() {
     if (error) { console.error(error); return; }
     const next = recentApps.map(a => a.id === id ? { ...a, status } : a);
     setRecentApps(next);
-    setStats(s => ({
-      ...s,
-      menunggu: next.filter(a => a.status === 'Menunggu').length,
-      diterima: next.filter(a => a.status === 'Diterima').length,
-    }));
+    setStats(s => ({ ...s, menunggu: next.filter(a => a.status === 'Menunggu').length, diterima: next.filter(a => a.status === 'Diterima').length }));
   };
 
   const bg = isDark ? '#0F172A' : '#F8FAFC';
@@ -72,7 +68,7 @@ export default function CompanyDashboard() {
       {/* Header */}
       <div style={{ background: card, borderBottom: `1px solid ${border}`, padding: '0 32px', display: 'flex', alignItems: 'center', height: '64px', gap: '16px', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginRight: 'auto' }}>
-          <div style={{ width: '32px', height: '32px', background: 'linear-gradient(135deg,#EA580C,#C2410C)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 800, fontSize: '13px' }}>CF</div>
+          <img src="/logo.jpeg" alt="SiapKerja.id" style={{ width: '32px', height: '32px', borderRadius: '8px', objectFit: 'cover' }} />
           <div>
             <div style={{ fontWeight: 800, fontSize: '14px', color: text, letterSpacing: '-0.01em' }}>SiapKerja.id</div>
             <div style={{ fontSize: '10px', color: muted, fontWeight: 500, letterSpacing: '0.04em' }}>PORTAL PERUSAHAAN</div>
@@ -135,7 +131,6 @@ export default function CompanyDashboard() {
 
         {/* Recent data */}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
-          {/* Recent apps */}
           <div style={{ background: card, borderRadius: '12px', border: `1px solid ${border}`, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
             <div style={{ padding: '16px 20px', borderBottom: `1px solid ${border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ fontSize: '14px', fontWeight: 700, color: text }}>Pelamar Terbaru</h3>
@@ -173,7 +168,6 @@ export default function CompanyDashboard() {
             ))}
           </div>
 
-          {/* My jobs */}
           <div style={{ background: card, borderRadius: '12px', border: `1px solid ${border}`, overflow: 'hidden', boxShadow: '0 1px 3px rgba(0,0,0,0.06)' }}>
             <div style={{ padding: '16px 20px', borderBottom: `1px solid ${border}`, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h3 style={{ fontSize: '14px', fontWeight: 700, color: text }}>Lowongan Aktif</h3>

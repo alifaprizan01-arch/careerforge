@@ -56,13 +56,14 @@ export default function PelatihanDetailPage({ params }) {
         supabase.from('trainings').select('*, training_categories(name)').eq('id', trainingId).single(),
         supabase.from('training_modules').select('*').eq('training_id', trainingId).order('order_index'),
         supabase.from('user_trainings').select('*').eq('user_id', user.id).eq('training_id', trainingId).single(),
-        supabase.from('user_module_progress').select('*').eq('user_id', user.id).eq('training_id', trainingId),
+        supabase.from('user_module_progress').select('*').eq('user_id', user.id),
       ]);
       setTraining(tr);
       setModules(mods || []);
       setUserTraining(ut);
+      const moduleIds = new Set((mods || []).map(m => m.id));
       const progressMap = {};
-      (mp || []).forEach(p => { progressMap[p.module_id] = p; });
+      (mp || []).filter(p => moduleIds.has(p.module_id)).forEach(p => { progressMap[p.module_id] = p; });
       setModuleProgress(progressMap);
       if (mods?.length > 0) {
         const firstIncomplete = mods.find(m => !progressMap[m.id]?.is_completed) || mods[0];
@@ -110,20 +111,32 @@ export default function PelatihanDetailPage({ params }) {
 
   const markModuleComplete = async (moduleId) => {
     try {
-      const { data } = await supabase.from('user_module_progress').upsert({
-        user_id: user.id, module_id: moduleId, training_id: trainingId,
+      const { data, error } = await supabase.from('user_module_progress').upsert({
+        user_id: user.id, module_id: moduleId,
         is_completed: true, completed_at: new Date().toISOString(),
       }, { onConflict: 'user_id,module_id' }).select().single();
+
+      if (error || !data) {
+        console.error('Gagal menyimpan progres modul:', error);
+        setMsg('⚠ Gagal menyimpan progres. Coba lagi.');
+        setTimeout(() => setMsg(''), 3000);
+        return;
+      }
+
       setModuleProgress(prev => ({ ...prev, [moduleId]: data }));
       // Update overall progress
-      const completedCount = Object.values({ ...moduleProgress, [moduleId]: { is_completed: true } }).filter(p => p.is_completed).length;
+      const completedCount = Object.values({ ...moduleProgress, [moduleId]: { is_completed: true } }).filter(p => p?.is_completed).length;
       const totalModules = modules.length;
       const progress = totalModules > 0 ? Math.round((completedCount / totalModules) * 100) : 0;
       await supabase.from('user_trainings').update({ progress, ...(progress >= 100 ? { completed_at: new Date().toISOString() } : {}) }).eq('user_id', user.id).eq('training_id', trainingId);
       setUserTraining(prev => ({ ...prev, progress }));
       setMsg('✓ Modul selesai!');
       setTimeout(() => setMsg(''), 3000);
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      console.error(e);
+      setMsg('⚠ Gagal menyimpan progres. Coba lagi.');
+      setTimeout(() => setMsg(''), 3000);
+    }
   };
 
   const submitQuiz = async (force = false) => {
@@ -202,7 +215,7 @@ export default function PelatihanDetailPage({ params }) {
     return match ? `https://www.youtube.com/embed/${match[1]}` : url;
   };
 
-  const completedModules = Object.values(moduleProgress).filter(p => p.is_completed).length;
+  const completedModules = Object.values(moduleProgress).filter(p => p?.is_completed).length;
   const overallProgress = modules.length > 0 ? Math.round((completedModules / modules.length) * 100) : 0;
   const maxAttempts = activeModule?.quiz_max_attempts || 0; // 0 = tak terbatas
   const attemptsUsed = quizAttempts.length;

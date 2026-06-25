@@ -72,13 +72,13 @@ export default function AdminMentorPage() {
     try {
       await supabase.from('mentors').update({ status: 'approved', availability: 'Tersedia', is_available: true }).eq('id', mentor.id);
       // Update role user jadi mentor
-      if (mentor.user_id) {
-        await supabase.from('users').update({ role: 'mentor' }).eq('id', mentor.user_id);
+      if (mentor.user_id_ref) {
+        await supabase.from('users').update({ role: 'mentor' }).eq('id', mentor.user_id_ref);
       }
       // Kirim notifikasi
-      if (mentor.user_id) {
+      if (mentor.user_id_ref) {
         await supabase.from('notifications').insert([{
-          user_id: mentor.user_id,
+          user_id: mentor.user_id_ref,
           title: 'Selamat! Pendaftaran Mentor Disetujui 🎉',
           message: 'Permohonanmu sebagai mentor telah disetujui. Akun mentormu kini aktif!',
           type: 'mentor_approved',
@@ -96,9 +96,9 @@ export default function AdminMentorPage() {
     try {
       await supabase.from('mentors').update({ status: 'rejected', availability: 'Tidak Tersedia', is_available: false }).eq('id', mentor.id);
       // Kirim notifikasi
-      if (mentor.user_id) {
+      if (mentor.user_id_ref) {
         await supabase.from('notifications').insert([{
-          user_id: mentor.user_id,
+          user_id: mentor.user_id_ref,
           title: 'Pendaftaran Mentor Tidak Disetujui',
           message: 'Maaf, permohonanmu sebagai mentor belum dapat kami setujui saat ini.',
           type: 'mentor_rejected',
@@ -175,7 +175,7 @@ export default function AdminMentorPage() {
         status: 'approved',          // ← admin langsung approved
         rating: 0, total_reviews: 0, rating_avg: 0,
         is_available: true,
-        user_id: null,               // mentor manual, tidak terkait user
+        user_id_ref: null,           // mentor manual, tidak terkait user
       }]);
       if (error) throw error;
       flash('✓ Mentor baru berhasil ditambahkan.');

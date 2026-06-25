@@ -8,6 +8,16 @@ import { useUser } from '../../../lib/userContext';
 import { useTheme } from '../../../lib/themeContext';
 import PageTransition from '../../components/PageTransition';
 
+function useIsMobile(bp = 768) {
+  const [m, setM] = useState(false);
+  useEffect(() => {
+    const check = () => setM(window.innerWidth < bp);
+    check(); window.addEventListener('resize', check);
+    return () => window.removeEventListener('resize', check);
+  }, [bp]);
+  return m;
+}
+
 export default function MentorBookingsPage() {
   const router = useRouter();
   const { user, loaded } = useUser();
@@ -21,6 +31,9 @@ export default function MentorBookingsPage() {
   const [rejectionReason, setRejectionReason] = useState('');
   const [saving, setSaving] = useState(null);
   const [msg, setMsg] = useState('');
+  const [msgType, setMsgType] = useState('success');
+  const isMobile = useIsMobile();
+  const [showDetail, setShowDetail] = useState(false);
 
   useEffect(() => { if (loaded && !user) router.push('/auth'); }, [loaded, user]);
   useEffect(() => {
@@ -55,14 +68,15 @@ export default function MentorBookingsPage() {
       }
       setBookings(prev => prev.map(b => b.id === id ? { ...b, ...updates } : b));
       if (selected?.id === id) setSelected(prev => ({ ...prev, ...updates }));
-      setMsg('Berhasil diperbarui!');
+      setMsg('Berhasil diperbarui!'); setMsgType('success');
       setTimeout(() => setMsg(''), 3000);
-    } catch (e) { setMsg('Gagal: ' + e.message); }
+    } catch (e) { setMsg('Gagal: ' + e.message); setMsgType('error'); }
     finally { setSaving(null); }
   };
 
   const confirmBooking = async (b) => {
-    if (!meetingLink.trim()) { setMsg('Masukkan link meeting terlebih dahulu.'); return; }
+    if (!meetingLink.trim()) { setMsg('Masukkan link meeting terlebih dahulu.'); setMsgType('error'); return; }
+    if (!meetingLink.startsWith('http')) { setMsg('Link meeting harus diawali dengan http:// atau https://'); setMsgType('error'); return; }
     await updateBooking(b.id, { status: 'Dikonfirmasi', meeting_link: meetingLink },
       `Sesi mentoring kamu dengan ${mentorData?.full_name} pada ${new Date(b.booking_date + 'T00:00:00').toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long' })} pukul ${b.booking_time} telah DIKONFIRMASI! 🎉\n\nLink Meeting: ${meetingLink}`
     );
@@ -119,9 +133,9 @@ export default function MentorBookingsPage() {
         <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px' }}>{bookings.length} total booking</span>
       </div>
 
-      <main style={{ padding: '20px 24px', maxWidth: '1400px', margin: '0 auto' }}>
+      <main style={{ padding: isMobile ? '16px' : '20px 24px', maxWidth: '1400px', margin: '0 auto' }}>
         <PageTransition>
-          {msg && <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ padding: '12px 16px', background: c.greenLight, border: `1px solid ${c.green}44`, borderRadius: '8px', color: c.green, marginBottom: '16px', fontSize: '13px' }}>{msg}</motion.div>}
+          {msg && <motion.div initial={{ opacity: 0, y: -10 }} animate={{ opacity: 1, y: 0 }} style={{ padding: '12px 16px', background: msgType === 'error' ? (isDark ? '#450A0A' : '#FEF2F2') : c.greenLight, border: `1px solid ${msgType === 'error' ? '#DC262644' : c.green + '44'}`, borderRadius: '8px', color: msgType === 'error' ? (isDark ? '#F87171' : '#DC2626') : c.green, marginBottom: '16px', fontSize: '13px', fontWeight: 500 }}>{msgType === 'error' ? '⚠️ ' : '✅ '}{msg}</motion.div>}
 
           {/* Filter tabs */}
           <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', flexWrap: 'wrap' }}>
@@ -138,9 +152,9 @@ export default function MentorBookingsPage() {
             })}
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '380px 1fr', gap: '16px', alignItems: 'start' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '380px 1fr', gap: '16px', alignItems: 'start' }}>
             {/* Booking list */}
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
+            <div style={{ display: isMobile && showDetail ? 'none' : 'flex', flexDirection: 'column', gap: '8px', maxHeight: isMobile ? 'auto' : 'calc(100vh - 200px)', overflowY: isMobile ? 'visible' : 'auto' }}>
               {loading ? <p style={{ color: c.muted, padding: '20px', textAlign: 'center' }}>Memuat...</p> :
               filtered.length === 0 ? (
                 <div style={{ background: c.card, borderRadius: '12px', border: `1px solid ${c.border}`, padding: '40px', textAlign: 'center' }}>
@@ -153,7 +167,7 @@ export default function MentorBookingsPage() {
                 const isPast = new Date(b.booking_date) < new Date();
                 return (
                   <motion.div key={b.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: i * 0.04 }}
-                    onClick={() => { setSelected(b); setMeetingLink(b.meeting_link || ''); setRejectionReason(''); }}
+                    onClick={() => { setSelected(b); setMeetingLink(b.meeting_link || ''); setRejectionReason(''); setShowDetail(true); }}
                     whileHover={{ y: -1 }}
                     style={{ background: c.card, borderRadius: '10px', padding: '14px 16px', cursor: 'pointer',
                       border: isSelected ? `2px solid ${c.green}` : `1px solid ${c.border}`,
@@ -179,10 +193,19 @@ export default function MentorBookingsPage() {
             </div>
 
             {/* Detail panel */}
-            {selected ? (
+            {selected && (!isMobile || showDetail) ? (
               <motion.div key={selected.id} initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }}
-                style={{ background: c.card, borderRadius: '12px', border: `1px solid ${c.border}`, overflow: 'hidden', maxHeight: 'calc(100vh - 200px)', overflowY: 'auto' }}>
+                style={{ background: c.card, borderRadius: '12px', border: `1px solid ${c.border}`, overflow: 'hidden', maxHeight: isMobile ? 'none' : 'calc(100vh - 200px)', overflowY: isMobile ? 'visible' : 'auto' }}>
 
+                {/* Back button mobile */}
+                {isMobile && (
+                  <div style={{ padding: '12px 16px', borderBottom: `1px solid ${c.border}` }}>
+                    <button onClick={() => { setShowDetail(false); setSelected(null); }}
+                      style={{ background: 'none', border: 'none', color: c.muted, fontSize: '14px', cursor: 'pointer', fontFamily: 'Inter, sans-serif', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      ← Kembali ke daftar booking
+                    </button>
+                  </div>
+                )}
                 {/* User info */}
                 <div style={{ padding: '20px 24px', borderBottom: `1px solid ${c.border}`, background: isDark ? '#0F172A' : '#F8FAFC' }}>
                   <div style={{ display: 'flex', alignItems: 'flex-start', gap: '14px', marginBottom: '14px' }}>

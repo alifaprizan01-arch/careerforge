@@ -134,8 +134,8 @@ export default function InterviewBanner() {
           position: 'relative', borderRadius: '24px', padding: '48px',
           display: 'flex', justifyContent: 'space-between', alignItems: 'center',
           gap: '40px', flexWrap: 'wrap', color: '#fff', cursor: 'pointer', overflow: 'hidden',
-          background: 'linear-gradient(120deg, #0a5bff 0%, #2f6bff 45%, #5b4bff 100%)',
-          boxShadow: '0 18px 50px rgba(37,99,235,0.32)',
+          background: 'linear-gradient(120deg, #1A1F36 0%, #2D2850 45%, #3B3060 100%)',
+          boxShadow: '0 18px 50px rgba(20,15,40,0.35)',
         }}
       >
         {/* sorotan kursor */}
@@ -145,9 +145,9 @@ export default function InterviewBanner() {
           aria-hidden
           animate={{ x: [0, 30, 0], y: [0, -20, 0] }}
           transition={{ duration: 12, repeat: Infinity, ease: 'easeInOut' }}
-          style={{ position: 'absolute', top: '-120px', right: '8%', width: '300px', height: '300px', borderRadius: '50%', background: 'rgba(255,255,255,0.14)', filter: 'blur(8px)', pointerEvents: 'none' }}
+          style={{ position: 'absolute', top: '-120px', right: '8%', width: '300px', height: '300px', borderRadius: '50%', background: 'rgba(255,255,255,0.06)', filter: 'blur(8px)', pointerEvents: 'none' }}
         />
-        <div aria-hidden style={{ position: 'absolute', bottom: '-90px', left: '-40px', width: '220px', height: '220px', borderRadius: '50%', background: 'rgba(91,75,255,0.45)', pointerEvents: 'none' }} />
+        <div aria-hidden style={{ position: 'absolute', bottom: '-90px', left: '-40px', width: '220px', height: '220px', borderRadius: '50%', background: 'rgba(60,40,120,0.45)', pointerEvents: 'none' }} />
 
         {/* Teks Kiri */}
         <div style={{ flex: '1 1 450px', position: 'relative', zIndex: 1 }}>

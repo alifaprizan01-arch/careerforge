@@ -4,17 +4,17 @@
 
 /* ===== DESIGN TOKENS ===== */
 :root {
-  /* Brand Colors */
-  --brand-50: #F5F3FF;
-  --brand-100: #EDE9FE;
-  --brand-200: #DDD6FE;
-  --brand-300: #C4B5FD;
-  --brand-400: #A78BFA;
-  --brand-500: #8B5CF6;
-  --brand-600: #7C3AED;
-  --brand-700: #6D28D9;
-  --brand-800: #5B21B6;
-  --brand-900: #4C1D95;
+  /* Brand Colors — sedikit lebih doff */
+  --brand-50: #EEEDF7;
+  --brand-100: #E0DEEF;
+  --brand-200: #C8C4E6;
+  --brand-300: #A89ED8;
+  --brand-400: #8A7DC8;
+  --brand-500: #7060B8;
+  --brand-600: #6050A8;
+  --brand-700: #524496;
+  --brand-800: #433882;
+  --brand-900: #362D6A;
 
   /* Neutral */
   --neutral-0: #FFFFFF;
@@ -31,38 +31,38 @@
   --neutral-950: #020617;
 
   /* Semantic */
-  --success-50: #F0FDF4;
-  --success-500: #22C55E;
-  --success-600: #16A34A;
-  --warning-50: #FFFBEB;
-  --warning-500: #F59E0B;
-  --warning-600: #D97706;
-  --error-50: #FEF2F2;
-  --error-500: #EF4444;
-  --error-600: #DC2626;
+  --success-50: #EDFAF3;
+  --success-500: #1EA854;
+  --success-600: #148F42;
+  --warning-50: #FDF8E8;
+  --warning-500: #D98D0A;
+  --warning-600: #C06905;
+  --error-50: #FDF0F0;
+  --error-500: #D93B3B;
+  --error-600: #C42121;
 
-  /* Light mode */
-  --bg-base: var(--neutral-50);
-  --bg-elevated: var(--neutral-0);
-  --bg-sunken: var(--neutral-100);
-  --bg-overlay: rgba(0, 0, 0, 0.5);
+  /* Light mode — warna doff/muted, tidak menyilaukan */
+  --bg-base: #EDEEF0;
+  --bg-elevated: #F2F3F5;
+  --bg-sunken: #E4E5E8;
+  --bg-overlay: rgba(0, 0, 0, 0.45);
 
-  --surface-primary: var(--neutral-0);
-  --surface-secondary: var(--neutral-50);
-  --surface-tertiary: var(--neutral-100);
-  --surface-brand: var(--brand-50);
+  --surface-primary: #F5F6F8;
+  --surface-secondary: #EDEEF0;
+  --surface-tertiary: #E4E5E8;
+  --surface-brand: #EAE8F5;
   --surface-brand-bold: var(--brand-600);
 
-  --border-subtle: var(--neutral-100);
-  --border-default: var(--neutral-200);
-  --border-strong: var(--neutral-300);
+  --border-subtle: #DFE0E3;
+  --border-default: #D4D5D9;
+  --border-strong: #C2C4C9;
   --border-brand: var(--brand-300);
 
-  --text-primary: var(--neutral-900);
-  --text-secondary: var(--neutral-600);
-  --text-tertiary: var(--neutral-400);
-  --text-inverse: var(--neutral-0);
-  --text-brand: var(--brand-600);
+  --text-primary: #1A1B1E;
+  --text-secondary: #52545C;
+  --text-tertiary: #8A8C95;
+  --text-inverse: #F5F6F8;
+  --text-brand: var(--brand-700);
   --text-success: var(--success-600);
   --text-warning: var(--warning-600);
   --text-error: var(--error-600);
@@ -78,7 +78,7 @@
   --shadow-lg: 0 10px 15px rgba(0,0,0,0.06), 0 4px 6px rgba(0,0,0,0.04);
   --shadow-xl: 0 20px 25px rgba(0,0,0,0.06), 0 8px 10px rgba(0,0,0,0.04);
   --shadow-2xl: 0 25px 50px rgba(0,0,0,0.12);
-  --shadow-brand: 0 4px 14px rgba(124,58,237,0.25);
+  --shadow-brand: 0 4px 12px rgba(109,50,212,0.18);
 
   /* Radius */
   --radius-sm: 6px;
@@ -123,7 +123,7 @@
   --surface-primary: var(--neutral-900);
   --surface-secondary: var(--neutral-800);
   --surface-tertiary: var(--neutral-700);
-  --surface-brand: rgba(124,58,237,0.16);
+  --surface-brand: rgba(109,50,212,0.14);
   --surface-brand-bold: var(--brand-500);
 
   --border-subtle: rgba(255,255,255,0.04);
@@ -144,7 +144,7 @@
   --shadow-md: 0 4px 6px rgba(0,0,0,0.25), 0 2px 4px rgba(0,0,0,0.2);
   --shadow-lg: 0 10px 15px rgba(0,0,0,0.3), 0 4px 6px rgba(0,0,0,0.2);
   --shadow-xl: 0 20px 25px rgba(0,0,0,0.35), 0 8px 10px rgba(0,0,0,0.2);
-  --shadow-brand: 0 4px 14px rgba(139,92,246,0.3);
+  --shadow-brand: 0 4px 12px rgba(120,80,220,0.22);
 }
 
 /* ===== BASE ===== */
@@ -197,7 +197,7 @@ h1, h2, h3, h4, h5, h6 {
 .btn-lg { padding: 12px 24px; font-size: var(--text-md); border-radius: var(--radius-lg); }
 
 .btn-primary { background: var(--brand-600); color: #fff; }
-.btn-primary:hover { background: var(--brand-700); box-shadow: var(--shadow-brand); }
+.btn-primary:hover { background: var(--brand-700); box-shadow: 0 4px 10px rgba(109,50,212,0.2); }
 .btn-primary:active { background: var(--brand-800); transform: scale(0.98); }
 
 .btn-secondary { background: var(--surface-secondary); color: var(--text-primary); border: 1px solid var(--border-default); }
@@ -231,12 +231,12 @@ h1, h2, h3, h4, h5, h6 {
   font-size: var(--text-xs); font-weight: var(--font-semibold);
   letter-spacing: 0.01em;
 }
-.badge-blue { background: #EFF6FF; color: #1D4ED8; border: 1px solid #BFDBFE; }
-.badge-green { background: var(--success-50); color: var(--success-600); border: 1px solid #BBF7D0; }
-.badge-yellow { background: var(--warning-50); color: var(--warning-600); border: 1px solid #FDE68A; }
-.badge-red { background: var(--error-50); color: var(--error-600); border: 1px solid #FECACA; }
+.badge-blue { background: #EBF3FF; color: #1A46C0; border: 1px solid #B3CEFA; }
+.badge-green { background: #EDFAF3; color: #148F42; border: 1px solid #A8EEC3; }
+.badge-yellow { background: #FDF8E8; color: #B05D05; border: 1px solid #F5D97A; }
+.badge-red { background: #FDF0F0; color: #B81D1D; border: 1px solid #F5BABA; }
 .badge-gray { background: var(--surface-secondary); color: var(--text-secondary); border: 1px solid var(--border-default); }
-.badge-purple { background: #F5F3FF; color: #7C3AED; border: 1px solid #DDD6FE; }
+.badge-purple { background: #F0EEFF; color: #6430C8; border: 1px solid #CBBEF8; }
 
 [data-theme="dark"] .badge-blue { background: rgba(37,99,235,0.15); color: #93C5FD; border-color: rgba(37,99,235,0.3); }
 [data-theme="dark"] .badge-green { background: rgba(34,197,94,0.12); color: #4ADE80; border-color: rgba(34,197,94,0.3); }
@@ -414,12 +414,12 @@ button {
 
 /* ===== FOCUS ===== */
 :focus-visible {
-  outline: 2px solid var(--brand-400);
+  outline: 2px solid var(--brand-300);
   outline-offset: 2px;
 }
 
 /* ===== SELECTION ===== */
-::selection { background: var(--brand-100); color: var(--brand-800); }
+::selection { background: #D8D0FC; color: #3F1A85; }
 
 /* ===== PENGAMAN MOBILE: cegah scroll horizontal ===== */
 @media (max-width: 768px) {
@@ -521,7 +521,7 @@ button {
   p, li { line-height: 1.55; }
 
   /* --- Smooth scroll & lebih cepat respond ke touch --- */
-  * { -webkit-tap-highlight-color: rgba(124,58,237,0.1); }
+  * { -webkit-tap-highlight-color: rgba(109,50,212,0.08); }
 
   /* --- Card hover: matikan transform di HP karena bisa bikin glitch --- */
   .course-card:hover,

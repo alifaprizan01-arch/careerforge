@@ -55,7 +55,7 @@ export default function DaftarMentorPage() {
     if (!user) return;
     (async () => {
       const { data } = await supabase
-        .from('mentors').select('id, status').eq('user_id', user.id).single();
+        .from('mentors').select('id, status').eq('user_id_ref', parseInt(user.id)).single();
       if (data?.status === 'approved') router.push('/mentor');
       if (data?.status === 'pending') setPendingExists(true);
     })();
@@ -97,19 +97,20 @@ export default function DaftarMentorPage() {
     setSubmitting(true);
     try {
       const { error } = await supabase.from('mentors').insert([{
-        user_id: user.id,
+        user_id_ref: parseInt(user.id) || null,
         full_name: form.full_name.trim(),
         title: form.title.trim(),
         company: form.company.trim() || null,
         bio: form.bio.trim(),
-        expertise: form.expertise.trim(),
+        expertise: [form.expertise.trim()],
         expertise_tags: form.expertise_tags,
         years_experience: parseInt(form.years_experience) || 0,
         price_per_session: parseInt(form.price_per_session) || 0,
+        hourly_rate: parseInt(form.price_per_session) || 0,
         linkedin_url: form.linkedin_url.trim() || null,
         avatar_url: user.avatar_url || null,
         availability: 'Tidak Tersedia',
-        status: 'pending',           // ← pending dulu, tunggu admin
+        status: 'pending',
         rating: 0, total_reviews: 0, rating_avg: 0,
         is_available: false,
       }]);

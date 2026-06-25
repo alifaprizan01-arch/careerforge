@@ -26,13 +26,6 @@ const values = [
   { icon: '🤝', title: 'Kolaborasi', desc: 'Menjembatani pencari kerja, perusahaan, dan mentor dalam satu ekosistem.' },
 ];
 
-const stats = [
-  { value: '10K+', label: 'Pencari Kerja' },
-  { value: '500+', label: 'Perusahaan Mitra' },
-  { value: '1.2K+', label: 'Pelatihan' },
-  { value: '95%', label: 'Tingkat Kepuasan' },
-];
-
 export default function TentangKamiPage() {
   return (
     <div style={{ display: 'flex', minHeight: '100vh', background: 'var(--bg-base)', fontFamily: 'var(--font-sans)' }}>
@@ -81,18 +74,6 @@ export default function TentangKamiPage() {
               </motion.div>
             ))}
           </div>
-
-          {/* Statistik */}
-          <motion.div {...fade(0)} style={{ background: 'var(--surface-brand)', border: '1px solid var(--border-brand)', borderRadius: '18px', padding: '36px', marginBottom: '64px' }}>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '24px', textAlign: 'center' }}>
-              {stats.map(s => (
-                <div key={s.label}>
-                  <div style={{ fontSize: '34px', fontWeight: 800, color: 'var(--text-brand)', letterSpacing: '-0.02em' }}>{s.value}</div>
-                  <div style={{ fontSize: '13px', color: 'var(--text-secondary)', fontWeight: 500, marginTop: '4px' }}>{s.label}</div>
-                </div>
-              ))}
-            </div>
-          </motion.div>
 
           {/* Nilai */}
           <motion.div {...fade(0)} style={{ textAlign: 'center', marginBottom: '36px' }}>

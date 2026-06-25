@@ -203,22 +203,22 @@ export default function PelatihanPage() {
           </div>
         </motion.div>
 
-        {/* Promo banner */}
+        {/* Banner Interview AI */}
         <AnimatePresence>
           {showPromo && (
             <motion.div initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0, marginBottom: 0 }}
               style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: '20px', flexWrap: 'wrap', background: 'var(--brand-600)', borderRadius: '16px', padding: isMobile ? '16px' : '24px 28px', marginBottom: '24px', overflow: 'hidden' }}>
               <div style={{ flex: 1, color: '#fff', zIndex: 1 }}>
-                <h2 style={{ fontSize: isMobile ? '16px' : '20px', fontWeight: 800, color: '#fff', marginBottom: '6px', lineHeight: 1.25 }}>Hemat 25% untuk satu tahun pembelajaran</h2>
+                <h2 style={{ fontSize: isMobile ? '16px' : '20px', fontWeight: 800, color: '#fff', marginBottom: '6px', lineHeight: 1.25 }}>Latih Interview-mu Bareng AI</h2>
                 <p style={{ fontSize: '13px', color: 'rgba(255,255,255,0.85)', lineHeight: 1.6, marginBottom: '16px', maxWidth: '440px' }}>
-                  Paket Personal jadi pendamping karier Anda untuk skill AI dan keahlian terkini. Promo berakhir {promoDeadlineLabel}.
+                  Simulasi wawancara kerja dengan AI: dapatkan pertanyaan sesuai posisi, jawab langsung, dan terima umpan balik instan agar lebih siap menghadapi interview sungguhan.
                 </p>
-                <button onClick={() => gridRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+                <button onClick={() => router.push('/interview')}
                   style={{ background: '#fff', color: 'var(--brand-700)', border: 'none', padding: '9px 18px', borderRadius: '9px', fontWeight: 700, fontSize: '13px', cursor: 'pointer', fontFamily: 'var(--font-sans)' }}>
-                  Hemat sekarang
+                  Mulai Interview AI →
                 </button>
               </div>
-              {!isMobile && <div style={{ width: '120px', height: '100px', borderRadius: '14px', background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '48px', flexShrink: 0 }}>🚀</div>}
+              {!isMobile && <div style={{ width: '120px', height: '100px', borderRadius: '14px', background: 'rgba(255,255,255,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '48px', flexShrink: 0 }}>🤖</div>}
               <button onClick={dismissPromo} aria-label="Tutup promo"
                 style={{ position: 'absolute', top: '12px', right: '14px', background: 'rgba(255,255,255,0.18)', color: '#fff', border: 'none', width: '26px', height: '26px', borderRadius: '50%', cursor: 'pointer', fontSize: '14px', lineHeight: 1 }}>✕</button>
             </motion.div>

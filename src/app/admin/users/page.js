@@ -21,6 +21,8 @@ export default function AdminUsersPage() {
   const [notifForm, setNotifForm] = useState({ title: '', message: '', targetUserId: null });
   const [showNotifModal, setShowNotifModal] = useState(false);
   const [sendingNotif, setSendingNotif] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting] = useState(false);
 
   useEffect(() => { if (loaded && (!user || user.role !== 'admin')) router.push('/'); }, [loaded, user]);
   useEffect(() => { if (user?.role === 'admin') fetchUsers(); }, [user]);
@@ -58,6 +60,34 @@ export default function AdminUsersPage() {
       setTimeout(() => setMsg(''), 4000);
     } catch (e) { setMsg('Gagal: ' + e.message); }
     finally { setSendingNotif(false); }
+  };
+
+  const deleteUser = async () => {
+    const target = deleteTarget;
+    if (!target) return;
+    setDeleting(true);
+    try {
+      // Hapus data terkait lebih dulu (best-effort: lewati tabel yang tidak ada di skema)
+      const relatedTables = [
+        'user_skills', 'user_experience', 'user_experiences', 'user_cvs', 'user_documents',
+        'saved_jobs', 'applications', 'job_applications', 'notifications', 'user_trainings',
+        'mentor_bookings', 'mentoring_bookings', 'testimonials', 'contact_messages',
+      ];
+      for (const tbl of relatedTables) {
+        const { error } = await supabase.from(tbl).delete().eq('user_id', target.id);
+        if (error && !/does not exist|find the table|relation|column .* does not exist/i.test(error.message || '')) {
+          console.warn('Gagal hapus dari ' + tbl + ': ' + error.message);
+        }
+      }
+      // Hapus baris user-nya
+      const { error: userErr } = await supabase.from('users').delete().eq('id', target.id);
+      if (userErr) throw userErr;
+      setUsers(prev => prev.filter(x => x.id !== target.id));
+      setDeleteTarget(null);
+      setMsg('User berhasil dihapus permanen.');
+      setTimeout(() => setMsg(''), 3000);
+    } catch (e) { setMsg('Gagal menghapus user: ' + (e.message || e)); }
+    finally { setDeleting(false); }
   };
 
   const c = {
@@ -122,6 +152,25 @@ export default function AdminUsersPage() {
             </motion.div>
           )}
 
+          {/* Modal Konfirmasi Hapus User */}
+          {deleteTarget && (
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px' }}>
+              <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} style={{ background: c.card, borderRadius: '14px', padding: '24px', maxWidth: '420px', width: '100%' }}>
+                <div style={{ fontSize: '32px', marginBottom: '10px' }}>⚠️</div>
+                <h3 style={{ fontSize: '16px', fontWeight: 700, color: c.text, marginBottom: '8px' }}>Hapus User Permanen?</h3>
+                <p style={{ fontSize: '13px', color: c.muted, lineHeight: 1.6, marginBottom: '20px' }}>
+                  User <strong style={{ color: c.text }}>{deleteTarget.full_name || deleteTarget.email}</strong> beserta seluruh datanya (skill, pengalaman, CV, dokumen, lamaran, notifikasi) akan dihapus permanen. Tindakan ini tidak bisa dibatalkan.
+                </p>
+                <div style={{ display: 'flex', gap: '10px' }}>
+                  <button onClick={() => setDeleteTarget(null)} disabled={deleting} style={{ flex: 1, padding: '10px', borderRadius: '8px', border: `1px solid ${c.border}`, background: 'transparent', color: c.muted, cursor: deleting ? 'not-allowed' : 'pointer' }}>Batal</button>
+                  <motion.button whileTap={{ scale: 0.97 }} onClick={deleteUser} disabled={deleting} style={{ flex: 2, padding: '10px', borderRadius: '8px', border: 'none', background: '#EF4444', color: '#fff', fontWeight: 600, cursor: deleting ? 'not-allowed' : 'pointer', opacity: deleting ? 0.7 : 1 }}>
+                    {deleting ? 'Menghapus...' : '🗑️ Hapus Permanen'}
+                  </motion.button>
+                </div>
+              </motion.div>
+            </motion.div>
+          )}
+
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: c.card, border: `1px solid ${c.border}`, borderRadius: '10px', padding: '10px 16px', marginBottom: '20px' }}>
             <span style={{ color: c.muted }}>🔍</span>
             <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Cari user..." style={{ border: 'none', outline: 'none', background: 'transparent', fontSize: '14px', flex: 1, color: c.inputText }} />
@@ -176,6 +225,12 @@ export default function AdminUsersPage() {
                     style={{ padding: '5px 8px', borderRadius: '6px', border: `1px solid ${c.border}`, background: 'transparent', color: c.muted, fontSize: '11px', cursor: 'pointer' }}>
                     📩
                   </motion.button>
+                  {u.id !== user.id && (
+                    <motion.button whileTap={{ scale: 0.95 }} onClick={() => setDeleteTarget(u)} title="Hapus user permanen"
+                      style={{ padding: '5px 8px', borderRadius: '6px', border: '1px solid #EF4444', background: 'transparent', color: '#EF4444', fontSize: '11px', cursor: 'pointer' }}>
+                      🗑️
+                    </motion.button>
+                  )}
                 </div>
               </motion.div>
             ))}
